@@ -90,6 +90,8 @@
     <ClCompile Include="d3dApp.cpp" />
     <ClCompile Include="GameTimer.cpp" />
     <ClCompile Include="Globals.cpp" />
+    <ClCompile Include="InfoText.cpp" />
+    <ClCompile Include="KeyboardHandler.cpp" />
     <ClCompile Include="MouseHandler.cpp" />
     <ClCompile Include="SurfelObject.cpp" />
     <ClCompile Include="WallDestructionMain.cpp" />
@@ -102,6 +104,8 @@
     <ClInclude Include="Drawable.h" />
     <ClInclude Include="GameTimer.h" />
     <ClInclude Include="Globals.h" />
+    <ClInclude Include="InfoText.h" />
+    <ClInclude Include="KeyboardHandler.h" />
     <ClInclude Include="MouseHandler.h" />
     <ClInclude Include="RandRange.h" />
     <ClInclude Include="resource.h" />
@@ -111,6 +115,7 @@
     <ResourceCompile Include="Wall_Destruction.rc" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Math.inc" />
     <None Include="Simple.fx" />
     <None Include="surfel.png" />
     <None Include="Surfels.fx">

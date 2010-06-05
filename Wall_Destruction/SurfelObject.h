@@ -33,6 +33,7 @@ namespace Drawables{
 		~SurfelObject(void);
 
 		void SetDrawMethod(DrawMethod method) { drawMethod = method; };
+		DrawMethod GetDrawMethod() { return drawMethod; };
 
 		void Init();
 		void Draw();

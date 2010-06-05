@@ -5,6 +5,7 @@
 #include <dxerr.h>
 #include "Camera.h"
 #include <sstream>
+#include "InfoText.h"
 
 #ifdef _UNICODE
 #define _T(x) x
@@ -60,6 +61,9 @@ namespace Helpers{
 		static float ClientWidth;
 		static float ClientHeight;
 		static Camera AppCamera;
+		static HWND Window;
+
+		static InfoText information;
 		
 		static const float PI;
 		static const float QUART_PI;
@@ -67,6 +71,7 @@ namespace Helpers{
 		static const float THREE_QUARTS_PI;		
 		static const float TWO_PI;
 
+		static bool CORRECTLY_SETUP;
 	};
 };
 

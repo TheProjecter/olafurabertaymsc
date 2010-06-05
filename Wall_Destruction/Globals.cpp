@@ -5,6 +5,10 @@ namespace Helpers{
 	float Globals::ClientWidth;
 	float Globals::ClientHeight;
 	Camera Globals::AppCamera;
+	bool Globals::CORRECTLY_SETUP = true;
+	HWND Globals::Window;
+
+	InfoText Globals::information;
 
 
 	const float Globals::PI = D3DX_PI;

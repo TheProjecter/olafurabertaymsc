@@ -96,10 +96,15 @@ namespace Drawables{
 			surfelVertexBuffer = NULL;
 		}
 
+		D3DXVECTOR3 normal1 = D3DXVECTOR3(RandRange::Rand(0.0f, 1.0f), RandRange::Rand(0.0f, 1.0f), RandRange::Rand(-1.0f, 0.0f));
+		D3DXVec3Normalize(&normal1, &normal1);
+		D3DXVECTOR3 normal2 = D3DXVECTOR3(RandRange::Rand(0.0f, 1.0f), RandRange::Rand(0.0f, 1.0f), RandRange::Rand(-1.0f, 0.0f));
+		D3DXVec3Normalize(&normal2, &normal2);
+
 		SURFEL_VERTEX vertices[] =
 		{
-			{D3DXVECTOR3( RandRange::Rand(-5.0f, 5.0f), RandRange::Rand(-5.0f, 5.0f), 0.0f ), D3DXVECTOR3( 0.0f, 0.0f, 1.0f ), D3DXVECTOR2(RandRange::Rand(3.0f, 10.0f), RandRange::Rand(3.0f, 10.0f))},
-			{D3DXVECTOR3( RandRange::Rand(-5.0f, 5.0f), RandRange::Rand(-5.0f, 5.0f), 0.0f ), D3DXVECTOR3( 0.0f, 0.0f, 1.0f ), D3DXVECTOR2(RandRange::Rand(3.0f, 10.0f), RandRange::Rand(3.0f, 10.0f))},
+			{D3DXVECTOR3( RandRange::Rand(-5.0f, 5.0f), RandRange::Rand(-5.0f, 5.0f), 0.0f ), normal1, D3DXVECTOR2(RandRange::Rand(3.0f, 10.0f), RandRange::Rand(3.0f, 10.0f))},
+			{D3DXVECTOR3( RandRange::Rand(-5.0f, 5.0f), RandRange::Rand(-5.0f, 5.0f), 0.0f ), normal2, D3DXVECTOR2(RandRange::Rand(3.0f, 10.0f), RandRange::Rand(3.0f, 10.0f))},
 		};
 
 		D3D10_BUFFER_DESC bd;

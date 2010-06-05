@@ -1,3 +1,5 @@
+#include "Math.inc"
+
 float4x4 World;
 float4x4 View;
 float4x4 Projection;
@@ -29,7 +31,6 @@ struct PS_SURFEL_INPUT{
 	float2 UV : TEXCOORD;
 };
 
-
 struct VS_INPUT{
 	float4 Pos : POSITION;
 	float4 Normal : NORMAL;
@@ -55,7 +56,6 @@ GS_SURFEL_INPUT VS_Surfel( VS_SURFEL_INPUT input)
     return output;
 }
 
-
 //
 // Takes in a point and output a single quad
 //
@@ -63,14 +63,12 @@ GS_SURFEL_INPUT VS_Surfel( VS_SURFEL_INPUT input)
 void GS_Surfel(point GS_SURFEL_INPUT input[1], inout TriangleStream<PS_SURFEL_INPUT> surfelStream, uniform bool useWVP)
 {
     PS_SURFEL_INPUT output;
-
-	// find the tangent 
-	float4 tan1 = normalize(mul(input[0].Normal, TangentRotation));
-	float4 tan2 = normalize(float4(cross(tan1.xyz, input[0].Normal.xyz), 1.0f));
+    
+	float3 tan1 = normalize(Perpendicular( input[0].Normal.xyz));
+	float3 tan2 = normalize(cross(input[0].Normal.xyz, tan1.xyz));
 
 	float xMultiplier[] = {-0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f};
 	float yMultiplier[] = { 0.5f, -0.5f, -0.5f, 0.5f, -0.5f, 0.5f};
-
 
 	uint U[] = {0, 0, 1, 0, 1, 1};
 	uint V[] = {0, 1, 1, 0, 1, 0};
@@ -78,9 +76,7 @@ void GS_Surfel(point GS_SURFEL_INPUT input[1], inout TriangleStream<PS_SURFEL_IN
 	[unroll]
     for(int i=0; i<6; i++)
     {		
-		output.Pos = input[0].Pos;// + xMultiplier[i] * tan1 + yMultiplier[i] * tan2;
-		output.Pos.x += xMultiplier[i]*input[0].Dimensions.x/* * tan1*/;
-		output.Pos.y += yMultiplier[i]*input[0].Dimensions.y/* * tan2*/;
+		output.Pos = float4(input[0].Pos.xyz + xMultiplier[i] * input[0].Dimensions.x * tan2 + yMultiplier[i] * input[0].Dimensions.y * tan1, 1.0f);
 		
 		if(useWVP){
 			output.Pos = mul( mul( mul( output.Pos, World), View), Projection);
