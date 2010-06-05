@@ -49,7 +49,7 @@ D3DApp::D3DApp(HINSTANCE hInstance, std::string name)
 
 	mMainWndCaption = name;
 	md3dDriverType  = D3D10_DRIVER_TYPE_HARDWARE;
-	mClearColor     = D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f);
+	mClearColor     = D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f);
 	mClientWidth    = 1024;
 	mClientHeight   = 800;
 }

@@ -9,8 +9,10 @@
 #include "d3dApp.h"
 #include "d3dUtil.h"
 #include "Globals.h"
-#include "CustomRectangle.h"
+#include "SurfelObject.h"
+//#include "CustomRectangle.h"
 #include "MouseHandler.h"
+#include <ctime>
 
 using namespace Drawables;
 
@@ -26,7 +28,10 @@ public:
 	void drawScene(); 
 
 private:
-	CustomRectangle rectangle;
+	SurfelObject surfelObject;
+	string instructions;
+	RECT instructionRect;
+//	CustomRectangle testRectangle;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -47,6 +52,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 WallDestructionApp::WallDestructionApp(HINSTANCE hInstance)
 	: D3DApp(hInstance, "Wall Destruction - Masters Project - Olafur Thor Gunnarsson - 0900128") 
 {
+	instructionRect.left = 5;
+	instructionRect.right = 0;
+	instructionRect.top = 35;
+	instructionRect.bottom = 0;
+	
+	instructions = "F1 - Surfel representation\nF2 - Solid representation\nF3 - Wireframe representation\nSpace - Randomize surfels\nWASD - Move camera\nMouse - Change camera's direction";
+	srand((unsigned)time(0));
 }
 
 WallDestructionApp::~WallDestructionApp()
@@ -55,7 +67,8 @@ WallDestructionApp::~WallDestructionApp()
 		md3dDevice->ClearState();
 
 	MouseHandler::CleanUp();
-	rectangle.CleanUp();
+	surfelObject.CleanUp();
+	//testRectangle.CleanUp();
 }
 
 void WallDestructionApp::initApp()
@@ -66,11 +79,15 @@ void WallDestructionApp::initApp()
 	Helpers::Globals::ClientHeight = mClientHeight;
 	Helpers::Globals::ClientWidth = mClientWidth;
 	Helpers::Globals::AppCamera = Camera(D3DXVECTOR3(0.0f, 0.0f, -10.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
-
-	rectangle = CustomRectangle(20.0f, 20.0f, D3DXCOLOR(0.0f, 255.0f, 0.0f, 255.0f));
-	rectangle.Init();
-
+	
 	MouseHandler::SetUp(mhAppInst, mhMainWnd);
+
+	surfelObject.SetDrawMethod(SURFEL);
+
+	surfelObject.Init();
+
+	/*testRectangle = CustomRectangle(10, 10, D3DXCOLOR(1.0f, 0.0f, 1.0f, 1.0f));
+	testRectangle.Init();*/
 }
 
 void WallDestructionApp::onResize()
@@ -90,6 +107,19 @@ void WallDestructionApp::updateScene(float dt)
 	#endif // _DEBUG	
 
 	Helpers::Globals::AppCamera.Update(dt);
+
+	if(GetAsyncKeyState(VK_F1)){
+		surfelObject.SetDrawMethod(SURFEL);
+	}
+	else if(GetAsyncKeyState(VK_F2)){
+		surfelObject.SetDrawMethod(SOLID);
+	}
+	else if(GetAsyncKeyState(VK_F3)){
+		surfelObject.SetDrawMethod(WIREFRAME);
+	}
+	else if(GetAsyncKeyState(VK_SPACE)){
+		surfelObject.RandomizeSurfels();
+	}
 }
 
 void WallDestructionApp::drawScene()
@@ -102,7 +132,11 @@ void WallDestructionApp::drawScene()
 	mFont->DrawTextA(0, mFrameStats.c_str(), -1, &R, DT_NOCLIP, RED);
 #endif // _DEBUG	
 
-	rectangle.Draw();
+	// We specify DT_NOCLIP, so we do not care about width/height of the rect.
+	mFont->DrawTextA(0, instructions.c_str(), -1, &instructionRect, DT_NOCLIP, GREEN);
+
+	surfelObject.Draw();
+	//testRectangle.Draw();
 
 	mSwapChain->Present(0, 0);
 }

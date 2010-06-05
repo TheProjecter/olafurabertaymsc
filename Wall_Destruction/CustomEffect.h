@@ -3,8 +3,10 @@
 
 #include <string>
 #include <map>
+#include <vector>
 #include <D3D10.h>
 #include <D3DX10.h>
+#include "Globals.h"
 
 #define CUSTOM_EFFECT_TYPE_VERTEX (1 << 0)
 #define CUSTOM_EFFECT_TYPE_GEOMETRY (1 << 1)
@@ -13,7 +15,24 @@
 using namespace std;
 
 namespace Helpers{
-	struct EffectNameComparer {
+	struct SURFEL_VERTEX{
+		// position
+		D3DXVECTOR3 pos;
+		// normal
+		D3DXVECTOR3 normal;
+		// dimensions.x : width
+		// dimensions.y : height
+		D3DXVECTOR2 dimensions;
+	};
+
+	struct SOLID_VERTEX{
+		D3DXVECTOR3 pos;
+		D3DXVECTOR3 normal;
+		D3DXVECTOR2 UV;
+	};
+
+
+	struct NameComparer {
 		bool operator()( string s1, string s2 ) const {
 			return s1 < s2;
 		}
@@ -28,9 +47,14 @@ namespace Helpers{
 
 		void PreDraw();
 		void Draw(int primitiveCount);
+		void Draw(int primitiveCount, int vertexSize);
+		void DrawAuto();
 		void CleanUp();
 		
 		void AddVariable(string variable);
+		void AddTexture(string variable, string texture);
+
+		void SetTexture(string variable, string texture);
 		void SetMatrix(string variable, D3DXMATRIX matrix);
 		void SetBoolVector(string variable, BOOL *vector);
 		void SetIntVector(string variable, int *vector);
@@ -39,15 +63,34 @@ namespace Helpers{
 		void SetInt(string variable, int scalar);
 		void SetFloat(string variable, float scalar);
 
+		ID3D10EffectTechnique* GetTechnique(){return Technique;}
+
+		// creates the vertex buffer every time, since this geometry shader is considered a special worker for the cpu
+		ID3D10Buffer* WriteToGeometryShader(D3D10_PRIMITIVE_TOPOLOGY inputTopology, ID3D10Buffer* inputBuffer, int inputVertexCount, ID3D10Buffer* outputBuffer);
+
 	private:
+		void CheckForGeometryShaderSupport(){
+			if(effectType & CUSTOM_EFFECT_TYPE_GEOMETRY)
+				return;
+
+			string errorString = name + " is not defined as a Geometry shader\n Construct the CustomEffect as CUSTOM_EFFECT_TYPE_GEOMETRY";
+			std::stringstream out;							
+			out << "Error - file: " << __FILE__ << " - line: " << (DWORD) __LINE__;	
+			MessageBox(0, errorString.c_str(), out.str().c_str(), 0);             
+		}
+
 		int effectType;
+		string name;
 		ID3D10Effect* effect;
 		ID3D10InputLayout **pVertexLayout;
-		ID3D10EffectTechnique* pTechnique;
+		ID3D10EffectTechnique* Technique;
 
 		UINT vertexLayoutSize;
+		bool texturesSet;
 
-		std::map<string, ID3D10EffectVariable*, EffectNameComparer> effectVariables;
+		std::map<string, ID3D10EffectVariable*, NameComparer> effectVariables;
+		std::vector<string> textureFileNames;
+		std::map<string, ID3D10ShaderResourceView*, NameComparer> textureSRV;
 	};
 }
 

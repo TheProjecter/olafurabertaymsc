@@ -40,14 +40,14 @@ namespace Drawables{
 		
 		HR(Globals::Device->CreateBuffer( &bd, &InitData, &mVB ));
 		
-		effect = CustomEffect("Surfels.fx", "SimpleSurfelTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_VERTEX, layout, 2);
+		effect = CustomEffect("Simple.fx", "SimpleTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_VERTEX, layout, 2);
 				
 		effect.AddVariable("World");
 		effect.AddVariable("View");
 		effect.AddVariable("Projection");
 
 		D3DXMATRIX world;
-		D3DXMatrixTranslation(&world, 0.0f, 0.0f, 0.0f);
+		D3DXMatrixTranslation(&world, -10.0f, 0.0f, 0.0f);
 
 		effect.SetMatrix("World", world);
 	}

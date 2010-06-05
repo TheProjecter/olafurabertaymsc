@@ -4,6 +4,7 @@
 #include <D3DX10.h>
 #include <dxerr.h>
 #include "Camera.h"
+#include <sstream>
 
 #ifdef _UNICODE
 #define _T(x) x
@@ -26,12 +27,30 @@
 		}                                                      \
 	}
 	#endif
-
 #else
 	#ifndef HR
 	#define HR(x) (x)
 	#endif
 #endif 
+
+#if defined(DEBUG) | defined(_DEBUG)
+	#ifndef ERR
+	#define ERR(x, errorString)	\
+	{                                                          \
+		HRESULT hr = (x);                                      \
+		if(FAILED(hr))                                         \
+		{                                                      \
+			std::stringstream out;							\
+			out << "Error - file: " << __FILE__ << " - line: " << (DWORD) __LINE__;	\
+			MessageBox(0, ((string)errorString).c_str(), out.str().c_str(), 0);             \
+		}                                                      \
+	}
+	#endif
+#else
+	#ifndef ERR
+	#define ERR(x, errorString) (x)
+	#endif
+#endif
 
 namespace Helpers{
 	class Globals

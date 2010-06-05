@@ -12,7 +12,7 @@ Camera::Camera(D3DXVECTOR3 pos, D3DXVECTOR3 lookAt){
 	D3DXVec3Normalize(&initialForward, &initialForward);
 	forward = initialForward;
 
-	deltaMovement = 1.0f;
+	deltaMovement = 5.0f;
 	deltaRotation = 1.0f;
 	yaw = 0.0f;
 	pitch = 0.0f;
@@ -84,7 +84,7 @@ void Camera::Update(float dt){
 
 		D3DXVec3TransformCoord(&forward, &initialForward, &rotation);
 		D3DXVec3TransformCoord(&right, &initialRight, &rotation);
-
+		
 		D3DXMatrixLookAtLH(&view, &position, &(position + forward), &up);
 	}
 }
