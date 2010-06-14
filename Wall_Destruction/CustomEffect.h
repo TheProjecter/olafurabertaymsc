@@ -7,6 +7,7 @@
 #include <D3D10.h>
 #include <D3DX10.h>
 #include "Globals.h"
+#include "Structs.h"
 
 #define CUSTOM_EFFECT_TYPE_VERTEX (1 << 0)
 #define CUSTOM_EFFECT_TYPE_GEOMETRY (1 << 1)
@@ -15,29 +16,6 @@
 using namespace std;
 
 namespace Helpers{
-	struct SURFEL_VERTEX{
-		// position
-		D3DXVECTOR3 pos;
-		// normal
-		D3DXVECTOR3 normal;
-		// dimensions.x : width
-		// dimensions.y : height
-		D3DXVECTOR2 dimensions;
-	};
-
-	struct SOLID_VERTEX{
-		D3DXVECTOR3 pos;
-		D3DXVECTOR3 normal;
-		D3DXVECTOR2 UV;
-	};
-
-
-	struct NameComparer {
-		bool operator()( string s1, string s2 ) const {
-			return s1 < s2;
-		}
-	};
-
 	class CustomEffect
 	{
 	public:
@@ -48,6 +26,7 @@ namespace Helpers{
 		void PreDraw();
 		void Draw(int primitiveCount);
 		void Draw(int primitiveCount, int vertexSize);
+		void DrawIndexed(int indexCount);
 		void DrawAuto();
 		void CleanUp();
 		
@@ -62,7 +41,6 @@ namespace Helpers{
 		void SetBool(string variable, BOOL scalar);
 		void SetInt(string variable, int scalar);
 		void SetFloat(string variable, float scalar);
-
 		ID3D10EffectTechnique* GetTechnique(){return Technique;}
 
 		// creates the vertex buffer every time, since this geometry shader is considered a special worker for the cpu
@@ -88,9 +66,9 @@ namespace Helpers{
 		UINT vertexLayoutSize;
 		bool texturesSet;
 
-		std::map<string, ID3D10EffectVariable*, NameComparer> effectVariables;
+		std::map<string, ID3D10EffectVariable*, Structs::NameComparer> effectVariables;
 		std::vector<string> textureFileNames;
-		std::map<string, ID3D10ShaderResourceView*, NameComparer> textureSRV;
+		std::map<string, ID3D10ShaderResourceView*, Structs::NameComparer> textureSRV;
 	};
 }
 

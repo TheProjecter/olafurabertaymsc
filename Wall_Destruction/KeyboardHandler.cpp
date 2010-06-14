@@ -6,6 +6,7 @@ namespace Helpers{
 	LPDIRECTINPUT8 KeyboardHandler::directInput;
 	LPDIRECTINPUTDEVICE8 KeyboardHandler::directInputDevice;
 	char KeyboardHandler::KeyBuffer[256], KeyboardHandler::LastKeyBuffer[256];
+	bool KeyboardHandler::isReady = false;
 
 	void KeyboardHandler::Init()
 	{
@@ -14,6 +15,7 @@ namespace Helpers{
 
 		InitDirectInput();
 		InitKeyboard();
+		isReady = true;
 	}
 
 	void KeyboardHandler::CleanUp()
@@ -76,7 +78,7 @@ namespace Helpers{
 	}
 
 	bool KeyboardHandler::IsKeyDown(int key){
-		return KeyBuffer[key] & 0x80;
+		return (KeyBuffer[key] & 0x80) != 0;
 	}
 
 	bool KeyboardHandler::IsKeyUp(int key){
@@ -84,11 +86,11 @@ namespace Helpers{
 	}
 
 	bool KeyboardHandler::IsSingleKeyDown(int key){
-		return (KeyBuffer[key] & 0x80) && !(LastKeyBuffer[key] & 0x80) ;
+		return ((KeyBuffer[key] & 0x80) != 0) && !((LastKeyBuffer[key] & 0x80) != 0);
 	}
 
 	bool KeyboardHandler::IsSingleKeyUp(int key){
-		return !(KeyBuffer[key] & 0x80) && (LastKeyBuffer[key] & 0x80) ;
+		return !((KeyBuffer[key] & 0x80) != 0) && ((LastKeyBuffer[key] & 0x80) != 0) ;
 	}
 }
 

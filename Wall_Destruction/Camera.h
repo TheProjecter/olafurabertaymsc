@@ -16,10 +16,13 @@ public:
 
 	D3DXMATRIX View(){return view;}
 	D3DXMATRIX Projection(){return projection;}
+	D3DXMATRIX InvView(){return invView;}
 
+	D3DXVECTOR3 Position(){return position;}
+	D3DXVECTOR3 Forward(){return forward;}
 	
 private:
-	D3DXMATRIX view, projection;
+	D3DXMATRIX view, projection, invView;
 	D3DXVECTOR3 position, lookAt, right, forward, initialForward, initialRight, up;
 	float deltaMovement, deltaRotation, yaw, pitch;
 };

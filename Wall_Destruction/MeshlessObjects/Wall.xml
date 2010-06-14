@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<meshless_object>
+  <name>Wall</name>
+  <deformable>true</deformable>
+  <!--texture taken from http://www.cgtextures.com/texview.php?id=15478&PHPSESSID=9fa800c43268de8fbb65b3683bce884e Image 1 Small-->
+  <texture>Textures\\Concrete.jpg</texture>
+
+  <material sigma="0.600672" rho="0.668533"/>
+  
+  <worldtranslation x="0.0" y="5.0" z="0.0"/>
+  <worldscale x="1.0" y="1.0" z="1.0"/>
+  <worldyawpitchroll x="0.0" y="0.0" z="0.0"/>
+
+  <!-- Front faces -->
+  <pointset>
+    <position x="-15.0" y="0.0" z="12.5"/>
+    <dimensions u="30.0" v="5.0"/>
+    <normal x="-1.0" y="0.0" z="0.0"/>
+  </pointset>
+
+  <pointset>
+    <position x="-2.5" y="0.0" z="10.0"/>
+    <dimensions u="25.0" v="30.0"/>
+    <normal x="0.0" y="0.0" z="-1.0"/>
+  </pointset>
+
+  <pointset>
+    <position x="10.0" y="0.0" z="-2.5"/>
+    <dimensions u="30.0" v="25.0"/>
+    <normal x="-1.0" y="0.0" z="0.0"/>
+  </pointset>
+
+  <pointset>
+    <position x="12.5" y="0.0" z="-15.0"/>
+    <dimensions u="5.0" v="30.0"/>
+    <normal x="0.0" y="0.0" z="-1.0"/>
+  </pointset>
+
+  <pointset>
+    <position x="15.0" y="0.0" z="0.0"/>
+    <dimensions u="30.0" v="30.0"/>
+    <normal x="1.0" y="0.0" z="0.0"/>
+  </pointset>
+  
+  <pointset>
+    <position x="0.0" y="0.0" z="15.0"/>
+    <dimensions u="30.0" v="30.0"/>
+    <normal x="0.0" y="0.0" z="1.0"/>
+  </pointset>
+  
+  <!-- Top face-->
+  <pointset>
+    <position x="-2.5" y="15.0" z="12.5"/>
+    <dimensions u="25.0" v="5.0"/>
+    <normal x="0.0" y="1.0" z="0.0"/>
+  </pointset>
+
+  <pointset>
+    <position x="12.5" y="15.0" z="0.0"/>
+    <dimensions u="5.0" v="30.0"/>
+    <normal x="0.0" y="1.0" z="0.0"/>
+  </pointset>
+  
+  <!--
+  
+  
+  <pointset>
+    <position x="0.0" y="0.0" z="10.0"/>
+    <dimensions u="20.0" v="20.0"/>
+    <normal x="0.0" y="0.0" z="1.0"/>    
+  </pointset>
+  
+  <pointset>
+    <position x="0.0" y="0.0" z="0.0"/>
+    <dimensions u="20.0" v="20.0"/>
+    <normal x="0.0" y="0.0" z="-1.0"/>
+  </pointset>
+
+  <pointset>
+    <position x="0.0" y="10.0" z="5.0"/>
+    <dimensions u="20.0" v="10.0"/>
+    <normal x="0.0" y="1.0" z="0.0"/>
+  </pointset>
+
+  <pointset>
+    <position x="0.0" y="-10.0" z="5.0"/>
+    <dimensions u="20.0" v="10.0"/>
+    <normal x="0.0" y="-1.0" z="0.0"/>
+  </pointset>
+
+  <pointset>
+    <position x="-10.0" y="0.0" z="5.0"/>
+    <dimensions u="20.0" v="10.0"/>
+    <normal x="-1.0" y="0.0" z="0.0"/>
+  </pointset>
+
+  <pointset>
+    <position x="10.0" y="0.0" z="5.0"/>
+    <dimensions u="20.0" v="10.0"/>
+    <normal x="1.0" y="0.0" z="0.0"/>
+  </pointset>
+-->
+</meshless_object>

@@ -6,6 +6,7 @@
 #include "Camera.h"
 #include <sstream>
 #include "InfoText.h"
+#include "Light.h"
 
 #ifdef _UNICODE
 #define _T(x) x
@@ -43,7 +44,7 @@
 		{                                                      \
 			std::stringstream out;							\
 			out << "Error - file: " << __FILE__ << " - line: " << (DWORD) __LINE__;	\
-			MessageBox(0, ((string)errorString).c_str(), out.str().c_str(), 0);             \
+			MessageBox(0, ((std::string)errorString).c_str(), out.str().c_str(), 0);             \
 		}                                                      \
 	}
 	#endif
@@ -53,17 +54,24 @@
 	#endif
 #endif
 
+using namespace Drawables;
+
 namespace Helpers{
+
+	enum DrawMethod {SURFEL, WIREFRAME, SOLID};
+
 	class Globals
 	{
 	public:
 		static ID3D10Device* Device;
-		static float ClientWidth;
-		static float ClientHeight;
+		static int ClientWidth;
+		static int ClientHeight;
 		static Camera AppCamera;
 		static HWND Window;
 
-		static InfoText information;
+		static InfoText DebugInformation;
+		static DrawMethod SurfelDrawMethod;
+		static Light AppLight;
 		
 		static const float PI;
 		static const float QUART_PI;
@@ -72,6 +80,8 @@ namespace Helpers{
 		static const float TWO_PI;
 
 		static bool CORRECTLY_SETUP;
+		static bool MOUSE_ACQUIRED;
+		static bool MOVE_WRECKINGBALL;
 	};
 };
 

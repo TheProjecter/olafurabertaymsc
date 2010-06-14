@@ -1,7 +1,7 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Wall_Destruction", "Wall_Destruction.vcxproj", "{71F2004A-5C33-4BFF-9A5E-97AC68D0BD12}"
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Wall_Destruction", "Wall_Destruction.vcproj", "{3F3C6B3C-29D0-4C41-8E2F-6FA3F13CD8F1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -9,10 +9,10 @@ Global
 		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{71F2004A-5C33-4BFF-9A5E-97AC68D0BD12}.Debug|Win32.ActiveCfg = Debug|Win32
-		{71F2004A-5C33-4BFF-9A5E-97AC68D0BD12}.Debug|Win32.Build.0 = Debug|Win32
-		{71F2004A-5C33-4BFF-9A5E-97AC68D0BD12}.Release|Win32.ActiveCfg = Release|Win32
-		{71F2004A-5C33-4BFF-9A5E-97AC68D0BD12}.Release|Win32.Build.0 = Release|Win32
+		{3F3C6B3C-29D0-4C41-8E2F-6FA3F13CD8F1}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3F3C6B3C-29D0-4C41-8E2F-6FA3F13CD8F1}.Debug|Win32.Build.0 = Debug|Win32
+		{3F3C6B3C-29D0-4C41-8E2F-6FA3F13CD8F1}.Release|Win32.ActiveCfg = Release|Win32
+		{3F3C6B3C-29D0-4C41-8E2F-6FA3F13CD8F1}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

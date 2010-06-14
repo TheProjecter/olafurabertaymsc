@@ -1,12 +1,17 @@
 #include "CustomEffect.h"
 //#include "Globals.h"
 
+#if defined(DEBUG) || defined(_DEBUG)
+#include "vld.h"
+#endif
+
 namespace Helpers{
 	
-	CustomEffect::CustomEffect(string name, string technique, int effectType, D3D10_INPUT_ELEMENT_DESC layout[], int layoutCount){
+	CustomEffect::CustomEffect(string shaderName, string technique, int effectType, D3D10_INPUT_ELEMENT_DESC *layout, int layoutCount){
+
 		texturesSet = false;
 		effect = NULL;
-		this->name = name;
+		this->name = "Shaders\\" + shaderName;
 
 		DWORD shaderFlags = D3D10_SHADER_ENABLE_STRICTNESS;
 #if defined( DEBUG ) || defined( _DEBUG )
@@ -36,7 +41,8 @@ namespace Helpers{
 			D3D10_PASS_DESC PassDesc;
 			HR(Technique->GetPassByIndex( idx )->GetDesc( &PassDesc ));
 
-			ERR(Globals::Device->CreateInputLayout( layout, layoutCount, PassDesc.pIAInputSignature, PassDesc.IAInputSignatureSize, &pVertexLayout[idx]), "Error creating the layout, is the layoutCount equal to the layout array?");
+			ERR(Globals::Device->CreateInputLayout( layout, layoutCount, PassDesc.pIAInputSignature, PassDesc.IAInputSignatureSize, &pVertexLayout[idx]), 
+					"Error creating the layout, is the layoutCount equal to the layout array?");
 		}
 
 		this->effectType = effectType;
@@ -53,7 +59,7 @@ namespace Helpers{
 		for( UINT p = 0; p < techDesc.Passes; ++p )
 		{
 			Technique->GetPassByIndex( p )->Apply( 0 );
-			for(UINT i = 0; i<=primitiveCount; i+=vertexSize)
+			for(int i = 0; i<=primitiveCount; i+=vertexSize)
 				Globals::Device->Draw( vertexSize, i);
 		}
 	}
@@ -66,6 +72,17 @@ namespace Helpers{
 		{
 			Technique->GetPassByIndex( p )->Apply( 0 );
 			Globals::Device->Draw( primitiveCount, 0 );
+		}
+	}
+
+	void CustomEffect::DrawIndexed(int indexCount){
+		// render
+		D3D10_TECHNIQUE_DESC techDesc;
+		Technique->GetDesc( &techDesc );
+		for( UINT p = 0; p < techDesc.Passes; ++p )
+		{
+			Technique->GetPassByIndex( p )->Apply( 0 );
+			Globals::Device->DrawIndexed( indexCount, 0, 0);
 		}
 	}
 
@@ -136,26 +153,30 @@ namespace Helpers{
 
 	void CustomEffect::CleanUp(){
 
-		for(int i = 0; i<vertexLayoutSize; i++){
-			pVertexLayout[i]->Release();
+		for(unsigned int i = 0; i<vertexLayoutSize; i++){
+ 			pVertexLayout[i]->Release();
 		}
-		delete [] pVertexLayout;
+		delete pVertexLayout;
 
-		std::map<std::string, ID3D10ShaderResourceView*, NameComparer>::const_iterator textureItr;
-
+		std::map<std::string, ID3D10ShaderResourceView*, Structs::NameComparer>::const_iterator textureItr;
 		for(textureItr = textureSRV.begin(); textureItr != textureSRV.begin(); textureItr++){
 			textureItr->second->Release();
 			delete textureItr->second;
 		}
+		textureSRV.clear();
 
-		std::map<std::string, ID3D10EffectVariable*, NameComparer>::const_iterator variableItr;
-
+		std::map<std::string, ID3D10EffectVariable*, Structs::NameComparer>::const_iterator variableItr;
 		for(variableItr = effectVariables.begin(); variableItr != effectVariables.begin(); variableItr++){
 			delete variableItr->second;
 		}
+		effectVariables.clear();
 
-		effect->Release();
-		delete effect;
+		textureFileNames.clear();
+
+		if(effect){
+			effect->Release();
+			effect = NULL;
+		}
 	}
 
 	// creates the vertex buffer every time, since this geometry shader is considered a special worker for the cpu
@@ -180,7 +201,7 @@ namespace Helpers{
 		Globals::Device->SOSetTargets( 1, pBuffers, offset );
 
 		PreDraw();
-		Draw(inputVertexCount, 1); 
+		Draw(inputVertexCount); 
 
 		// Get back to normal
 		pBuffers[0] = NULL;

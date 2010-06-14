@@ -4,41 +4,35 @@
 #include <D3DX10.h>
 #include <vector>
 #include "Drawable.h"
+#include "Structs.h"
 #include "CustomEffect.h"
+#include "HavokPhysicsInclude.h"
 
 // http://www.nealen.net/projects/mls/asapmls.pdf
 namespace Drawables{
-	struct SURFEL_VERTEX{
-		// position
-		D3DXVECTOR3 pos;
-		// normal
-		D3DXVECTOR3 normal;
-		// dimensions.x : width
-		// dimensions.y : height
-		D3DXVECTOR2 dimensions;
-	};
 
-	struct SOLID_VERTEX{
-		D3DXVECTOR3 pos;
-		D3DXVECTOR3 normal;
-		D3DXVECTOR2 UV;
-	};
 
-	enum DrawMethod {SURFEL, WIREFRAME, SOLID};
-
-	class SurfelObject : Drawable
+	class SurfelObject : public Drawable
 	{
 	public:
 		SurfelObject(void);
+		SurfelObject(std::vector<Structs::SURFEL_VERTEX> surfels);
 		~SurfelObject(void);
 
-		void SetDrawMethod(DrawMethod method) { drawMethod = method; };
-		DrawMethod GetDrawMethod() { return drawMethod; };
-
-		void Init();
 		void Draw();
+		void Update(float dt);
+		void Init();
 		void CleanUp();
-		void RandomizeSurfels();
+
+		void SetWorld(D3DXMATRIX world){ this->world = world;}
+		void SetSurfelsSolidTexture(std::string tex){this->surfelsSolidTexture = tex;}
+
+		void ResetSurfels(std::vector<Structs::SURFEL_VERTEX> newSurfels);
+		void ResetSurfels();
+
+		std::vector<Structs::SURFEL_VERTEX> GetSurfels(){return surfels;}
+
+		ID3D10Buffer* GetReadableVertexBuffer(){return readableVertexBuffer;}
 	
 	private:
 		void DrawSurfel();
@@ -53,11 +47,12 @@ namespace Drawables{
 
 		void InitCommonSolidAndWireframe();
 
-		std::vector<SURFEL_VERTEX> surfels;
-		DrawMethod drawMethod;
+		std::vector<Structs::SURFEL_VERTEX> surfels;
+		std::vector<hkpRigidBody*> surfelRigidBodies;
+		std::string surfelsSolidTexture;
 
 		Helpers::CustomEffect surfelEffect, wireframeEffect, solidEffect, geometryEffect;
-		ID3D10Buffer *surfelVertexBuffer, *solidVertexBuffer, *dynamicSurfelVertexBuffer;
+		ID3D10Buffer *surfelVertexBuffer, *solidVertexBuffer, *readableVertexBuffer;
 		
 		ID3D10RasterizerState *SolidRenderState;
 

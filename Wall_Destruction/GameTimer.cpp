@@ -11,7 +11,7 @@ GameTimer::GameTimer()
 {
 	__int64 countsPerSec;
 	QueryPerformanceFrequency((LARGE_INTEGER*)&countsPerSec);
-	mSecondsPerCount = 1.0 / (double)countsPerSec;
+	mSecondsPerCount = 1.0 / (double)countsPerSec ;
 }
 
 // Returns the total time elapsed since reset() was called, NOT counting any

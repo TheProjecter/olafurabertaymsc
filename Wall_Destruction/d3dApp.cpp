@@ -5,6 +5,8 @@
 #include "d3dApp.h"
 #include <sstream>
 #include "Globals.h"
+#include "KeyboardHandler.h"
+#include "PhysicsWrapper.h"
 
 LRESULT CALLBACK
 	MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -77,7 +79,7 @@ HWND D3DApp::getMainWnd()
 int D3DApp::run()
 {
 	MSG msg = {0};
-
+	
 	mTimer.reset();
 
 	while(msg.message != WM_QUIT)
@@ -110,7 +112,6 @@ void D3DApp::initApp()
 	initDirect3D();
 
 	D3DX10CreateFont(md3dDevice, 14, 0, 0, 1, false, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Times New Roman", &mFont);
-
 }
 
 void D3DApp::onResize()
@@ -122,7 +123,6 @@ void D3DApp::onResize()
 	ReleaseCOM(mDepthStencilView);
 	ReleaseCOM(mDepthStencilBuffer);
 
-
 	// Resize the swap chain and recreate the render target view.
 
 	HR(mSwapChain->ResizeBuffers(1, mClientWidth, mClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, 0));
@@ -130,7 +130,6 @@ void D3DApp::onResize()
 	HR(mSwapChain->GetBuffer(0, __uuidof(ID3D10Texture2D), reinterpret_cast<void**>(&backBuffer)));
 	HR(md3dDevice->CreateRenderTargetView(backBuffer, 0, &mRenderTargetView));
 	ReleaseCOM(backBuffer);
-
 
 	// Create the depth/stencil buffer and view.
 
@@ -206,6 +205,13 @@ void D3DApp::drawScene()
 
 LRESULT D3DApp::msgProc(UINT msg, WPARAM wParam, LPARAM lParam)
 {
+
+	if(!Helpers::Globals::CORRECTLY_SETUP){
+		PostQuitMessage(0);
+		return 0;
+	}
+
+
 	switch( msg )
 	{
 		// WM_ACTIVATE is sent when the window is activated or deactivated.  
@@ -216,11 +222,13 @@ LRESULT D3DApp::msgProc(UINT msg, WPARAM wParam, LPARAM lParam)
 		{
 			mAppPaused = true;
 			mTimer.stop();
+			PhysicsWrapper::Pause();
 		}
 		else
 		{
 			mAppPaused = false;
 			mTimer.start();
+			PhysicsWrapper::Resume();
 		}
 		return 0;
 
@@ -314,7 +322,7 @@ LRESULT D3DApp::msgProc(UINT msg, WPARAM wParam, LPARAM lParam)
 		((MINMAXINFO*)lParam)->ptMinTrackSize.y = 200; 
 		return 0;
 	default:
-		if(GetAsyncKeyState(VK_ESCAPE))
+		if(Helpers::KeyboardHandler::IsKeyDown(DIK_ESCAPE))
 		{
 			PostQuitMessage(0);
 			return 0;

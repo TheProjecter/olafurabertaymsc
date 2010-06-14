@@ -20,6 +20,7 @@ namespace Helpers{
 		static bool IsKeyDown(int);
 		static bool IsSingleKeyDown(int);
 		static bool IsSingleKeyUp(int);
+		static bool IsReady(){return isReady;}
 
 	private:
 		static void InitDirectInput();
@@ -29,6 +30,8 @@ namespace Helpers{
 		static LPDIRECTINPUTDEVICE8 directInputDevice;
 
 		static char KeyBuffer[256], LastKeyBuffer[256];
+
+		static bool isReady;
 	};
 }
 

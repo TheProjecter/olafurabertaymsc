@@ -5,20 +5,24 @@
 namespace Drawables{
 	SurfelObject::SurfelObject(void){}
 
+	SurfelObject::SurfelObject(std::vector<Structs::SURFEL_VERTEX> surfels){
+		this->surfels = surfels;
+	}
+
 	SurfelObject::~SurfelObject(void){}
 
 	void SurfelObject::Init(){
 		surfelVertexBuffer = NULL;
 		solidVertexBuffer = NULL;
 
-		D3DXMatrixTranslation(&world, 0.0f, 0.0f, 0.0f);
+		SetMaterialInfo(0.416384f, 0.142109f);
 
 		InitGeometryPass();
 		InitSurfel();
 		InitCommonSolidAndWireframe();
 		InitWireframe();
 		InitSolid();
-		RandomizeSurfels();
+		ResetSurfels(surfels);
 	}
 
 	void SurfelObject::InitGeometryPass(){
@@ -36,12 +40,7 @@ namespace Drawables{
 		geometryEffect.AddVariable("World");
 		geometryEffect.AddVariable("View");
 		geometryEffect.AddVariable("Projection");
-		geometryEffect.AddVariable("TangentRotation");
-		
-		D3DXMATRIX tangentRotation;
-		D3DXMatrixRotationYawPitchRoll(&tangentRotation, Helpers::Globals::HALF_PI, Helpers::Globals::HALF_PI, Helpers::Globals::HALF_PI);
-
-		geometryEffect.SetMatrix("TangentRotation", tangentRotation);
+	
 		geometryEffect.SetMatrix("World", world);
 	}
 
@@ -54,62 +53,51 @@ namespace Drawables{
 			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 2*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // dimensions
 		};
 
-		/*
-		D3D10_BUFFER_DESC vbdesc =
-		{
-			sizeof(SURFEL_VERTEX),
-			D3D10_USAGE_DYNAMIC,
-			D3D10_BIND_VERTEX_BUFFER | D3D10_BIND_STREAM_OUTPUT,
-			D3D10_CPU_ACCESS_WRITE,
-			0
-		};
-
-		HR(Helpers::Globals::Device->CreateBuffer( &vbdesc, NULL, &dynamicSurfelVertexBuffer));
-		
-		SURFEL_VERTEX *tmpVertices = NULL;
-		HRESULT hr = dynamicSurfelVertexBuffer->Map(D3D10_MAP_WRITE_DISCARD, 0, (void**)&tmpVertices);
-		if(SUCCEEDED(hr)){
-			CopyMemory(tmpVertices, vertices, sizeof( vertices ) );
-			dynamicSurfelVertexBuffer->Unmap();
-		}
-		*/
 		// create the effect
 		surfelEffect = Helpers::CustomEffect("Surfels.fx", "SurfelTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_GEOMETRY | CUSTOM_EFFECT_TYPE_VERTEX , layout, 3);
-		
 		surfelEffect.AddVariable("World");
 		surfelEffect.AddVariable("View");
 		surfelEffect.AddVariable("Projection");
-		surfelEffect.AddVariable("TangentRotation");
-		surfelEffect.AddTexture("SurfelTexture", "surfel.png");
+		surfelEffect.AddTexture("SurfelTexture", "Textures\\surfel.png");
 
-		D3DXMATRIX tangentRotation;
-		D3DXMatrixRotationYawPitchRoll(&tangentRotation, Helpers::Globals::HALF_PI, Helpers::Globals::HALF_PI, Helpers::Globals::HALF_PI);
-		
-		surfelEffect.SetMatrix("TangentRotation", tangentRotation);
-		surfelEffect.SetTexture("SurfelTexture", "surfel.png");
+		surfelEffect.AddVariable("LightPos");
+		surfelEffect.AddVariable("AmbientColor");
+		surfelEffect.AddVariable("CameraPos");
+		surfelEffect.AddVariable("LightDirection");
+		surfelEffect.AddVariable("A");
+		surfelEffect.AddVariable("B");
+		surfelEffect.AddVariable("rhoOverPi");
+		surfelEffect.AddVariable("LightColor");		
+
+		surfelEffect.SetTexture("SurfelTexture", "Textures\\surfel.png");
 		surfelEffect.SetMatrix("World", world);
+		surfelEffect.SetFloatVector("AmbientColor", Helpers::Globals::AppLight.GetAmbientColor());
+		surfelEffect.SetFloatVector("LightPos", Helpers::Globals::AppLight.GetPosition());
+		surfelEffect.SetFloatVector("LightDirection", Helpers::Globals::AppLight.GetDirection());
+		surfelEffect.SetFloat("A", this->A);
+		surfelEffect.SetFloat("B", this->B);
+		surfelEffect.SetFloat("rhoOverPi", this->rhoOverPi);
+		surfelEffect.SetFloatVector("LightColor", Helpers::Globals::AppLight.GetColor());
 	}
 
-	void SurfelObject::RandomizeSurfels(){
+	void SurfelObject::ResetSurfels(std::vector<Structs::SURFEL_VERTEX> newSurfels){
 		if(surfelVertexBuffer){
 			surfelVertexBuffer->Release();
 			surfelVertexBuffer = NULL;
 		}
+		
+		this->surfels = newSurfels;
 
-		D3DXVECTOR3 normal1 = D3DXVECTOR3(RandRange::Rand(0.0f, 1.0f), RandRange::Rand(0.0f, 1.0f), RandRange::Rand(-1.0f, 0.0f));
-		D3DXVec3Normalize(&normal1, &normal1);
-		D3DXVECTOR3 normal2 = D3DXVECTOR3(RandRange::Rand(0.0f, 1.0f), RandRange::Rand(0.0f, 1.0f), RandRange::Rand(-1.0f, 0.0f));
-		D3DXVec3Normalize(&normal2, &normal2);
+		Structs::SURFEL_VERTEX* vertices = NULL;
+		vertices = new Structs::SURFEL_VERTEX[newSurfels.size()];
 
-		SURFEL_VERTEX vertices[] =
-		{
-			{D3DXVECTOR3( RandRange::Rand(-5.0f, 5.0f), RandRange::Rand(-5.0f, 5.0f), 0.0f ), normal1, D3DXVECTOR2(RandRange::Rand(3.0f, 10.0f), RandRange::Rand(3.0f, 10.0f))},
-			{D3DXVECTOR3( RandRange::Rand(-5.0f, 5.0f), RandRange::Rand(-5.0f, 5.0f), 0.0f ), normal2, D3DXVECTOR2(RandRange::Rand(3.0f, 10.0f), RandRange::Rand(3.0f, 10.0f))},
-		};
-
+		for(UINT i = 0; i<newSurfels.size();i++){
+			vertices[i] = newSurfels[i];
+		}
+			
 		D3D10_BUFFER_DESC bd;
 		bd.Usage = D3D10_USAGE_DEFAULT;
-		bd.ByteWidth = sizeof( vertices );
+		bd.ByteWidth = newSurfels.size() * sizeof( Structs::SURFEL_VERTEX );
 		bd.BindFlags = D3D10_BIND_VERTEX_BUFFER | D3D10_BIND_STREAM_OUTPUT;
 		bd.CPUAccessFlags = 0;
 		bd.MiscFlags = 0;
@@ -118,14 +106,22 @@ namespace Drawables{
 
 		HR(Helpers::Globals::Device->CreateBuffer( &bd, &InitData, &surfelVertexBuffer ));	
 
-		geometryEffect.WriteToGeometryShader(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST, surfelVertexBuffer, 2, solidVertexBuffer);
+		geometryEffect.WriteToGeometryShader(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST, surfelVertexBuffer, newSurfels.size(), solidVertexBuffer);
+
+		Helpers::Globals::Device->CopyResource(readableVertexBuffer, solidVertexBuffer);
+
+		delete vertices;
+	}
+
+	void SurfelObject::ResetSurfels(){
+		ResetSurfels(surfels);
 	}
 
 	void SurfelObject::InitCommonSolidAndWireframe(){	
 
 		D3D10_BUFFER_DESC vbdesc =
 		{
-			100 * sizeof(SOLID_VERTEX),
+			100 * sizeof(Structs::SOLID_VERTEX),
 			D3D10_USAGE_DEFAULT,
 			D3D10_BIND_VERTEX_BUFFER | D3D10_BIND_STREAM_OUTPUT,
 			0,
@@ -133,6 +129,17 @@ namespace Drawables{
 		};
 
 		HR( Helpers::Globals::Device->CreateBuffer( &vbdesc, NULL, &solidVertexBuffer ) );		
+
+		D3D10_BUFFER_DESC vbdesc2 =
+		{
+			100 * sizeof(Structs::SOLID_VERTEX),
+			D3D10_USAGE_STAGING,
+			0,
+			D3D10_CPU_ACCESS_READ,
+			0
+		};
+
+		HR( Helpers::Globals::Device->CreateBuffer( &vbdesc2, NULL, &readableVertexBuffer) );		
 	}
 
 	void SurfelObject::InitWireframe(){
@@ -149,21 +156,32 @@ namespace Drawables{
 		wireframeEffect.AddVariable("World");
 		wireframeEffect.AddVariable("View");
 		wireframeEffect.AddVariable("Projection");
-		wireframeEffect.AddVariable("TangentRotation");
-		wireframeEffect.AddTexture("SurfelTexture", "surfel_non_transparent.jpg");
+		wireframeEffect.AddTexture("SurfelTexture", surfelsSolidTexture);
 
-		D3DXMATRIX tangentRotation;
-		D3DXMatrixRotationYawPitchRoll(&tangentRotation, Helpers::Globals::HALF_PI, Helpers::Globals::HALF_PI, Helpers::Globals::HALF_PI);
+		wireframeEffect.AddVariable("LightPos");
+		wireframeEffect.AddVariable("AmbientColor");
+		wireframeEffect.AddVariable("CameraPos");
+		wireframeEffect.AddVariable("LightDirection");
+		wireframeEffect.AddVariable("A");
+		wireframeEffect.AddVariable("B");
+		wireframeEffect.AddVariable("rhoOverPi");
+		wireframeEffect.AddVariable("LightColor");		
 
-		wireframeEffect.SetMatrix("TangentRotation", tangentRotation);
-		wireframeEffect.SetTexture("SurfelTexture", "surfel_non_transparent.jpg");
+
+		wireframeEffect.SetTexture("SurfelTexture", surfelsSolidTexture);
 		wireframeEffect.SetMatrix("World", world);
-
+		wireframeEffect.SetFloatVector("AmbientColor", Helpers::Globals::AppLight.GetAmbientColor());
+		wireframeEffect.SetFloatVector("LightPos", Helpers::Globals::AppLight.GetPosition());
+		wireframeEffect.SetFloatVector("LightDirection", Helpers::Globals::AppLight.GetDirection());
+		wireframeEffect.SetFloat("A", this->A);
+		wireframeEffect.SetFloat("B", this->B);
+		wireframeEffect.SetFloat("rhoOverPi", this->rhoOverPi);
+		wireframeEffect.SetFloatVector("LightColor", Helpers::Globals::AppLight.GetColor());
+		
 		// setup the solid renderstate since we want to reset the renderstate when the wireframe surfel has finished
 		D3D10_RASTERIZER_DESC solidRasterizer;
 		solidRasterizer.FillMode = D3D10_FILL_SOLID;
 		Helpers::Globals::Device->CreateRasterizerState(&solidRasterizer, &SolidRenderState);
-
 	}
 
 	void SurfelObject::InitSolid(){
@@ -181,36 +199,48 @@ namespace Drawables{
 		solidEffect.AddVariable("World");
 		solidEffect.AddVariable("View");
 		solidEffect.AddVariable("Projection");
-		solidEffect.AddVariable("TangentRotation");
-		solidEffect.AddTexture("SurfelTexture", "surfel_non_transparent.jpg");
+		solidEffect.AddTexture("SurfelTexture", surfelsSolidTexture);
 
-		D3DXMATRIX tangentRotation;
-		D3DXMatrixRotationYawPitchRoll(&tangentRotation, Helpers::Globals::HALF_PI, Helpers::Globals::HALF_PI, Helpers::Globals::HALF_PI);
+		solidEffect.AddVariable("LightPos");
+		solidEffect.AddVariable("AmbientColor");
+		solidEffect.AddVariable("CameraPos");
+		solidEffect.AddVariable("LightDirection");
+		solidEffect.AddVariable("A");
+		solidEffect.AddVariable("B");
+		solidEffect.AddVariable("rhoOverPi");
+		solidEffect.AddVariable("LightColor");		
 
-		solidEffect.SetMatrix("TangentRotation", tangentRotation);
-		solidEffect.SetTexture("SurfelTexture", "surfel_non_transparent.jpg");
+		solidEffect.SetTexture("SurfelTexture", surfelsSolidTexture);
 		solidEffect.SetMatrix("World", world);
+		solidEffect.SetFloatVector("AmbientColor", Helpers::Globals::AppLight.GetAmbientColor());
+		solidEffect.SetFloatVector("LightPos", Helpers::Globals::AppLight.GetPosition());
+		solidEffect.SetFloatVector("LightDirection", Helpers::Globals::AppLight.GetDirection());
+		solidEffect.SetFloat("A", this->A);
+		solidEffect.SetFloat("B", this->B);
+		solidEffect.SetFloat("rhoOverPi", this->rhoOverPi);
+		solidEffect.SetFloatVector("LightColor", Helpers::Globals::AppLight.GetColor());
 	}
 
 	void SurfelObject::Draw(){
-		if(drawMethod == SOLID){
+		if(Helpers::Globals::SurfelDrawMethod == Helpers::SOLID){
 			DrawSolid();
 		}
-		else if(drawMethod == WIREFRAME){
+		else if(Helpers::Globals::SurfelDrawMethod == Helpers::WIREFRAME){
 			DrawWireframe();
 		}
-		else if(drawMethod == SURFEL){
+		else if(Helpers::Globals::SurfelDrawMethod == Helpers::SURFEL){
 			DrawSurfel();
 		}
 	}
 
 	void SurfelObject::DrawSolid(){
+		solidEffect.SetFloatVector("CameraPos", Helpers::Globals::AppCamera.Position());
 		solidEffect.SetMatrix("View", Helpers::Globals::AppCamera.View());
 		solidEffect.SetMatrix("Projection", Helpers::Globals::AppCamera.Projection());
 
 		solidEffect.PreDraw();
 
-		UINT stride = sizeof( SOLID_VERTEX);
+		UINT stride = sizeof( Structs::SOLID_VERTEX);
 		UINT offset = 0;
 
 		Helpers::Globals::Device->IASetPrimitiveTopology( D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -220,12 +250,13 @@ namespace Drawables{
 	}
 
 	void SurfelObject::DrawWireframe(){
+		wireframeEffect.SetFloatVector("CameraPos", Helpers::Globals::AppCamera.Position());
 		wireframeEffect.SetMatrix("View", Helpers::Globals::AppCamera.View());
 		wireframeEffect.SetMatrix("Projection", Helpers::Globals::AppCamera.Projection());
 
 		wireframeEffect.PreDraw();
 
-		UINT stride = sizeof( SOLID_VERTEX);
+		UINT stride = sizeof( Structs::SOLID_VERTEX);
 		UINT offset = 0;
 
 		Helpers::Globals::Device->IASetPrimitiveTopology( D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
@@ -237,281 +268,30 @@ namespace Drawables{
 
 	void SurfelObject::DrawSurfel(){
 	
+		surfelEffect.SetFloatVector("CameraPos", Helpers::Globals::AppCamera.Position());
 		surfelEffect.SetMatrix("View", Helpers::Globals::AppCamera.View());
 		surfelEffect.SetMatrix("Projection", Helpers::Globals::AppCamera.Projection());
 
 		surfelEffect.PreDraw();
 	
-		UINT stride = sizeof( SURFEL_VERTEX);
+		UINT stride = sizeof( Structs::SURFEL_VERTEX);
 		UINT offset = 0;
 		
 		Helpers::Globals::Device->IASetPrimitiveTopology( D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
 		Helpers::Globals::Device->IASetVertexBuffers( 0, 1, &surfelVertexBuffer, &stride, &offset );
 
-		surfelEffect.Draw(2);//(1);
+		surfelEffect.Draw(surfels.size());
 	}
 
 	void SurfelObject::CleanUp(){
+		geometryEffect.CleanUp();
 		surfelEffect.CleanUp();
 		solidEffect.CleanUp();
 		wireframeEffect.CleanUp();
 		
 		surfelVertexBuffer->Release();
 		solidVertexBuffer->Release();
+
+		surfels.clear();
 	}
 }
-
-
-
-		
-
-
-/*#include "SurfelObject.h"
-#include "Globals.h"
-
-namespace Drawables{
-	SurfelObject::SurfelObject(void){}
-
-	SurfelObject::~SurfelObject(void){}
-
-	void SurfelObject::Init(){
-
-		D3DXMatrixTranslation(&world, 10.0f, 0.0f, 0.0f);
-
-    	InitGeometryPass();
-		InitSurfel();
-		InitCommonSolidAndWireframe();
-		//InitWireframe();
-		//InitSolid();
-		//DrawToGeometry();
-	}
-
-	void SurfelObject::InitGeometryPass(){
-		// Define the input layout
-		D3D10_INPUT_ELEMENT_DESC layout[] =
-		{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D10_INPUT_PER_VERTEX_DATA, 0 }, // pos
-			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // normal
-			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 2*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // dimensions
-		};
-
-		// create the effect
-		geometryEffect = Helpers::CustomEffect("Surfels.fx", "GeometryTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_GEOMETRY | CUSTOM_EFFECT_TYPE_VERTEX , layout, 3);
-
-		geometryEffect.AddVariable("World");
-		geometryEffect.AddVariable("View");
-		geometryEffect.AddVariable("Projection");
-		geometryEffect.AddVariable("TangentRotation");
-		
-		D3DXMATRIX tangentRotation;
-		D3DXMatrixRotationYawPitchRoll(&tangentRotation, Helpers::Globals::HALF_PI, Helpers::Globals::HALF_PI, Helpers::Globals::HALF_PI);
-
-		geometryEffect.SetMatrix("TangentRotation", tangentRotation);
-		geometryEffect.SetMatrix("World", world);
-
-		SOLID_VERTEX v = {D3DXVECTOR3(0.0f, 0.0f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f), D3DXVECTOR2(0.0f, 0.0f)};
-
-		geometryEffect.SetupGeometryStreamOut(v, 4);
-	}
-
-	void SurfelObject::InitSurfel(){
-		// Define the input layout
-		D3D10_INPUT_ELEMENT_DESC layout[] =
-		{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D10_INPUT_PER_VERTEX_DATA, 0 }, // pos
-			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // normal
-			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 2*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // dimensions
-		};
-
-		SURFEL_VERTEX vertices[] =
-		{
-			{D3DXVECTOR3( 0.0f, 0.0f, 0.0f ), D3DXVECTOR3( 0.0f, 0.0f, 1.0f ), D3DXVECTOR2(5.0f, 10.0f)},
-			{D3DXVECTOR3( 1.0f, 5.0f, 0.0f ), D3DXVECTOR3( 0.0f, 0.0f, 1.0f ), D3DXVECTOR2(10.0f, 5.0f)},
-		};
-
-	    solidVertexBuffer = geometryEffect.WriteToGeometryShader(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST, vertices, 2);
-
-		D3D10_BUFFER_DESC bd;
-		bd.Usage = D3D10_USAGE_DEFAULT;
-		bd.ByteWidth = sizeof( vertices );
-		bd.BindFlags = D3D10_BIND_VERTEX_BUFFER | D3D10_BIND_STREAM_OUTPUT;
-		bd.CPUAccessFlags = 0;
-		bd.MiscFlags = 0;
-		D3D10_SUBRESOURCE_DATA InitData;
-		InitData.pSysMem = vertices;
-
-		HR(Helpers::Globals::Device->CreateBuffer( &bd, &InitData, &surfelVertexBuffer ));	
-
-		// create the effect
-		surfelEffect = Helpers::CustomEffect("Surfels.fx", "SurfelTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_GEOMETRY | CUSTOM_EFFECT_TYPE_VERTEX , layout, 3);
-		
-		surfelEffect.AddVariable("World");
-		surfelEffect.AddVariable("View");
-		surfelEffect.AddVariable("Projection");
-		surfelEffect.AddVariable("TangentRotation");
-		surfelEffect.AddTexture("SurfelTexture", "surfel.png");
-
-		D3DXMATRIX tangentRotation;
-		D3DXMatrixRotationYawPitchRoll(&tangentRotation, Helpers::Globals::HALF_PI, Helpers::Globals::HALF_PI, Helpers::Globals::HALF_PI);
-		
-		surfelEffect.SetMatrix("TangentRotation", tangentRotation);
-		surfelEffect.SetTexture("SurfelTexture", "surfel.png");
-		surfelEffect.SetMatrix("World", world);
-	}
-
-	void SurfelObject::DrawToGeometry(){
-		
-		// Set IA parameters
-		ID3D10Buffer* pBuffers[1];
-		pBuffers[0] = surfelVertexBuffer;
-
-		UINT stride[1] = { sizeof(SURFEL_VERTEX) };
-		UINT offset[1] = { 0 };
-		Helpers::Globals::Device->IASetVertexBuffers( 0, 1, pBuffers, stride, offset );
-		Helpers::Globals::Device->IASetPrimitiveTopology( D3D10_PRIMITIVE_TOPOLOGY_POINTLIST );
-
-		// Point to the correct output buffer
-		pBuffers[0] = solidVertexBuffer;
-		Helpers::Globals::Device->SOSetTargets( 1, pBuffers, offset );
-
-		// Draw
-		D3D10_TECHNIQUE_DESC techDesc;
-		geometryEffect.GetTechnique()->GetDesc( &techDesc );
-
-		for( UINT p = 0; p < techDesc.Passes; ++p )
-		{
-			geometryEffect.GetTechnique()->GetPassByIndex( p )->Apply( 0 );
-
-			Helpers::Globals::Device->Draw( 2, 0 );			
-		}
-
-		// Get back to normal
-		pBuffers[0] = NULL;
-		Helpers::Globals::Device->SOSetTargets( 1, pBuffers, offset );
-	}
-
-	void SurfelObject::InitCommonSolidAndWireframe(){		
-	}
-
-	void SurfelObject::InitWireframe(){
-		// Define the input layout
-		D3D10_INPUT_ELEMENT_DESC layout[] =
-		{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D10_INPUT_PER_VERTEX_DATA, 0 }, // pos
-			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // normal
-			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 2*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // UV
-		};
-
-		// create the effect
-		wireframeEffect = Helpers::CustomEffect("Surfels.fx", "WireframeTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_VERTEX , layout, 3);
-		wireframeEffect.AddVariable("World");
-		wireframeEffect.AddVariable("View");
-		wireframeEffect.AddVariable("Projection");
-		wireframeEffect.AddVariable("TangentRotation");
-		wireframeEffect.AddTexture("SurfelTexture", "surfel_non_transparent.jpg");
-
-		D3DXMATRIX tangentRotation;
-		D3DXMatrixRotationYawPitchRoll(&tangentRotation, Helpers::Globals::HALF_PI, Helpers::Globals::HALF_PI, Helpers::Globals::HALF_PI);
-
-		wireframeEffect.SetMatrix("TangentRotation", tangentRotation);
-		wireframeEffect.SetTexture("SurfelTexture", "surfel_non_transparent.jpg");
-		wireframeEffect.SetMatrix("World", world);
-	}
-
-	void SurfelObject::InitSolid(){
-		// Define the input layout
-		D3D10_INPUT_ELEMENT_DESC layout[] =
-		{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D10_INPUT_PER_VERTEX_DATA, 0 }, // pos
-			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // normal
-			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 2*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // UV
-		};
-
-		// create the effect
-		solidEffect= Helpers::CustomEffect("Surfels.fx", "SolidTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_VERTEX , layout, 3);
-
-		solidEffect.AddVariable("World");
-		solidEffect.AddVariable("View");
-		solidEffect.AddVariable("Projection");
-		solidEffect.AddVariable("TangentRotation");
-		solidEffect.AddTexture("SurfelTexture", "surfel_non_transparent.jpg");
-
-		D3DXMATRIX tangentRotation;
-		D3DXMatrixRotationYawPitchRoll(&tangentRotation, Helpers::Globals::HALF_PI, Helpers::Globals::HALF_PI, Helpers::Globals::HALF_PI);
-
-		solidEffect.SetMatrix("TangentRotation", tangentRotation);
-		solidEffect.SetTexture("SurfelTexture", "surfel_non_transparent.jpg");
-		solidEffect.SetMatrix("World", world);
-	}
-
-	void SurfelObject::Draw(){
-		if(drawMethod == SOLID){
-			DrawSolid();
-		}
-		else if(drawMethod == WIREFRAME){
-			DrawWireframe();
-		}
-		else if(drawMethod == SURFEL){
-			DrawSurfel();
-		}
-	}
-
-	void SurfelObject::DrawSolid(){
-		solidEffect.SetMatrix("View", Helpers::Globals::AppCamera.View());
-		solidEffect.SetMatrix("Projection", Helpers::Globals::AppCamera.Projection());
-
-		solidEffect.PreDraw();
-
-		UINT stride = sizeof( SOLID_VERTEX);
-		UINT offset = 0;
-
-		Helpers::Globals::Device->IASetPrimitiveTopology( D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP );
-		Helpers::Globals::Device->IASetVertexBuffers( 0, 1, &solidVertexBuffer, &stride, &offset );
-
-		solidEffect.Draw(8, 4);
-	}
-
-	void SurfelObject::DrawWireframe(){
-		wireframeEffect.SetMatrix("View", Helpers::Globals::AppCamera.View());
-		wireframeEffect.SetMatrix("Projection", Helpers::Globals::AppCamera.Projection());
-
-		wireframeEffect.PreDraw();
-
-		UINT stride = sizeof( SOLID_VERTEX);
-		UINT offset = 0;
-
-		Helpers::Globals::Device->IASetPrimitiveTopology( D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP );
-		Helpers::Globals::Device->IASetVertexBuffers( 0, 1, &solidVertexBuffer, &stride, &offset );
-
-		wireframeEffect.Draw(8, 4);
-	}
-
-	void SurfelObject::DrawSurfel(){
-	
-		surfelEffect.SetMatrix("View", Helpers::Globals::AppCamera.View());
-		surfelEffect.SetMatrix("Projection", Helpers::Globals::AppCamera.Projection());
-
-		surfelEffect.PreDraw();
-	
-		UINT stride = sizeof( SURFEL_VERTEX);
-		UINT offset = 0;
-		
-		Helpers::Globals::Device->IASetPrimitiveTopology( D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
-		Helpers::Globals::Device->IASetVertexBuffers( 0, 1, &surfelVertexBuffer, &stride, &offset );
-
-		surfelEffect.Draw(2);
-	}
-
-	void SurfelObject::CleanUp(){
-		surfelEffect.CleanUp();
-		solidEffect.CleanUp();
-		wireframeEffect.CleanUp();
-		
-		surfelVertexBuffer->Release();
-		solidVertexBuffer->Release();
-	}
-}*/
-
-
-
-		

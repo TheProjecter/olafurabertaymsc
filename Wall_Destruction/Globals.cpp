@@ -1,17 +1,26 @@
 #include "Globals.h"
 
+using namespace Drawables;
+
 namespace Helpers{
+	// directx stuff
 	ID3D10Device* Globals::Device;
-	float Globals::ClientWidth;
-	float Globals::ClientHeight;
-	Camera Globals::AppCamera;
-	bool Globals::CORRECTLY_SETUP = true;
+	int Globals::ClientWidth;
+	int Globals::ClientHeight;
 	HWND Globals::Window;
 
-	InfoText Globals::information;
+	// application stuff
+	Camera Globals::AppCamera;
+	Light Globals::AppLight;
+	bool Globals::CORRECTLY_SETUP = true;
+	bool Globals::MOUSE_ACQUIRED = false; // set as false, so the mouse gets acquired in the beginning
+	bool Globals::MOVE_WRECKINGBALL = false;
 
+	InfoText Globals::DebugInformation;
+	DrawMethod Globals::SurfelDrawMethod = SOLID;
 
-	const float Globals::PI = D3DX_PI;
+	// constants
+	const float Globals::PI = (float)D3DX_PI;
 	const float Globals::QUART_PI = PI*0.25f;
 	const float Globals::HALF_PI = PI*0.5f;
 	const float Globals::THREE_QUARTS_PI = PI*0.75f;		
