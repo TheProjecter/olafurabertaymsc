@@ -1,10 +1,6 @@
 #ifndef INFO_TEXT_H
 #define INFO_TEXT_H
 
-#if defined(DEBUG) || defined(_DEBUG)
-#include "vld.h"
-#endif
-
 #include <list>
 #include <string>
 #include <D3DX10.h>

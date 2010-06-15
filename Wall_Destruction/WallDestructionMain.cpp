@@ -17,7 +17,7 @@
 #include "PhysicsWrapper.h"
 #define DIRECTINPUT_VERSION 0x0800
 
-#if defined(DEBUG) || defined(_DEBUG)
+#ifdef DETECT_MEMORY_LEAKS
 #include "vld.h"
 #endif
 

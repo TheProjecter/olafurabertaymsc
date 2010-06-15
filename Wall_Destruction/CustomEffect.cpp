@@ -1,9 +1,4 @@
 #include "CustomEffect.h"
-//#include "Globals.h"
-
-#if defined(DEBUG) || defined(_DEBUG)
-#include "vld.h"
-#endif
 
 namespace Helpers{
 	
