@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="Havok\Source"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;TIXML_USE_STL"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;TIXML_USE_STL"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -63,7 +63,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="hkaAnimation.lib hkaInternal.lib hkaRagdoll.lib hkBase.lib hkCompat.lib hkgBridge.lib hkgCommon.lib hkgDx9.lib hkgDx9s.lib hkgDx10.lib hkGeometryUtilities.lib hkgOgl.lib hkgOgls.lib hkInternal.lib hkpCollide.lib hkpConstraintSolver.lib hkpDynamics.lib hkpInternal.lib hkpUtilities.lib hkpVehicle.lib hkSceneData.lib hksCommon.lib hkSerialize.lib hksXAudio2.lib hkVisualize.lib VdbClient.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;Havok\Lib&quot;"
+				AdditionalLibraryDirectories="&quot;Havok\Lib_Debug&quot;"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames="libc.lib;libcmt.lib;msvcrt.lib;libcd.lib;libcmtd.lib"
 				GenerateDebugInformation="true"
@@ -94,10 +94,10 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			OutputDirectory="..\..\Release"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			CharacterSet="1"
+			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -119,7 +119,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
+				AdditionalIncludeDirectories="Havok\Source"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;TIXML_USE_STL"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -137,7 +138,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="hkaAnimation.lib hkaInternal.lib hkaRagdoll.lib hkBase.lib hkCompat.lib hkgBridge.lib hkgCommon.lib hkgDx9.lib hkgDx9s.lib hkgDx10.lib hkGeometryUtilities.lib hkgOgl.lib hkgOgls.lib hkInternal.lib hkpCollide.lib hkpConstraintSolver.lib hkpDynamics.lib hkpInternal.lib hkpUtilities.lib hkpVehicle.lib hkSceneData.lib hksCommon.lib hkSerialize.lib hksXAudio2.lib hkVisualize.lib VdbClient.lib"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="&quot;Havok\Lib_Release&quot;"
+				IgnoreDefaultLibraryNames="libc.lib;libcmt.lib;msvcrt.lib;libcd.lib;libcmtd.lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -451,7 +455,7 @@
 					>
 				</File>
 				<File
-					RelativePath=".\OrenNayerLighting.inc"
+					RelativePath=".\Shaders\OrenNayerLighting.inc"
 					>
 				</File>
 				<File
@@ -511,213 +515,253 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="Havok"
+				>
+				<Filter
+					Name="Lib_Debug"
+					>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkaAnimation.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkaanimation.pdb"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkaInternal.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkainternal.pdb"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkaRagdoll.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkaragdoll.pdb"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkBase.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkbase.pdb"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkCompat.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkcompat.pdb"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkgBridge.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkgbridge.pdb"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkgCommon.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkgcommon.pdb"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkgDx10.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkgDx9.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkgDx9s.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkGeometryUtilities.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkgOgl.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkgOgls.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkInternal.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkpCollide.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkpConstraintSolver.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkpDynamics.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkpInternal.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkpUtilities.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkpVehicle.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkSceneData.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hksCommon.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkSerialize.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hksXAudio2.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkVisualize.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\VdbClient.lib"
+						>
+					</File>
+				</Filter>
+				<Filter
+					Name="Lib_Release"
+					>
+				</Filter>
+			</Filter>
 		</Filter>
 		<File
-			RelativePath=".\Havok\Lib\hkaAnimation.lib"
+			RelativePath=".\Havok\Lib_Release\hkaAnimation.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkaanimation.pdb"
+			RelativePath=".\Havok\Lib_Release\hkaInternal.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkaInternal.lib"
+			RelativePath=".\Havok\Lib_Release\hkaRagdoll.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkainternal.pdb"
+			RelativePath=".\Havok\Lib_Release\hkBase.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkaRagdoll.lib"
+			RelativePath=".\Havok\Lib_Release\hkCompat.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkaragdoll.pdb"
+			RelativePath=".\Havok\Lib_Release\hkgBridge.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkBase.lib"
+			RelativePath=".\Havok\Lib_Release\hkgCommon.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkbase.pdb"
+			RelativePath=".\Havok\Lib_Release\hkgDx10.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkCompat.lib"
+			RelativePath=".\Havok\Lib_Release\hkgDx9.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkcompat.pdb"
+			RelativePath=".\Havok\Lib_Release\hkgDx9s.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkgBridge.lib"
+			RelativePath=".\Havok\Lib_Release\hkGeometryUtilities.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkgbridge.pdb"
+			RelativePath=".\Havok\Lib_Release\hkgOgl.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkgCommon.lib"
+			RelativePath=".\Havok\Lib_Release\hkgOgls.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkgcommon.pdb"
+			RelativePath=".\Havok\Lib_Release\hkInternal.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkgDx10.lib"
+			RelativePath=".\Havok\Lib_Release\hkpCollide.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkgdx10.pdb"
+			RelativePath=".\Havok\Lib_Release\hkpConstraintSolver.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkgDx9.lib"
+			RelativePath=".\Havok\Lib_Release\hkpDynamics.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkgdx9.pdb"
+			RelativePath=".\Havok\Lib_Release\hkpInternal.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkgDx9s.lib"
+			RelativePath=".\Havok\Lib_Release\hkpUtilities.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkgdx9s.pdb"
+			RelativePath=".\Havok\Lib_Release\hkpVehicle.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkGeometryUtilities.lib"
+			RelativePath=".\Havok\Lib_Release\hkSceneData.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkgeometryutilities.pdb"
+			RelativePath=".\Havok\Lib_Release\hksCommon.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkgOgl.lib"
+			RelativePath=".\Havok\Lib_Release\hkSerialize.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkgogl.pdb"
+			RelativePath=".\Havok\Lib_Release\hksXAudio2.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkgOgls.lib"
+			RelativePath=".\Havok\Lib_Release\hkVisualize.lib"
 			>
 		</File>
 		<File
-			RelativePath=".\Havok\Lib\hkgogls.pdb"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkInternal.lib"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkinternal.pdb"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkpCollide.lib"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkpcollide.pdb"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkpConstraintSolver.lib"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkpconstraintsolver.pdb"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkpDynamics.lib"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkpdynamics.pdb"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkpInternal.lib"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkpinternal.pdb"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkpUtilities.lib"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkputilities.pdb"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkpVehicle.lib"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkpvehicle.pdb"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkSceneData.lib"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkscenedata.pdb"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hksCommon.lib"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkscommon.pdb"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkSerialize.lib"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkserialize.pdb"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hksXAudio2.lib"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hksxaudio2.pdb"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkVisualize.lib"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\hkvisualize.pdb"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\VdbClient.lib"
-			>
-		</File>
-		<File
-			RelativePath=".\Havok\Lib\vdbclient.pdb"
+			RelativePath=".\Havok\Lib_Release\VdbClient.lib"
 			>
 		</File>
 	</Files>
