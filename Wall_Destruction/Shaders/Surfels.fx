@@ -3,7 +3,10 @@
 //#include "PhongLighting.inc"
 #include "OrenNayerLighting.inc"
 
-Texture2D SurfelTexture;
+Texture2D EWATexture;
+Texture2D SurfaceTexture;
+
+float4 Color;
 
 SamplerState SurfelFilter
 {
@@ -15,13 +18,22 @@ SamplerState SurfelFilter
 struct VS_SURFEL_INPUT{
 	float4 Pos : POSITION;
 	float4 Normal : NORMAL;
-	float2 Dimensions: TEXCOORD0;
+	float4 MajorRadius: TEXCOORD0;
+	float4 MinorRadius: TEXCOORD1;
+	
+	/*float2 UV : TEXCOORD0;
+	float2 Ratio : TEXCOORD1;
+	float Radius: TEXCOORD2;*/
 };
 
 struct GS_SURFEL_INPUT{	
 	float4 Pos : POSITION;
-	float4 Normal : NORMAL;
-	float2 Dimensions: TEXCOORD0;
+	float4 Normal : NORMAL;	
+	float4 MajorRadius: TEXCOORD0;
+	float4 MinorRadius: TEXCOORD1;
+	/*float2 UV : TEXCOORD0;
+	float2 Ratio : TEXCOORD1;
+	float Radius: TEXCOORD2;*/
 };
 
 struct PS_SURFEL_INPUT{
@@ -56,8 +68,13 @@ GS_SURFEL_INPUT VS_Surfel( VS_SURFEL_INPUT input)
 	GS_SURFEL_INPUT output = (GS_SURFEL_INPUT) 0;
 	output.Pos = input.Pos;
 	output.Normal = input.Normal;
-	output.Dimensions = input.Dimensions;
-
+	output.MajorRadius = input.MajorRadius;
+	output.MinorRadius = input.MinorRadius;
+	/*output.Radius = input.Radius;
+	output.UV = input.UV;
+	output.Ratio = input.Ratio;
+	output.Radius = input.Radius;*/
+	
     return output;
 }
 
@@ -68,41 +85,43 @@ GS_SURFEL_INPUT VS_Surfel( VS_SURFEL_INPUT input)
 void GS_Surfel(point GS_SURFEL_INPUT input[1], inout TriangleStream<PS_SURFEL_INPUT> surfelStream, uniform bool useWVP)
 {
     PS_SURFEL_INPUT output;
-    
-    float3 tan1 = normalize(Perpendicular( input[0].Normal.xyz));
-	float3 tan2 = normalize(cross(input[0].Normal.xyz, tan1.xyz));
 
-	float xMultiplier[] = {-0.5f, -0.5f, 0.5f, 0.5f};
-	float yMultiplier[] = {-0.5f, 0.5f, -0.5f, 0.5f};
+	float xMultiplier[] = {-1.0, -1.0, 1.0, 1.0};
+	float yMultiplier[] = {-1.0, 1.0, -1.0, 1.0};
 
-	uint U[] = {0, 0, 1, 1};
-	uint V[] = {1, 0, 1, 0};
+	float U[] = {0.0, 0.0, 1.0, 1.0};
+	float V[] = {0.0, 1.0, 0.0, 1.0};
     
 	[unroll]
     for(int i=0; i<4; i++)
     {		
-		output.Pos = float4(input[0].Pos.xyz + xMultiplier[i] * input[0].Dimensions.x * tan2 + yMultiplier[i] * input[0].Dimensions.y * tan1, 1.0f);
-		
+		float4 originalPos;
+				
 		if(useWVP){
+			originalPos = float4(input[0].Pos.xyz + xMultiplier[i] * input[0].MajorRadius.xyz + yMultiplier[i] * input[0].MinorRadius.xyz, 1.0f);
+			output.Pos = originalPos;
 			output.Pos = mul( mul( mul( output.Pos, World), View), Projection);
 		}
+		else{
+			originalPos = float4(input[0].Pos.xyz + xMultiplier[i] * input[0].MajorRadius.xyz + yMultiplier[i] * input[0].MinorRadius.xyz , 1.0f);
+			output.Pos = originalPos;			
+		}
+		
 		output.PosW = mul(output.Pos, World);
 		
-		float4x4 tmp = World;
-		tmp[3][0] = 0.0f;
-		tmp[3][1] = 0.0f;
-		tmp[3][2] = 0.0f;
-		
-		output.NormalW = normalize(mul(input[0].Normal, tmp));
+		output.NormalW = normalize(mul(float4(input[0].Normal.xyz, 0), World));
 		
 		// Determine the light direction vector. This assumes that the vector
 		// is constant relative to the camera.
 		output.LightDir = -normalize(float4(LightDirection, 1.0f)).xyz;
 		
 		// Determine the eye vector for the light
-		output.EyeVect = -normalize(float4(CameraPos, 1.0f) + input[0].Pos).xyz;
+		output.EyeVect = -normalize(float4(CameraPos, 1.0f) + originalPos).xyz;
 
-		output.UV = float2(U[i], V[i]);
+		//if(useWVP)
+			output.UV = float2(U[i], V[i]);
+		/*else
+			output.UV = float2(input[0].UV.x + U[i] * input[0].Ratio.x*0.5f, input[0].UV.y + V[i] * input[0].Ratio.y*0.5f);*/
 		surfelStream.Append(output);
     }
 
@@ -114,7 +133,7 @@ void GS_Surfel(point GS_SURFEL_INPUT input[1], inout TriangleStream<PS_SURFEL_IN
 //
 float4 PS_Surfel( PS_SURFEL_INPUT input) : SV_Target
 {
-	return SurfelTexture.Sample(SurfelFilter, input.UV) * Light_OrenNayer(input.NormalW.xyz, input.EyeVect, input.LightDir);;// * float4(ParallelLight(input.PosW.xyz, input.NormalW.xyz), 1.0f);
+	return EWATexture.Sample(SurfelFilter, input.UV) * SurfaceTexture.Sample(SurfelFilter, input.UV) * Light_OrenNayer(input.NormalW.xyz, input.EyeVect, input.LightDir);
 }
 
 //
@@ -126,12 +145,7 @@ PS_INPUT VS( VS_INPUT input)
 	output.Pos = mul( mul( mul(input.Pos, World), View), Projection);
 	output.PosW = mul(input.Pos, World);
 	
-	float4x4 tmp = World;
-	tmp[3][0] = 0.0f;
-	tmp[3][1] = 0.0f;
-	tmp[3][2] = 0.0f;
-	
-	output.NormalW = normalize(mul(input.Normal, tmp));
+	output.NormalW = normalize(mul(float4(input.Normal.xyz, 0.0f), World));
 	
 	// Determine the light direction vector. This assumes that the vector
 	// is constant relative to the camera.
@@ -149,7 +163,7 @@ PS_INPUT VS( VS_INPUT input)
 //
 float4 PS( PS_INPUT input) : SV_Target
 {
-	return SurfelTexture.Sample(SurfelFilter, input.UV) * Light_OrenNayer(input.NormalW.xyz, input.EyeVect, input.LightDir);//float4(ParallelLight(input.PosW.xyz, input.NormalW.xyz), 1.0f);
+	return SurfaceTexture.Sample(SurfelFilter, input.UV) * Light_OrenNayer(input.NormalW.xyz, input.EyeVect, input.LightDir);//float4(ParallelLight(input.PosW.xyz, input.NormalW.xyz), 1.0f);
 }
 
 GeometryShader gsStreamOut = ConstructGSWithSO( CompileShader( gs_4_0, GS_Surfel(false) ), "SV_POSITION.xyz; NORMAL.xyz; TEXCOORD.xy" );
@@ -175,7 +189,7 @@ technique10 SurfelTechnique
 		SetGeometryShader ( CompileShader( gs_4_0, GS_Surfel(true) ) );
 	    SetPixelShader( CompileShader( ps_4_0, PS_Surfel() ) );
 	    SetDepthStencilState( EnableDepth, 0 );
-		SetRasterizerState(SOLID);
+		SetRasterizerState(SURFEL);
  	    SetBlendState( AlphaBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
     }
 }
@@ -190,7 +204,7 @@ technique10 SolidTechnique
 	    SetPixelShader( CompileShader( ps_4_0, PS() ) );
 	    SetDepthStencilState( EnableDepth, 0 );
 		SetRasterizerState(SOLID);
-		SetBlendState( AlphaBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
+		SetBlendState( NoAlphaBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
     }
 }
 
@@ -203,6 +217,6 @@ technique10 WireframeTechnique
 	    SetPixelShader( CompileShader( ps_4_0, PS() ) );
 	    SetDepthStencilState( EnableDepth, 0 );
 		SetRasterizerState(WF);
-		SetBlendState( AlphaBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
+		SetBlendState( NoAlphaBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
     }
 }

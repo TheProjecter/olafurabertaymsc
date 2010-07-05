@@ -18,7 +18,7 @@
 #define DIRECTINPUT_VERSION 0x0800
 
 #ifdef DETECT_MEMORY_LEAKS
-#include "vld.h"
+	//#include "vld.h"
 #endif
 
 #include "Globals.h"
@@ -30,8 +30,11 @@
 #include "ObjectHelper.h"
 #include "RandRange.h"
 #include "WreckingBall.h"
+#include "CSGTree.h"
+#include "SpriteViewPort.h"
 #include <ctime>
 #include <map>
+#include "DrawableTex2D.h"
 
 using namespace Drawables;
 
@@ -48,23 +51,20 @@ public:
 	void Reset();
 
 private:
-//	SurfelObject surfelObject;
 	string instructions;
 	RECT instructionRect;
 	std::map<std::string, MeshlessObject*, Structs::NameComparer> meshlessObjects;
 	Drawables::WreckingBall wreckingBall;
 	Projectiles projectiles;
-//	CustomRectangle testRectangle;
+	bool resetLastFrame;
+
+	DrawableTex2D DepthPass, AttributePass, NormalizationPass;
+	SpriteViewPort depthMapVP, normalMapVP, occlusionMapVP;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 	PSTR cmdLine, int showCmd)
 {
-	// Enable run-time memory check for debug builds.
-#if defined(DEBUG) | defined(_DEBUG)
-	_CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
-#endif
-
 	WallDestructionApp theApp(hInstance);
 
 	theApp.initApp();
@@ -84,8 +84,9 @@ WallDestructionApp::~WallDestructionApp()
 {
 	Helpers::MouseHandler::CleanUp();
 	Helpers::KeyboardHandler::CleanUp();
-	//surfelObject.CleanUp();
+
 	Helpers::Globals::DebugInformation.CleanUp();
+	PhysicsWrapper::CleanUp();
 	
 	for(Helpers::ObjectHelper::MeshlessObjectsIterator = Helpers::ObjectHelper::MeshlessObjects.begin(); 
 		Helpers::ObjectHelper::MeshlessObjectsIterator != Helpers::ObjectHelper::MeshlessObjects.end(); 
@@ -100,11 +101,12 @@ WallDestructionApp::~WallDestructionApp()
 	if( md3dDevice )
 		md3dDevice->ClearState();
 
-	PhysicsWrapper::CleanUp();
 	//testRectangle.CleanUp();
 }
 
 void WallDestructionApp::Reset(){
+
+	Helpers::Globals::DebugInformation.StartTimer();
 
 	for(Helpers::ObjectHelper::MeshlessObjectsIterator = Helpers::ObjectHelper::MeshlessObjects.begin(); 
 		Helpers::ObjectHelper::MeshlessObjectsIterator != Helpers::ObjectHelper::MeshlessObjects.end(); 
@@ -112,6 +114,9 @@ void WallDestructionApp::Reset(){
 			Helpers::ObjectHelper::MeshlessObjectsIterator->second->CleanUp();
 			delete Helpers::ObjectHelper::MeshlessObjectsIterator->second;
 	}
+
+	Helpers::ObjectHelper::MeshlessObjects.clear();
+
 	wreckingBall.CleanUp();
 	projectiles.CleanUp();
 	PhysicsWrapper::CleanUp();
@@ -128,6 +133,9 @@ void WallDestructionApp::Reset(){
 	projectiles.Init();
 
 	PhysicsWrapper::FinishInit();
+
+	Helpers::Globals::DebugInformation.EndTimer("Restart ");
+	resetLastFrame = true;
 }
 
 void WallDestructionApp::initApp()
@@ -166,6 +174,20 @@ void WallDestructionApp::initApp()
 	projectiles.Init();
 
 	PhysicsWrapper::FinishInit();
+
+	DepthPass.init(Helpers::Globals::ClientWidth, Helpers::Globals::ClientHeight, 1, DXGI_FORMAT_R16G16B16A16_FLOAT);
+	AttributePass.init(Helpers::Globals::ClientWidth, Helpers::Globals::ClientHeight, 3, DXGI_FORMAT_R32G32B32A32_FLOAT);
+	NormalizationPass.init(Helpers::Globals::ClientWidth, Helpers::Globals::ClientHeight, 1, DXGI_FORMAT_R16G16B16A16_FLOAT);
+
+	depthMapVP = SpriteViewPort(0.3f, 0.3f, D3DXVECTOR2(0.7f, -0.99f));
+	normalMapVP = SpriteViewPort(0.3f, 0.3f, D3DXVECTOR2(0.4f, -0.99f));
+	occlusionMapVP = SpriteViewPort(0.3f, 0.3f, D3DXVECTOR2(0.1f, -0.99f));
+
+	this->depthMapVP.Init();
+	this->normalMapVP.Init();
+	this->occlusionMapVP.Init();
+
+	resetLastFrame = false;
 }
 
 void WallDestructionApp::onResize()
@@ -173,8 +195,9 @@ void WallDestructionApp::onResize()
 	D3DApp::onResize();
 	Helpers::Globals::ClientHeight = mClientHeight;
 	Helpers::Globals::ClientWidth = mClientWidth;
+	Helpers::Globals::RenderTargetView = this->mRenderTargetView;
+	Helpers::Globals::DepthStencilView = this->mDepthStencilView;
 	Helpers::Globals::Device = md3dDevice;
-
 	Helpers::Globals::AppCamera.Reset();
 
 	Helpers::Globals::DebugInformation.SetRect(this->mClientWidth / 2 - 50, 5);
@@ -187,6 +210,11 @@ void WallDestructionApp::onResize()
 
 void WallDestructionApp::updateScene(float dt)
 {
+	if(resetLastFrame){
+		resetLastFrame = false;
+		return;
+	}
+
 	Helpers::MouseHandler::DetectInput();
 	Helpers::KeyboardHandler::Update();
 	
@@ -208,29 +236,25 @@ void WallDestructionApp::updateScene(float dt)
 	#ifdef _DEBUG
 		D3DApp::updateScene(dt);
 	#endif 
-		
-	if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_F1) && Helpers::Globals::SurfelDrawMethod != Helpers::SURFEL){ 
-		Helpers::Globals::DebugInformation.AddText("Setting SurfelObject.Drawmethod to SURFEL");
-		Helpers::Globals::SurfelDrawMethod = Helpers::SURFEL;
-	}
-	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_F2) && Helpers::Globals::SurfelDrawMethod != Helpers::SOLID){
-		Helpers::Globals::DebugInformation.AddText("Setting SurfelObject.Drawmethod to SOLID");
-		Helpers::Globals::SurfelDrawMethod = Helpers::SOLID;
-	}
-	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_F3) && Helpers::Globals::SurfelDrawMethod != Helpers::WIREFRAME){
-		Helpers::Globals::DebugInformation.AddText("Setting SurfelObject.Drawmethod to WIREFRAME");
-		Helpers::Globals::SurfelDrawMethod  = Helpers::WIREFRAME;
+	
+	if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_F1)){
+		if(Helpers::Globals::SurfelRenderMethod == Helpers::WIREFRAME){
+			Helpers::Globals::DebugInformation.AddText("Setting SurfelObject.RenderMethod to SOLID");
+			Helpers::Globals::SurfelRenderMethod = Helpers::SOLID;
+		}
+		else{
+			Helpers::Globals::DebugInformation.AddText("Setting SurfelObject.RenderMethod to WIREFRAME");
+			Helpers::Globals::SurfelRenderMethod = Helpers::WIREFRAME;
+		}		
 	}
 	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_H)){
-		Helpers::Globals::DebugInformation.AddText("Enter - Reset scene");	
-		Helpers::Globals::DebugInformation.AddText("Tab - Enable camera / wrecking ball movement");	
-		Helpers::Globals::DebugInformation.AddText("Caps Lock - Acquire / Unacquire mouse");	
-		Helpers::Globals::DebugInformation.AddText("Left Mouse Button - Fire a projectile");	
-		Helpers::Globals::DebugInformation.AddText("Mouse - Change camera's direction");	
-		Helpers::Globals::DebugInformation.AddText("WASD - Move camera / Move wrecking ball");	
-		Helpers::Globals::DebugInformation.AddText("F3 - Wireframe representation");
-		Helpers::Globals::DebugInformation.AddText("F2 - Solid representation");
-		Helpers::Globals::DebugInformation.AddText("F1 - Surfel representation");
+		Helpers::Globals::DebugInformation.AddText(GREEN, "Enter - Reset scene");	
+		Helpers::Globals::DebugInformation.AddText(LIGHT_YELLOW_GREEN, "Tab - Enable camera / wrecking ball movement");	
+		Helpers::Globals::DebugInformation.AddText(GREEN, "Caps Lock - Acquire / Unacquire mouse");	
+		Helpers::Globals::DebugInformation.AddText(LIGHT_YELLOW_GREEN, "Left Mouse Button - Fire a projectile");	
+		Helpers::Globals::DebugInformation.AddText(GREEN, "Mouse - Change camera's direction");	
+		Helpers::Globals::DebugInformation.AddText(LIGHT_YELLOW_GREEN, "WASD - Move camera / Move wrecking ball");	
+		Helpers::Globals::DebugInformation.AddText(GREEN, "F1 - Surfel / Wireframe representation");
 	}
 	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_CAPSLOCK)){
 		if(Helpers::Globals::MOUSE_ACQUIRED){
@@ -243,7 +267,6 @@ void WallDestructionApp::updateScene(float dt)
 		}
 	}
 	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_RETURN)){
-		Helpers::Globals::DebugInformation.AddText(RED, "Resetting scene");
 		Reset();
 	}
 	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_TAB)){
@@ -256,6 +279,32 @@ void WallDestructionApp::updateScene(float dt)
 			Helpers::Globals::MOVE_WRECKINGBALL = false;
 		}
 	}
+	/*else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_F4)){
+		if(!Helpers::Globals::DRAW_OCTREE){
+			Helpers::Globals::DebugInformation.AddText(D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f), "Drawing Octree");
+			Helpers::Globals::DRAW_OCTREE = true;
+
+		}
+		else{
+			Helpers::Globals::DebugInformation.AddText(D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f), "Not Drawing Octree");
+			Helpers::Globals::DRAW_OCTREE= false;
+		}
+	}*/
+	else if(Helpers::KeyboardHandler::IsKeyDown(DIK_R)){
+		Surface::RadiusScale += 0.01f;
+		
+		if(Surface::RadiusScale > 2.0f)
+			Surface::RadiusScale = 2.0f;
+
+		Helpers::Globals::DebugInformation.AddText(D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f), "Radius Scale = %f", Surface::RadiusScale );
+	}
+	else if(Helpers::KeyboardHandler::IsKeyDown(DIK_F)){
+		Surface::RadiusScale -= 0.01f;
+		if(Surface::RadiusScale < 0.01f)
+			Surface::RadiusScale = 0.01f;
+
+		Helpers::Globals::DebugInformation.AddText(D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f), "Radius Scale = %f", Surface::RadiusScale );
+	}
 
 	if(Helpers::MouseHandler::IsButtonPressed(Helpers::MouseHandler::MOUSE_LEFTBUTTON)){
 		projectiles.Add();
@@ -265,14 +314,48 @@ void WallDestructionApp::updateScene(float dt)
 void WallDestructionApp::drawScene()
 {
 	D3DApp::drawScene();
-	projectiles.Draw();
-	wreckingBall.Draw();
+
+	// draw to shadow map
+/*	DepthPass.begin();
+
+	for(Helpers::ObjectHelper::MeshlessObjectsIterator = Helpers::ObjectHelper::MeshlessObjects.begin(); 
+		Helpers::ObjectHelper::MeshlessObjectsIterator != Helpers::ObjectHelper::MeshlessObjects.end(); 
+		Helpers::ObjectHelper::MeshlessObjectsIterator++){
+			Helpers::ObjectHelper::MeshlessObjectsIterator->second->DrawDepth();
+	}
+
+	projectiles.DrawDepth();
+	wreckingBall.DrawDepth();
+
+	DepthPass.end();
+*/
+	projectiles.Draw(DepthPass.colorMap(0));
+	wreckingBall.Draw(DepthPass.colorMap(0));
+
+/*	AttributePass.begin();
+	// draw attributes of the meshless objects
+	for(Helpers::ObjectHelper::MeshlessObjectsIterator = Helpers::ObjectHelper::MeshlessObjects.begin(); 
+		Helpers::ObjectHelper::MeshlessObjectsIterator != Helpers::ObjectHelper::MeshlessObjects.end(); 
+		Helpers::ObjectHelper::MeshlessObjectsIterator++){
+			Helpers::ObjectHelper::MeshlessObjectsIterator->second->DrawAttributes(DepthPass.colorMap(0));
+	}
+	AttributePass.end();
+
+	NormalizationPass.begin();
+*/	// Normalize the attributes 
 	for(Helpers::ObjectHelper::MeshlessObjectsIterator = Helpers::ObjectHelper::MeshlessObjects.begin(); 
 		Helpers::ObjectHelper::MeshlessObjectsIterator != Helpers::ObjectHelper::MeshlessObjects.end(); 
 		Helpers::ObjectHelper::MeshlessObjectsIterator++){
 			Helpers::ObjectHelper::MeshlessObjectsIterator->second->Draw();
 	}
+//	NormalizationPass.end();
 
+//	spriteViewPort.Draw(depthMap.colorMap(1));
+
+/*	depthMapVP.Draw(DepthPass.colorMap(0));
+	occlusionMapVP.Draw(AttributePass.colorMap(0));
+	normalMapVP.Draw(AttributePass.colorMap(1));
+*/
 	// draw text
 #ifdef _DEBUG
 	RECT R = {5, 5, 0, 0};

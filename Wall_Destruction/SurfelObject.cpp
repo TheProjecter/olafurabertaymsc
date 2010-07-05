@@ -2,6 +2,8 @@
 #include "Globals.h"
 #include "RandRange.h"
 
+#define MAX_LEVEL 7
+
 namespace Drawables{
 	SurfelObject::SurfelObject(void){}
 
@@ -11,7 +13,7 @@ namespace Drawables{
 
 	SurfelObject::~SurfelObject(void){}
 
-	void SurfelObject::Init(){
+	void SurfelObject::Init(bool isDeformable, D3DXVECTOR3 pos){
 		surfelVertexBuffer = NULL;
 		solidVertexBuffer = NULL;
 
@@ -22,7 +24,49 @@ namespace Drawables{
 		InitCommonSolidAndWireframe();
 		InitWireframe();
 		InitSolid();
+
 		ResetSurfels(surfels);
+
+		IsDeformable = isDeformable;
+		if(isDeformable){
+
+			Structs::SOLID_VERTEX* vertices = 0;
+
+			HR(GetReadableVertexBuffer()->Map(D3D10_MAP_READ, 0, reinterpret_cast< void** >(&vertices)));
+			GetReadableVertexBuffer()->Unmap();
+
+			D3DXVECTOR3 Min = D3DXVECTOR3(FLT_MAX, FLT_MAX, FLT_MAX);
+			D3DXVECTOR3 Max = D3DXVECTOR3(FLT_MIN, FLT_MIN, FLT_MIN);
+
+			for(unsigned int i = 0; i<surfels.size()*6; i++){
+				if(Min.x > vertices[i].pos.x)
+					Min.x = vertices[i].pos.x;
+				if(Max.x < vertices[i].pos.x)
+					Max.x = vertices[i].pos.x;
+
+				if(Min.y > vertices[i].pos.y)
+					Min.y = vertices[i].pos.y;
+				if(Max.y < vertices[i].pos.y)
+					Max.y = vertices[i].pos.y;
+				
+				if(Min.z > vertices[i].pos.z)
+					Min.z = vertices[i].pos.z;
+				if(Max.z < vertices[i].pos.z)
+					Max.z = vertices[i].pos.z;
+			}
+
+			this->octree = new Octree((Max + Min)/2.0f, max(Max.x - Min.x, max(Max.y - Min.y, Max.z - Min.z))*0.5f+ 0.05f, 5);
+
+			for(unsigned int i = 0; i<surfels.size(); i++){
+ 				Structs::SurfelNode* sn = new Structs::SurfelNode();
+ 				
+ 				sn->surfel = surfels[i];
+ 				sn->surfel.pos += pos;
+
+				this->octree->InsertObject(sn);
+			//	delete sn;
+			}
+		}
 	}
 
 	void SurfelObject::InitGeometryPass(){
@@ -31,11 +75,13 @@ namespace Drawables{
 		{
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D10_INPUT_PER_VERTEX_DATA, 0 }, // pos
 			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // normal
-			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 2*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // dimensions
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 2*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // UV
+			{ "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, 2*sizeof(D3DXVECTOR3) + sizeof(D3DXVECTOR2), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // ratio
+			{ "TEXCOORD", 2, DXGI_FORMAT_R32_FLOAT, 0, 2*sizeof(D3DXVECTOR3) + 2*sizeof(D3DXVECTOR2), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // radius
 		};
 
 		// create the effect
-		geometryEffect = Helpers::CustomEffect("Surfels.fx", "GeometryTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_GEOMETRY | CUSTOM_EFFECT_TYPE_VERTEX , layout, 3);
+		geometryEffect = Helpers::CustomEffect("Surfels.fx", "GeometryTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_GEOMETRY | CUSTOM_EFFECT_TYPE_VERTEX , layout, 5);
 
 		geometryEffect.AddVariable("World");
 		geometryEffect.AddVariable("View");
@@ -50,11 +96,13 @@ namespace Drawables{
 		{
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D10_INPUT_PER_VERTEX_DATA, 0 }, // pos
 			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // normal
-			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 2*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // dimensions
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 2*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // UV
+			{ "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, 2*sizeof(D3DXVECTOR3) + sizeof(D3DXVECTOR2), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // ratio
+			{ "TEXCOORD", 2, DXGI_FORMAT_R32_FLOAT, 0, 2*sizeof(D3DXVECTOR3) + 2*sizeof(D3DXVECTOR2), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // radius
 		};
 
 		// create the effect
-		surfelEffect = Helpers::CustomEffect("Surfels.fx", "SurfelTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_GEOMETRY | CUSTOM_EFFECT_TYPE_VERTEX , layout, 3);
+		surfelEffect = Helpers::CustomEffect("Surfels.fx", "SurfelTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_GEOMETRY | CUSTOM_EFFECT_TYPE_VERTEX , layout, 5);
 		surfelEffect.AddVariable("World");
 		surfelEffect.AddVariable("View");
 		surfelEffect.AddVariable("Projection");
@@ -69,7 +117,7 @@ namespace Drawables{
 		surfelEffect.AddVariable("rhoOverPi");
 		surfelEffect.AddVariable("LightColor");		
 
-		surfelEffect.SetTexture("SurfelTexture", "Textures\\surfel.png");
+		surfelEffect.SetTexture("SurfelTexture", "Textures\\surfel.png");		
 		surfelEffect.SetMatrix("World", world);
 		surfelEffect.SetFloatVector("AmbientColor", Helpers::Globals::AppLight.GetAmbientColor());
 		surfelEffect.SetFloatVector("LightPos", Helpers::Globals::AppLight.GetPosition());
@@ -81,6 +129,9 @@ namespace Drawables{
 	}
 
 	void SurfelObject::ResetSurfels(std::vector<Structs::SURFEL_VERTEX> newSurfels){
+		if(newSurfels.size() == 0)
+			return;
+
 		if(surfelVertexBuffer){
 			surfelVertexBuffer->Release();
 			surfelVertexBuffer = NULL;
@@ -121,7 +172,7 @@ namespace Drawables{
 
 		D3D10_BUFFER_DESC vbdesc =
 		{
-			100 * sizeof(Structs::SOLID_VERTEX),
+			100000 * sizeof(Structs::SOLID_VERTEX),
 			D3D10_USAGE_DEFAULT,
 			D3D10_BIND_VERTEX_BUFFER | D3D10_BIND_STREAM_OUTPUT,
 			0,
@@ -132,7 +183,7 @@ namespace Drawables{
 
 		D3D10_BUFFER_DESC vbdesc2 =
 		{
-			100 * sizeof(Structs::SOLID_VERTEX),
+			100000 * sizeof(Structs::SOLID_VERTEX),
 			D3D10_USAGE_STAGING,
 			0,
 			D3D10_CPU_ACCESS_READ,
@@ -231,6 +282,15 @@ namespace Drawables{
 		else if(Helpers::Globals::SurfelDrawMethod == Helpers::SURFEL){
 			DrawSurfel();
 		}
+
+		if(IsDeformable){
+			if(Helpers::Globals::DRAW_OCTREE){
+				this->octree->Draw();
+			}
+			else{
+				this->octree->CleanUpDrawables();
+			}
+		}
 	}
 
 	void SurfelObject::DrawSolid(){
@@ -289,9 +349,15 @@ namespace Drawables{
 		solidEffect.CleanUp();
 		wireframeEffect.CleanUp();
 		
-		surfelVertexBuffer->Release();
-		solidVertexBuffer->Release();
+		if(surfelVertexBuffer)
+			surfelVertexBuffer->Release();
+		if(solidVertexBuffer)
+			solidVertexBuffer->Release();
 
 		surfels.clear();
+		if(IsDeformable){			
+			octree->CleanUp();
+			delete octree;
+		}
 	}
 }

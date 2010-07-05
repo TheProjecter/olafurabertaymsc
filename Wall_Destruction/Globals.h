@@ -54,11 +54,17 @@
 	#endif
 #endif
 
+// begin - these definitions are taken from GS-NPatch-Tesselation
+#define STR(x) #x
+#define DEF_STR(x) STR(x)
+#define DEF_MACRO(x) { #x, DEF_STR(x) }
+// end 
+
 using namespace Drawables;
 
 namespace Helpers{
 
-	enum DrawMethod {SURFEL, WIREFRAME, SOLID};
+	enum DrawMethod {SOLID, WIREFRAME, SURFEL};
 
 	class Globals
 	{
@@ -71,6 +77,7 @@ namespace Helpers{
 
 		static InfoText DebugInformation;
 		static DrawMethod SurfelDrawMethod;
+		static DrawMethod SurfelRenderMethod;
 		static Light AppLight;
 		
 		static const float PI;
@@ -82,6 +89,9 @@ namespace Helpers{
 		static bool CORRECTLY_SETUP;
 		static bool MOUSE_ACQUIRED;
 		static bool MOVE_WRECKINGBALL;
+		static bool DRAW_OCTREE;
+		static ID3D10RenderTargetView* RenderTargetView;
+		static ID3D10DepthStencilView* DepthStencilView;
 	};
 };
 

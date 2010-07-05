@@ -7,6 +7,7 @@
 #include "Structs.h"
 #include "CustomEffect.h"
 #include "HavokPhysicsInclude.h"
+#include "Octree.h"
 
 // http://www.nealen.net/projects/mls/asapmls.pdf
 namespace Drawables{
@@ -21,9 +22,10 @@ namespace Drawables{
 
 		void Draw();
 		void Update(float dt);
-		void Init();
+		void Init(bool isDeformable, D3DXVECTOR3 pos);
 		void CleanUp();
 
+		void SetOctree();
 		void SetWorld(D3DXMATRIX world){ this->world = world;}
 		void SetSurfelsSolidTexture(std::string tex){this->surfelsSolidTexture = tex;}
 
@@ -33,6 +35,7 @@ namespace Drawables{
 		std::vector<Structs::SURFEL_VERTEX> GetSurfels(){return surfels;}
 
 		ID3D10Buffer* GetReadableVertexBuffer(){return readableVertexBuffer;}
+		Octree* GetOctree(){return octree;}
 	
 	private:
 		void DrawSurfel();
@@ -48,6 +51,7 @@ namespace Drawables{
 		void InitCommonSolidAndWireframe();
 
 		std::vector<Structs::SURFEL_VERTEX> surfels;
+		std::vector<Structs::PHYXEL_NODE> phyxels;
 		std::vector<hkpRigidBody*> surfelRigidBodies;
 		std::string surfelsSolidTexture;
 
@@ -57,6 +61,9 @@ namespace Drawables{
 		ID3D10RasterizerState *SolidRenderState;
 
 		D3DXMATRIX world;
+
+		Octree *octree;
+		bool IsDeformable;
 	};
 }
 

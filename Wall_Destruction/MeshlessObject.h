@@ -2,9 +2,12 @@
 #define MESHLESS_OBJECT_H
 
 #include "SurfelObject.h"
+#include "PhyxelObject.h"
 #include "Drawable.h"
 #include "Globals.h"
 #include "HavokPhysicsInclude.h"
+#include "Volume.h"
+#include "CSGTree.h"
 
 namespace Drawables{
 
@@ -17,6 +20,9 @@ namespace Drawables{
 		~MeshlessObject(void);
 
 		void Draw();
+		void DrawDepth();
+		void DrawAttributes(ID3D10ShaderResourceView* depth);
+		void DrawNormalization(ID3D10ShaderResourceView* attributeMap);
 		void Update(float dt);
 		void Init();
 		void CleanUp();
@@ -26,14 +32,21 @@ namespace Drawables{
 
 		void SetDeformable(bool deformable){this->deformable = deformable;}
 		void SetWorld(D3DXMATRIX world){this->world = world;}
-		void ResetBuffers();
 
-		SurfelObject GetSurfelObject(){return surfelObject;}
+//		SurfelObject GetSurfelObject(){return surfelObject;}
+
+		Volume* GetVolume(){return volume;}
+
 		D3DXVECTOR3 Position(){return position;}
 		std::string GetName(){return name;}
 
 	private:
-		SurfelObject surfelObject;
+//		SurfelObject surfelObject;
+		PhyxelObject phyxelObject;
+
+		CSGTree *tree;
+		Volume *volume;
+
 		std::string pointCloudXmlFile;
 		bool deformable;
 		int pointCloudSize;

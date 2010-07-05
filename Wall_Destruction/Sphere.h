@@ -19,6 +19,7 @@ public:
 
 	void init(float radius, UINT numSlices, UINT numStacks);
 	void Draw(Helpers::CustomEffect *effect);
+	void DrawDepth(Helpers::CustomEffect *effect);
 	void CleanUp();
 
 	void UpdateWorld();
@@ -57,7 +58,7 @@ private:
 	DWORD mNumVertices;
 	DWORD mNumFaces;
 
-	ID3D10Buffer* mVB;
+	ID3D10Buffer *mVB, *mVBDepth;
 	ID3D10Buffer* mIB;
 
 	D3DXMATRIX Translation, Rotation, RadiusTranslation, World;

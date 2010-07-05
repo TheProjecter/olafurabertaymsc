@@ -46,7 +46,13 @@ void Chain::Init(D3DXVECTOR3 start, D3DXVECTOR3 end, int count){
 	effect.AddVariable("A");
 	effect.AddVariable("B");
 	effect.AddVariable("rhoOverPi");
-	effect.AddVariable("LightColor");		
+	effect.AddVariable("LightColor");				
+	effect.AddVariable("windowWidth");
+	effect.AddVariable("windowHeight");
+
+
+	effect.SetFloat("windowWidth", Helpers::Globals::ClientWidth);
+	effect.SetFloat("windowHeight", Helpers::Globals::ClientHeight);
 
 	effect.SetFloatVector("AmbientColor", Helpers::Globals::AppLight.GetAmbientColor());
 	effect.SetFloatVector("LightPos", Helpers::Globals::AppLight.GetPosition());
@@ -58,6 +64,17 @@ void Chain::Init(D3DXVECTOR3 start, D3DXVECTOR3 end, int count){
 
 	// image taken from http://www.cgtextures.com/getfile.php/ConcreteRough0075_1_S.jpg?id=38616&s=s&PHPSESSID=fb96f672ea0d7aff54fd54fe3f539e00
 	effect.SetTexture("tex", "Textures\\WreckingBall.jpg");
+	effect.AddVariable("depthMap");
+/*
+	D3D10_INPUT_ELEMENT_DESC depthLayout[] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D10_INPUT_PER_VERTEX_DATA, 0 }, // pos
+	};
+
+	depthEffect = Helpers::CustomEffect("SphereEffect.fx", "SphereDepthTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_VERTEX, depthLayout, 1);
+	depthEffect.AddVariable("World");
+	depthEffect.AddVariable("View");
+	depthEffect.AddVariable("Projection");*/
 }
 
 void Chain::Update(float dt){
@@ -66,7 +83,9 @@ void Chain::Update(float dt){
 	}
 }
 
-void Chain::Draw(){	
+void Chain::Draw( ID3D10ShaderResourceView* depthMap )
+{	
+	effect.SetTexture("depthMap", depthMap);
 	effect.SetMatrix("View", Helpers::Globals::AppCamera.View());
 	effect.SetMatrix("Projection", Helpers::Globals::AppCamera.Projection());
 	effect.SetFloatVector("CameraPos", Helpers::Globals::AppCamera.Position());
@@ -87,3 +106,16 @@ void Chain::CleanUp(){
 	effect.CleanUp();
 }
 
+void Chain::DrawDepth()
+{
+/*	depthEffect.SetMatrix("Projection", Helpers::Globals::AppCamera.Projection());
+	depthEffect.SetMatrix("View", Helpers::Globals::AppCamera.View());
+
+	depthEffect.PreDraw();
+
+	for(unsigned int i = 0; i<chainSpheres.size(); i++){
+		depthEffect.SetMatrix("World", chainSpheres[i]->GetWorld());		
+		depthEffect.PreDraw();
+		chainSpheres[i]->DrawDepth(&depthEffect);
+	}*/
+}

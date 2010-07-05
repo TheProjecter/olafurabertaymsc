@@ -1,1 +1,7 @@
-CSG Tree Rendering for Point-Sampled Objects
+- CSG Tree Rendering for Point-Sampled Objects
+- Algebraic Point Set Surfaces
+- Feature Preserving Point Set Surfaces based on Non-Linear Kernel Regression
+- Robust Moving Least-squares Fitting with Sharp Features
+- Interpolating and Approximating Implicit Surfaces from Polygon Soup
+- An As-Short-As-Possible Introduction to the Least Squares, Weighted Least Squares and Moving Least Squares Methods for Scattered Data Approximation and Interpolation
+- Interactive Boolean Operations on Surfel-Bounded Solids

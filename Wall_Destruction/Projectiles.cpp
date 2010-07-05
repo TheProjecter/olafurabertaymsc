@@ -35,6 +35,11 @@ void Projectiles::Init(){
 	projectileEffect.AddVariable("B");
 	projectileEffect.AddVariable("rhoOverPi");
 	projectileEffect.AddVariable("LightColor");		
+	projectileEffect.AddVariable("windowWidth");
+	projectileEffect.AddVariable("windowHeight");
+
+	projectileEffect.SetFloat("windowWidth", Helpers::Globals::ClientWidth);
+	projectileEffect.SetFloat("windowHeight", Helpers::Globals::ClientHeight);
 
 	projectileEffect.SetFloatVector("AmbientColor", Helpers::Globals::AppLight.GetAmbientColor());
 	projectileEffect.SetFloatVector("LightPos", Helpers::Globals::AppLight.GetPosition());
@@ -44,12 +49,26 @@ void Projectiles::Init(){
 	projectileEffect.SetFloat("rhoOverPi", this->rhoOverPi);
 	projectileEffect.SetFloatVector("LightColor", Helpers::Globals::AppLight.GetColor());
 
+
 	// image taken from http://www.cgtextures.com/getfile.php/ConcreteRough0019_2_S.jpg?id=38615&s=s&PHPSESSID=fb96f672ea0d7aff54fd54fe3f539e00
 	projectileEffect.SetTexture("tex", "Textures\\Projectile.jpg");
+	projectileEffect.AddVariable("depthMap");
+
+	D3D10_INPUT_ELEMENT_DESC depthLayout[] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D10_INPUT_PER_VERTEX_DATA, 0 }, // pos
+	};
+
+	depthEffect = Helpers::CustomEffect("SphereEffect.fx", "SphereDepthTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_VERTEX, depthLayout, 1);
+	depthEffect.AddVariable("World");
+	depthEffect.AddVariable("View");
+	depthEffect.AddVariable("Projection");
+	depthEffect.SetMatrix("Projection", Helpers::Globals::AppCamera.Projection());
 }
 
-void Projectiles::Draw(){
-	
+void Projectiles::Draw( ID3D10ShaderResourceView* depthMap )
+{
+	projectileEffect.SetTexture("depthMap", depthMap);
 	projectileEffect.SetMatrix("View", Helpers::Globals::AppCamera.View());
 	projectileEffect.SetMatrix("Projection", Helpers::Globals::AppCamera.Projection());
 	projectileEffect.SetFloatVector("CameraPos", Helpers::Globals::AppCamera.Position());
@@ -60,6 +79,19 @@ void Projectiles::Draw(){
 	for(it = projectiles.begin(); it != projectiles.end(); it++){
 		projectileEffect.SetMatrix("World", it->world);
 		projectileSphere.Draw(&projectileEffect);
+	}	
+}
+
+void Projectiles::DrawDepth(){
+
+	depthEffect.SetMatrix("View", Helpers::Globals::AppCamera.View());
+	depthEffect.PreDraw();
+
+	std::list<Structs::PROJECTILE>::iterator it;
+
+	for(it = projectiles.begin(); it != projectiles.end(); it++){
+		depthEffect.SetMatrix("World", it->world);
+		projectileSphere.DrawDepth(&depthEffect);
 	}	
 }
 
@@ -92,6 +124,9 @@ void Projectiles::CleanUp(){
 	projectileEffect.CleanUp();
 
 	while(!projectiles.empty()){
+		/*if(projectiles.front().rigidBody)
+			delete projectiles.front().rigidBody;
+*/
 		projectiles.erase(projectiles.begin());
 	}
 

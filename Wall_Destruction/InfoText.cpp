@@ -40,6 +40,50 @@ namespace Drawables{
 		textRect.bottom = 0;
 	}
 
+	void InfoText::StartTimer(){
+		startTime.push_back(clock());
+	}
+
+	void InfoText::EndTimer(D3DXCOLOR color, const char *strText, ...){
+		va_list args;
+		char strBuffer[4096];
+
+		if (!strText)
+			return;
+
+		va_start(args, strText);
+		vsprintf_s(strBuffer, strText, args);
+		va_end(args);		
+
+		std::string str = strBuffer;
+		str.append(" in %.3f sec");
+
+		double time = (double)(clock() - startTime.front())/ (double)CLOCKS_PER_SEC;
+		startTime.pop_front();
+
+		AddText(color, str.c_str(), time);
+	}
+
+	void InfoText::EndTimer(const char *strText, ...){
+		va_list args;
+		char strBuffer[4096];
+
+		if (!strText)
+			return;
+		
+		va_start(args, strText);
+		vsprintf_s(strBuffer, strText, args);
+		va_end(args);		
+	
+		std::string str = strBuffer;
+		str.append(" in %.3f sec");
+
+		double time = (double)(clock() - startTime.front())/ (double)CLOCKS_PER_SEC;
+		startTime.pop_front();
+
+		AddText(str.c_str(), time);
+	}
+
 	// printf wrapper idea taken from Henry Fortunas PS2 Framework (http://www.hsfortuna.pwp.blueyonder.co.uk/)
 	void InfoText::AddText(const char *strText, ...){
 		va_list args;
@@ -75,6 +119,11 @@ namespace Drawables{
 	}
 
 	void InfoText::AddText(D3DXCOLOR color, std::string text){
+		// put a cap on the texts
+		if(texts.size() == 70){
+			texts.pop_front();
+		}
+
 		INFO_TEXT it;
 		it.text = text;
 		it.color = color;
@@ -89,6 +138,9 @@ namespace Drawables{
 
 		texts.clear();
 		texts.swap( std::list<INFO_TEXT>() );
+
+		startTime.clear();
+		startTime.swap(std::list<clock_t>());
 
 		font->Release();
 		font = NULL;

@@ -11,6 +11,10 @@ public:
 	// Robust implicit Moving Least Squares
 	//static Structs::SURFEL_VERTEX* RIMLS(Structs::POINT_CLOUD_VERTEX *points);
 
+	//void Algorithms::SurfaceSplatting(Structs::POINT_CLOUD_VERTEX *points);
+
+	static Structs::SURFEL_VERTEX* APSS(Structs::POINT_CLOUD_VERTEX *points);
+
 };
 
 #endif

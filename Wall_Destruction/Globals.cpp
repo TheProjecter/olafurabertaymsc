@@ -7,6 +7,8 @@ namespace Helpers{
 	ID3D10Device* Globals::Device;
 	int Globals::ClientWidth;
 	int Globals::ClientHeight;
+	ID3D10RenderTargetView* Globals::RenderTargetView;
+	ID3D10DepthStencilView* Globals::DepthStencilView;
 	HWND Globals::Window;
 
 	// application stuff
@@ -15,9 +17,11 @@ namespace Helpers{
 	bool Globals::CORRECTLY_SETUP = true;
 	bool Globals::MOUSE_ACQUIRED = false; // set as false, so the mouse gets acquired in the beginning
 	bool Globals::MOVE_WRECKINGBALL = false;
+	bool Globals::DRAW_OCTREE = false;
 
 	InfoText Globals::DebugInformation;
 	DrawMethod Globals::SurfelDrawMethod = SOLID;
+	DrawMethod Globals::SurfelRenderMethod = SOLID;
 
 	// constants
 	const float Globals::PI = (float)D3DX_PI;

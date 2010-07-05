@@ -18,13 +18,15 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			OutputDirectory="..\..\..\..\..\..\MASTERS\Output"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
+			EnableManagedIncrementalBuild="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine=""
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -41,8 +43,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="Havok\Source"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;TIXML_USE_STL;DETECT_MEMORY_LEAKS"
+				AdditionalIncludeDirectories="&quot;C:\Program Files (x86)\Visual Leak Detector\include&quot;;Havok\Source"
+				PreprocessorDefinitions="WIN32;_DEBUG;DEBUG;_WINDOWS;TIXML_USE_STL;DETECT_MEMORY_LEAKS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -62,8 +64,8 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="hkaAnimation.lib hkaInternal.lib hkaRagdoll.lib hkBase.lib hkCompat.lib hkgBridge.lib hkgCommon.lib hkgDx9.lib hkgDx9s.lib hkgDx10.lib hkGeometryUtilities.lib hkgOgl.lib hkgOgls.lib hkInternal.lib hkpCollide.lib hkpConstraintSolver.lib hkpDynamics.lib hkpInternal.lib hkpUtilities.lib hkpVehicle.lib hkSceneData.lib hksCommon.lib hkSerialize.lib hksXAudio2.lib hkVisualize.lib VdbClient.lib"
-				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;Havok\Lib_Debug&quot;"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="&quot;C:\Program Files (x86)\Visual Leak Detector\lib\Win32&quot;;Havok\Lib_Debug"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames="libc.lib;libcmt.lib;msvcrt.lib;libcd.lib;libcmtd.lib"
 				GenerateDebugInformation="true"
@@ -90,11 +92,12 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="mkdir ..\..\..\..\..\..\MASTERS\Output\Textures&#x0D;&#x0A;mkdir ..\..\..\..\..\..\MASTERS\Output\MeshlessObjects&#x0D;&#x0A;mkdir ..\..\..\..\..\..\MASTERS\Output\Shaders&#x0D;&#x0A;&#x0D;&#x0A;copy .\MeshlessObjects\*.* ..\..\..\..\..\..\MASTERS\Output\MeshlessObjects\&#x0D;&#x0A;copy .\Shaders\*.* ..\..\..\..\..\..\MASTERS\Output\Shaders\&#x0D;&#x0A;copy .\Textures\*.* ..\..\..\..\..\..\MASTERS\Output\Textures\&#x0D;&#x0A;&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="..\..\Release"
+			OutputDirectory="..\..\..\..\..\..\MASTERS\Release"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
@@ -120,7 +123,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="Havok\Source"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;TIXML_USE_STL"
+				PreprocessorDefinitions="WIN32;_WINDOWS;TIXML_USE_STL"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -168,6 +171,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine=""
 			/>
 		</Configuration>
 	</Configurations>
@@ -199,11 +203,19 @@
 					>
 				</File>
 				<File
+					RelativePath=".\MathHelper.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\MouseHandler.cpp"
 					>
 				</File>
 				<File
 					RelativePath=".\ObjectHelper.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Octree.cpp"
 					>
 				</File>
 				<File
@@ -220,6 +232,10 @@
 				</File>
 				<File
 					RelativePath=".\d3dApp.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\DrawableTex2D.cpp"
 					>
 				</File>
 				<File
@@ -247,11 +263,31 @@
 					>
 				</File>
 				<File
+					RelativePath=".\PhyxelObject.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\Projectiles.cpp"
 					>
 				</File>
 				<File
+					RelativePath=".\SpriteViewPort.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Surface.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\SurfelObject.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\TextureCreator.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Volume.cpp"
 					>
 				</File>
 				<File
@@ -264,6 +300,10 @@
 				>
 				<File
 					RelativePath=".\Algorithms.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\CSGTree.cpp"
 					>
 				</File>
 				<File
@@ -305,6 +345,46 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\Shaders\phong splatting\fps\fp_clip_pass1.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Shaders\phong splatting\fps\fp_clip_pass2_phong.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Shaders\phong splatting\fps\fp_normalize.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Shaders\phong splatting\fps\fp_pass1.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Shaders\phong splatting\fps\fp_pass2_phong.h"
+				>
+			</File>
+			<File
+				RelativePath=".\resource.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Shaders\phong splatting\vps\vp_clip_pass1.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Shaders\phong splatting\vps\vp_clip_pass2_phong.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Shaders\phong splatting\vps\vp_pass1.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Shaders\phong splatting\vps\vp_pass2_phong.h"
+				>
+			</File>
 			<Filter
 				Name="Helpers"
 				>
@@ -325,11 +405,19 @@
 					>
 				</File>
 				<File
+					RelativePath=".\MathHelper.h"
+					>
+				</File>
+				<File
 					RelativePath=".\MouseHandler.h"
 					>
 				</File>
 				<File
 					RelativePath=".\ObjectHelper.h"
+					>
+				</File>
+				<File
+					RelativePath=".\Octree.h"
 					>
 				</File>
 				<File
@@ -365,6 +453,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\DrawableTex2D.h"
+					>
+				</File>
+				<File
 					RelativePath=".\GameTimer.h"
 					>
 				</File>
@@ -393,11 +485,31 @@
 					>
 				</File>
 				<File
+					RelativePath=".\PhyxelObject.h"
+					>
+				</File>
+				<File
 					RelativePath=".\Projectiles.h"
 					>
 				</File>
 				<File
+					RelativePath=".\SpriteViewPort.h"
+					>
+				</File>
+				<File
+					RelativePath=".\Surface.h"
+					>
+				</File>
+				<File
 					RelativePath=".\SurfelObject.h"
+					>
+				</File>
+				<File
+					RelativePath=".\TextureCreator.h"
+					>
+				</File>
+				<File
+					RelativePath=".\Volume.h"
 					>
 				</File>
 				<File
@@ -410,6 +522,10 @@
 				>
 				<File
 					RelativePath=".\Algorithms.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CSGTree.h"
 					>
 				</File>
 				<File
@@ -443,6 +559,10 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+			<File
+				RelativePath=".\Wall_Destruction.rc"
+				>
+			</File>
 			<Filter
 				Name="Shaders"
 				>
@@ -475,7 +595,11 @@
 					>
 				</File>
 				<File
-					RelativePath=".\Shaders\Surfels.fx"
+					RelativePath=".\Shaders\SurfelSplatter.fx"
+					>
+				</File>
+				<File
+					RelativePath=".\Shaders\Viewport.fx"
 					>
 				</File>
 			</Filter>

@@ -75,7 +75,7 @@ technique10 SimpleTechnique
 		
 		SetDepthStencilState( EnableDepth, 0 );
 		SetRasterizerState(SOLID);
- 	    SetBlendState( AlphaBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
+ 	    SetBlendState( NoAlphaBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
     }
 }
 
@@ -89,6 +89,6 @@ technique10 SimpleTextureTechnique
 		
 		SetDepthStencilState( EnableDepth, 0 );
 		SetRasterizerState(SOLID);
- 	    SetBlendState( AlphaBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
+ 	    SetBlendState( NoAlphaBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
     }
 }

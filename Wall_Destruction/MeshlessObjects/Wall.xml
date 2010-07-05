@@ -12,93 +12,205 @@
   <worldscale x="1.0" y="1.0" z="1.0"/>
   <worldyawpitchroll x="0.0" y="0.0" z="0.0"/>
 
-  <!-- Front faces -->
-  <pointset>
-    <position x="-15.0" y="0.0" z="12.5"/>
-    <dimensions u="30.0" v="5.0"/>
-    <normal x="-1.0" y="0.0" z="0.0"/>
-  </pointset>
+  <volume>
+    <!--
+    <surfel>
+      <position x="" y="" z=""/> SURFACE CENTER
+      <majorAxis x="0.0" y="5.0" z="0.0"/> SURFEL MAJOR AXIS
+      <minorAxis x="0.0" y="0.0" z="2.5"/> SURFEL MINOR AXIS
+      <normal x="-1.0" y="0.0" z="0.0"/> SURFEL NORMAL
+      <count u="3" v="2"/> SURFEL COUNT / 2
+    </surfel>
+    -->
+    
+    <!-- far left -->
+    <surfel>
+      <position x="-30.0" y="0.0" z="25.0"/>
+      <majorAxis x="0.0" y="5.0" z="0.0"/>
+      <minorAxis x="0.0" y="0.0" z="5.0"/>
+      <normal x="-1.0" y="0.0" z="0.0"/>
+      <count u="3" v="1"/>
+    </surfel>
 
-  <pointset>
-    <position x="-2.5" y="0.0" z="10.0"/>
-    <dimensions u="25.0" v="30.0"/>
-    <normal x="0.0" y="0.0" z="-1.0"/>
-  </pointset>
+    <!-- front facing back -->
+    <surfel>
+      <position x="-5.0" y="0.0" z="20.0"/>
+      <majorAxis x="25.0" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="5.0" z="0.0"/>
+      <normal x="0.0" y="0.0" z="-1.0"/>
+      <count u="1" v="3"/>
+    </surfel>
 
-  <pointset>
-    <position x="10.0" y="0.0" z="-2.5"/>
-    <dimensions u="30.0" v="25.0"/>
-    <normal x="-1.0" y="0.0" z="0.0"/>
-  </pointset>
+    <surfel>
+      <position x="20.0" y="0.0" z="-5.0"/>
+      <majorAxis x="0.0" y="5.0" z="0.0"/>
+      <minorAxis x="0.0" y="0.0" z="25.0"/>
+      <normal x="-1.0" y="0.0" z="0.0"/>
+      <count u="3" v="1"/>
+    </surfel>
 
-  <pointset>
-    <position x="12.5" y="0.0" z="-15.0"/>
-    <dimensions u="5.0" v="30.0"/>
-    <normal x="0.0" y="0.0" z="-1.0"/>
-  </pointset>
+    <surfel>
+      <position x="25.0" y="0.0" z="-30.0"/>
+      <majorAxis x="5.0" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="5.0" z="0.0"/>
+      <normal x="0.0" y="0.0" z="-1.0"/>
+      <count u="1" v="3"/>
+    </surfel>
 
-  <pointset>
-    <position x="15.0" y="0.0" z="0.0"/>
-    <dimensions u="30.0" v="30.0"/>
-    <normal x="1.0" y="0.0" z="0.0"/>
-  </pointset>
-  
-  <pointset>
-    <position x="0.0" y="0.0" z="15.0"/>
-    <dimensions u="30.0" v="30.0"/>
-    <normal x="0.0" y="0.0" z="1.0"/>
-  </pointset>
-  
-  <!-- Top face-->
-  <pointset>
-    <position x="-2.5" y="15.0" z="12.5"/>
-    <dimensions u="25.0" v="5.0"/>
-    <normal x="0.0" y="1.0" z="0.0"/>
-  </pointset>
+    <surfel>
+      <position x="30.0" y="0.0" z="0.0"/>
+      <majorAxis x="0.0" y="0.0" z="30.0"/>
+      <minorAxis x="0.0" y="5.0" z="0.0"/>
+      <normal x="1.0" y="0.0" z="0.0"/>
+      <count u="1" v="3"/>
+    </surfel>
 
-  <pointset>
-    <position x="12.5" y="15.0" z="0.0"/>
-    <dimensions u="5.0" v="30.0"/>
-    <normal x="0.0" y="1.0" z="0.0"/>
-  </pointset>
-  
-  <!--
-  
-  
-  <pointset>
-    <position x="0.0" y="0.0" z="10.0"/>
-    <dimensions u="20.0" v="20.0"/>
-    <normal x="0.0" y="0.0" z="1.0"/>    
-  </pointset>
-  
-  <pointset>
-    <position x="0.0" y="0.0" z="0.0"/>
-    <dimensions u="20.0" v="20.0"/>
-    <normal x="0.0" y="0.0" z="-1.0"/>
-  </pointset>
+    <surfel>
+      <position x="0.0" y="0.0" z="30.0"/>
+      <majorAxis x="0.0" y="5.0" z="0.0"/>
+      <minorAxis x="30.0" y="0.0" z="0.0"/>
+      <normal x="0.0" y="0.0" z="1.0"/>
+      <count u="3" v="1"/>
+    </surfel>
 
-  <pointset>
-    <position x="0.0" y="10.0" z="5.0"/>
-    <dimensions u="20.0" v="10.0"/>
-    <normal x="0.0" y="1.0" z="0.0"/>
-  </pointset>
+    <surfel>
+      <position x="0.0" y="15.0" z="25.0"/>
+      <majorAxis x="30.0" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="0.0" z="5.0"/>
+      <normal x="0.0" y="1.0" z="0.0"/>
+      <count u="1" v="1"/>
+    </surfel>
+	
+	<surfel>
+      <position x="25.0" y="15.0" z="-5.0"/>
+      <majorAxis x="5.0" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="0.0" z="25.0"/>
+      <normal x="0.0" y="1.0" z="0.0"/>
+      <count u="1" v="1"/>
+    </surfel>
+    
+    <!--    
+    <pointset>
+      <surfel radius="1.25"/> 
+      <position x="14.375" y="0.0" z="-4.375"/> 
+      <dimensions u="30.0" v="30.0"/> 
+      <normal x="-1.0" y="0.0" z="0.0"/> 
+    </pointset>
+    
+    <surfel>
+      <position x="0.0" y="-10.0" z="0.0"/>
+      <majorAxis x="5.0" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="0.0" z="-5.0"/>
+      <normal x="0.0" y="-1.0" z="0.0"/>
+      <count u="10" v="10"/>
+    </surfel>
 
-  <pointset>
-    <position x="0.0" y="-10.0" z="5.0"/>
-    <dimensions u="20.0" v="10.0"/>
-    <normal x="0.0" y="-1.0" z="0.0"/>
-  </pointset>
+    <surfel>
+      <position x="-50.0" y="-5.0" z="0.0"/>
+      <majorAxis x="0.0" y="0.0" z="-5.0"/>
+      <minorAxis x="0.0" y="5.0" z="0.0"/>
+      <normal x="-1.0" y="0.0" z="0.0"/>
+      <count u="10" v="1"/>
+    </surfel>
 
-  <pointset>
-    <position x="-10.0" y="0.0" z="5.0"/>
-    <dimensions u="20.0" v="10.0"/>
-    <normal x="-1.0" y="0.0" z="0.0"/>
-  </pointset>
+    <surfel>
+      <position x="50.0" y="-5.0" z="0.0"/>
+      <majorAxis x="0.0" y="0.0" z="5.0"/>
+      <minorAxis x="0.0" y="5.0" z="0.0"/>
+      <normal x="1.0" y="0.0" z="0.0"/>
+      <count u="10" v="1"/>
+    </surfel>
 
-  <pointset>
-    <position x="10.0" y="0.0" z="5.0"/>
-    <dimensions u="20.0" v="10.0"/>
-    <normal x="1.0" y="0.0" z="0.0"/>
-  </pointset>
+    <surfel>
+      <position x="0.0" y="-5.0" z="-50.0"/>
+      <majorAxis x="5.0" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="5.0" z="0.0"/>
+      <normal x="0.0" y="0.0" z="-1.0"/>
+      <count u="10" v="1"/>
+    </surfel>
+
+    <surfel>
+      <position x="0.0" y="-5.0" z="50.0"/>
+      <majorAxis x="-5.0" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="5.0" z="0.0"/>
+      <normal x="0.0" y="0.0" z="1.0"/>
+      <count u="10" v="1"/>
+    </surfel>
 -->
+  </volume>
+
+
+  <!-- Front faces -->
+  <!--<pointset>
+    <surfel radius="1.25"/>
+    <position x="-24.0" y="-10.0" z="15.0"/>
+    <dimensions u="5.0" v="5.0"/>
+    <normal x="0.0" y="0.0" z="-1.0"/>
+  </pointset>
+
+  <pointset>
+    <surfel radius="1.25"/>
+    <position x="-15.0" y="10.0" z="5.0"/>
+    <dimensions u="5.0" v="5.0"/>
+    <normal x="0.0" y="0.0" z="-1.0"/>
+  </pointset>
+  -->
+  <!--<pointset>
+    <surfel radius="1.25"/>
+    <position x="-14.375" y="0.0" z="15.0"/>
+    <dimensions u="30.0" v="11.25"/>  
+    <normal x="-1.0" y="0.0" z="0.0"/>
+  </pointset> 
+  
+  <pointset>
+    <surfel radius="1.25"/>
+    <position x="0.0" y="0.0" z="10.0"/>
+    <dimensions u="30.0" v="30.0"/> 
+    <normal x="0.0" y="0.0" z="-1.0"/>
+  </pointset>
+  
+  <pointset>
+    <surfel radius="1.25"/> 
+    <position x="14.375" y="0.0" z="-4.375"/> 
+    <dimensions u="30.0" v="30.0"/> 
+    <normal x="-1.0" y="0.0" z="0.0"/> 
+  </pointset> 
+
+  <pointset>
+    <surfel radius="1.25"/> 
+    <position x="18.75" y="0.0" z="-18.75"/> 
+    <dimensions u="10.0" v="30.0"/> 
+    <normal x="0.0" y="0.0" z="-1.0"/> 
+  </pointset> 
+
+  <pointset> 
+    <surfel radius="1.25"/> 
+    <position x="23.125" y="0.0" z="0.625"/> 
+    <dimensions u="30.0" v="40.0"/> 
+    <normal x="1.0" y="0.0" z="0.0"/> 
+  </pointset> 
+
+  <pointset> 
+    <surfel radius="1.25"/> 
+    <position x="4.375" y="0.0" z="20.0"/> 
+    <dimensions u="38.75" v="30.0"/> 
+    <normal x="0.0" y="0.0" z="1.0"/>
+  </pointset> 
+-->
+  <!-- Top face--> 
+  <!--<pointset> 
+    <surfel radius="1.25"/> 
+    <position x="4.375" y="14.375" z="15.0"/> 
+    <dimensions u="38.75" v="11.25"/>
+    <normal x="0.0" y="1.0" z="0.0"/> 
+  </pointset> 
+  -->
+<!-- 
+  <pointset> 
+    <surfel radius="1.25"/> 
+    <position x="18.75" y="14.375" z="-4.375"/> 
+    <dimensions u="10.0" v="30.0"/> 
+    <normal x="0.0" y="1.0" z="0.0"/> 
+  </pointset>
+  -->
 </meshless_object>

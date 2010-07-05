@@ -17,26 +17,27 @@ namespace Drawables{
 		~WreckingBall(void){};
 		
 		void Init();
-		void Draw();
+		void Draw(ID3D10ShaderResourceView* depthMap);
+		void DrawDepth();
 		void Update(float dt);
 		void CleanUp();
 		void ResetBuffers();
 
 		float GetRadius(){return radius;}
-		void SetRigidBody( hkpRigidBody* rigidBody ){this->sphere->SetRigidBody(rigidBody);};
-		hkpRigidBody* GetRigidBody( ){return this->sphere->GetRigidBody();};
-		D3DXVECTOR3 GetPosition(){return sphere->GetPositionVector();}
-		void SetPosition(D3DXVECTOR3 pos){this->sphere->SetPosition(pos.x, pos.y, pos.z);}
+		void SetRigidBody( hkpRigidBody* rigidBody ){this->sphere.SetRigidBody(rigidBody);};
+		hkpRigidBody* GetRigidBody( ){return this->sphere.GetRigidBody();};
+		D3DXVECTOR3 GetPosition(){return sphere.GetPositionVector();}
+		void SetPosition(D3DXVECTOR3 pos){this->sphere.SetPosition(pos.x, pos.y, pos.z);}
 		Chain GetChain(){return chain;}
 	private:
 		float radius;
 		D3DXVECTOR3 pos;
 		D3DXMATRIX scaleMatrix, rotationMatrix, translationMatrix, worldMatrix, invWorldView;;
-		Sphere *sphere;
+		Sphere sphere;
 		int subsets;
 		Chain chain;
 
-		Helpers::CustomEffect wreckingBallEffect;
+		Helpers::CustomEffect wreckingBallEffect, depthEffect;
 	};
 }
 

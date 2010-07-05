@@ -1,7 +1,7 @@
 #include "Camera.h"
-#include "Globals.h"
 #include "MouseHandler.h"
 #include "KeyboardHandler.h"
+#include "Globals.h"
 
 using namespace Helpers;
 
@@ -16,6 +16,9 @@ Camera::Camera(D3DXVECTOR3 pos, D3DXVECTOR3 lookAt){
 	deltaRotation = 1.0f;
 	yaw = 0.0f;
 	pitch = 0.0f;
+
+	near_plane = 0.001f;
+	far_plane = 1000.0f;
 
 	D3DXMATRIX rot;
 	D3DXMatrixRotationY(&rot, (float)D3DX_PI/2.0f);
@@ -32,7 +35,14 @@ Camera::Camera(D3DXVECTOR3 pos, D3DXVECTOR3 lookAt){
 }	
 
 void Camera::Reset(){
-	D3DXMatrixPerspectiveFovLH(&projection, Globals::HALF_PI * ((float)Globals::ClientHeight/ (float)Globals::ClientWidth), (float)Globals::ClientWidth/ (float)Globals::ClientHeight, 0.001f, 1000.0f);
+	this->fov = Globals::HALF_PI * ((float)Globals::ClientHeight/ (float)Globals::ClientWidth);
+	nearHeight = near_plane * tan(fov*0.5f);
+	nearWidth = near_plane * tan(fov*0.5f) * ((float)Globals::ClientWidth/ (float)Globals::ClientHeight);
+		
+	D3DXMatrixPerspectiveFovLH(&projection, fov, (float)Globals::ClientWidth/ (float)Globals::ClientHeight, near_plane, far_plane);
+	
+	viewPortWidth = projection(0, 0);
+	viewPortHeight = projection(1, 1);
 }
 
 void Camera::Update(float dt){
@@ -89,5 +99,6 @@ void Camera::Update(float dt){
 		
 		D3DXMatrixLookAtLH(&view, &position, &(position + forward), &up);
 		D3DXMatrixInverse(&invView, NULL, &(view));
+		viewProjection = view * projection;
 	}
 }

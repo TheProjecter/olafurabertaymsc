@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include "HavokPhysicsInclude.h"
+//#include "CSGTree.h"
 
 
 namespace Structs{
@@ -20,20 +21,56 @@ namespace Structs{
 		D3DXVECTOR3 pos;
 		// normal
 		D3DXVECTOR3 normal;
-		// dimensions.x : width
-		// dimensions.y : height
-		D3DXVECTOR2 dimensions;
+		D3DXVECTOR3 majorAxis;
+		D3DXVECTOR3 minorAxis;
+		D3DXVECTOR2 UV;
 
-		SURFEL_VERTEX(){
-			this->dimensions = D3DXVECTOR2(0.0f, 0.0f);
-			this->normal = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
-			this->pos = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
+		SURFEL_VERTEX(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR3 majorAxis, D3DXVECTOR3 minorAxis, D3DXVECTOR2 UV){
+			this->pos = pos;
+			this->normal = normal;
+			this->minorAxis = minorAxis;
+			this->majorAxis = majorAxis;			
+			this->UV = UV;
 		}
 
-		SURFEL_VERTEX(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR2 dim){
-			this->dimensions = dim;
-			this->normal = normal;
+		SURFEL_VERTEX(){
+		}
+	};
+
+
+		/*
+			Clip planes can be
+			(1, -1, 0)		(-1, -1, 0)		(1, 1, 0)		(-1, 1, 0)	   (0, 1, 0)		(1, 0, 0)
+			 _ _			 _ _				 _			    _			   _
+			|  _|			|_	|				| |_		  _| |			  | |			  _ _
+			|_| 			  |_|				|_ _|	   	 |_ _|			  |_|			 |_ _|
+
+			(1, -1, 1)		(-1, -1, 1)		(1, 1, 1)		(-1, 1, 1)	   (0, 1, 1)		(1, 0, 1)
+			    			 				       _		  _				 _				  _ _
+			   _			 _					  |_|		 |_| 			| |				 |_ _|
+			  |_| 			|_|   			     	   	     				|_|				 
+
+		*/
+	struct SURFEL_EDGE_VERTEX{
+		// position
+		D3DXVECTOR3 pos;
+		// normal
+		D3DXVECTOR3 normal;
+		D3DXVECTOR3 majorAxis;
+		D3DXVECTOR3 minorAxis;
+		D3DXVECTOR3 clipPlane;
+		D3DXVECTOR2 UV;
+
+		SURFEL_EDGE_VERTEX(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR3 majorAxis, D3DXVECTOR3 minorAxis, D3DXVECTOR3 clipPlane, D3DXVECTOR2 UV){
 			this->pos = pos;
+			this->normal = normal;
+			this->minorAxis = minorAxis;
+			this->majorAxis = majorAxis;			
+			this->clipPlane = clipPlane;
+			this->UV = UV;
+		}
+
+		SURFEL_EDGE_VERTEX(){
 		}
 	};
 
@@ -50,8 +87,21 @@ namespace Structs{
 		SOLID_VERTEX(){}
 	};
 
-	struct SIMULATION_NODE{
+	struct POINT_CLOUD_VERTEX {
 		D3DXVECTOR3 pos;
+		D3DXVECTOR3 normal;
+	};
+
+	struct PHYXEL_NODE{
+		D3DXVECTOR3 pos;
+		float radius;
+		float mass;
+	};
+
+	struct SIMPLE_VERTEX{
+		D3DXVECTOR3 pos;
+		float supportRadius;
+		float mass;
 	};
 
 	struct MESHLESS_OBJECT_STRUCT{
@@ -77,9 +127,22 @@ namespace Structs{
 		hkpRigidBody* rigidBody;
 	};
 
-	struct CAMERA_DIRECTION_LINE_STRUCT{
-		D3DXVECTOR3 position;
-		bool IsNearCamera;
+	// Octree
+	struct SurfelNode{
+		Structs::SURFEL_VERTEX surfel;;
+		SurfelNode *nextSurfel;
+	} ;
+
+	struct OctreeNode {
+		D3DXVECTOR3 center; // Center point of octree node 
+		float halfWidth; // Half the width of the node volume
+		
+		OctreeNode *pChild[8]; // Pointers to the eight children nodes
+		OctreeNode *parent;
+		SurfelNode *pObjList; // Linked list of objects contained at this node
+
+		bool childrenContainObjects;
+		bool checked;
 	};
 }
 

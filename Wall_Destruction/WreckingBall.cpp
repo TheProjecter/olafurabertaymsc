@@ -15,12 +15,7 @@ namespace Drawables{
 			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 2*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // dimensions
 		};
 
-		/*this->DiffuseColor = D3DXVECTOR3(1.0f, 1.0f, 1.0f);
-		this->SpecularColor = D3DXVECTOR3(0.5f, 0.5f, 0.5f);
-		this->SpecularPower = 1.0f;
-*/
 		this->SetMaterialInfo(0.600672f, 0.668533f);
-		//this->SetMaterialInfo(0, 0.668533f);
 
 		wreckingBallEffect = Helpers::CustomEffect("SphereEffect.fx", "SphereTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_VERTEX, layout, 3);
 
@@ -38,6 +33,13 @@ namespace Drawables{
 		wreckingBallEffect.AddVariable("B");
 		wreckingBallEffect.AddVariable("rhoOverPi");
 		wreckingBallEffect.AddVariable("LightColor");		
+		wreckingBallEffect.AddVariable("depthMap");
+		wreckingBallEffect.AddVariable("windowWidth");
+		wreckingBallEffect.AddVariable("windowHeight");
+
+
+		wreckingBallEffect.SetFloat("windowWidth", Helpers::Globals::ClientWidth);
+		wreckingBallEffect.SetFloat("windowHeight", Helpers::Globals::ClientHeight);
 
 		wreckingBallEffect.SetFloatVector("AmbientColor", Helpers::Globals::AppLight.GetAmbientColor());
 		wreckingBallEffect.SetFloatVector("LightPos", Helpers::Globals::AppLight.GetPosition());
@@ -50,30 +52,54 @@ namespace Drawables{
 		// image taken from http://www.cgtextures.com/getfile.php/ConcreteRough0075_1_S.jpg?id=38616&s=s&PHPSESSID=fb96f672ea0d7aff54fd54fe3f539e00
 		wreckingBallEffect.SetTexture("tex", "Textures\\WreckingBall.jpg");
 
-		sphere = new Sphere();
-		sphere->init(radius, 30, 30);
-		sphere->SetPosition(0.0f, 10.0f, -20.0f);
+		D3D10_INPUT_ELEMENT_DESC depthLayout[] =
+		{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D10_INPUT_PER_VERTEX_DATA, 0 }, // pos
+		};
+
+		depthEffect = Helpers::CustomEffect("SphereEffect.fx", "SphereDepthTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_VERTEX, depthLayout, 1);
+		depthEffect.AddVariable("World");
+		depthEffect.AddVariable("View");
+		depthEffect.AddVariable("Projection");
+		depthEffect.SetMatrix("Projection", Helpers::Globals::AppCamera.Projection());
+
+		sphere = Sphere();
+		sphere.init(radius, 30, 30);
+		sphere.SetPosition(0.0f, 10.0f, -20.0f);
 		this->chain = Chain();
-		this->chain.Init(sphere->GetPositionVector() + D3DXVECTOR3(0.0f, radius, 0.0f), sphere->GetPositionVector() + D3DXVECTOR3(0.0f, 20.0f + radius, 0.0f), 5);
+		this->chain.Init(sphere.GetPositionVector() + D3DXVECTOR3(0.0f, radius, 0.0f), sphere.GetPositionVector() + D3DXVECTOR3(0.0f, 20.0f + radius, 0.0f), 4);
 
 		PhysicsWrapper::AddWreckingBall(this);
 	}
 
-	void WreckingBall::Draw(){
+	void WreckingBall::Draw( ID3D10ShaderResourceView* depthMap )
+	{
+		wreckingBallEffect.SetTexture("depthMap", depthMap);
 		wreckingBallEffect.SetFloatVector("CameraPos", Helpers::Globals::AppCamera.Position());
-		wreckingBallEffect.SetMatrix("World", this->sphere->GetWorld());
+		wreckingBallEffect.SetMatrix("World", this->sphere.GetWorld());
 		wreckingBallEffect.SetMatrix("View", Helpers::Globals::AppCamera.View());
 		wreckingBallEffect.SetMatrix("Projection", Helpers::Globals::AppCamera.Projection());
 
 		wreckingBallEffect.PreDraw();
 
-		sphere->Draw(&wreckingBallEffect);
+		sphere.Draw(&wreckingBallEffect);
 
-		this->chain.Draw();
+		this->chain.Draw(depthMap);
+	}
+
+	void WreckingBall::DrawDepth(){
+		depthEffect.SetMatrix("View", Helpers::Globals::AppCamera.View());
+		depthEffect.SetMatrix("World", this->sphere.GetWorld());
+		
+		depthEffect.PreDraw();
+			
+		sphere.DrawDepth(&depthEffect);
+
+		this->chain.DrawDepth();
 	}
 
 	void WreckingBall::Update(float dt){
-		this->sphere->SetWorld(PhysicsWrapper::GetWorld(this->sphere->GetRigidBody()));
+		this->sphere.SetWorld(PhysicsWrapper::GetWorld(this->sphere.GetRigidBody()));
 
 		this->chain.Update(dt);
 
@@ -96,13 +122,12 @@ namespace Drawables{
 
 	void WreckingBall::CleanUp(){
 		wreckingBallEffect.CleanUp();
-		sphere->CleanUp();
-		delete sphere;
+		sphere.CleanUp();
 		this->chain.CleanUp();
 	}
 
 	void WreckingBall::ResetBuffers()
 	{
-		sphere->init(radius, 30, 30);
+		sphere.init(radius, 30, 30);
 	}
 }

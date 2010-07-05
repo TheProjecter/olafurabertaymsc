@@ -14,7 +14,8 @@ public:
 
 	void Init(D3DXVECTOR3 start, D3DXVECTOR3 end, int count);
 	void Update(float dt);
-	void Draw();
+	void Draw(ID3D10ShaderResourceView* depthMap);
+	void DrawDepth();
 	void CleanUp();
 
 	int GetCount(){return chainSpheres.size();}
@@ -22,11 +23,11 @@ public:
 
 	Sphere* operator [] (unsigned int index) {
 		return chainSpheres[index];
-	}
+	}	
 
 private:
 	std::vector<Sphere*> chainSpheres;
-	Helpers::CustomEffect effect;
+	Helpers::CustomEffect effect, depthEffect;
 
 	D3DXVECTOR3 start, end, delta;
 	D3DXMATRIX invWorldView;

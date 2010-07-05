@@ -12,7 +12,8 @@ public:
 	~Projectiles(void){};
 
 	void Init();
-	void Draw();
+	void Draw(ID3D10ShaderResourceView* depthMap);
+	void DrawDepth();
 	void Update(float dt);
 	void CleanUp();
 
@@ -20,7 +21,7 @@ public:
 
 private:
 	Sphere projectileSphere;
-	Helpers::CustomEffect projectileEffect;
+	Helpers::CustomEffect projectileEffect, depthEffect;
 	std::list<Structs::PROJECTILE> projectiles;
 
 	float deltaTime, lastShotTime;

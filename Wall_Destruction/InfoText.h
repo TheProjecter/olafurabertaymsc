@@ -5,6 +5,7 @@
 #include <string>
 #include <D3DX10.h>
 #include "Drawable.h"
+#include <ctime>
 
 namespace Drawables{
 	
@@ -26,6 +27,10 @@ namespace Drawables{
 		
 		void AddText(D3DXCOLOR color, std::string text);
 		void AddText(std::string text);
+
+		void StartTimer();
+		void EndTimer(D3DXCOLOR color, const char *strText, ...);
+		void EndTimer(const char *strText, ...);
 		
 		void Draw();
 		void Update(float dt);
@@ -35,6 +40,8 @@ namespace Drawables{
 	private:
 		void Init(int x, int y);
 		std::list<INFO_TEXT> texts;
+		std::list<clock_t> startTime;
+
 		ID3DX10Font* font;
 		RECT textRect, deltaRect;
 		float deterioration;

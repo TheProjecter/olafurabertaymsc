@@ -17,38 +17,68 @@ namespace Drawables{
 	}
 
 	void MeshlessObject::CleanUp(){
-		surfelObject.CleanUp();
+//		surfelObject.CleanUp();
+		if(deformable){
+			phyxelObject.CleanUp();
+		}
+		if(volume){
+			volume->CleanUp();
+			delete volume;
+		}
+		if(tree){
+			tree->CleanUp();
+			delete tree;
+		}
+
 	}
 
 	void MeshlessObject::Draw(){
-
+		if(volume)
+			volume->Draw();
+		else if(tree)
+			tree->Draw();
+/*
 		this->surfelObject.Draw();
+		if(deformable){
+			this->phyxelObject.Draw();
+		}*/
 	}
 
 	void MeshlessObject::Update(float dt){
 	}
 
 	void MeshlessObject::Init(){
-		Structs::MESHLESS_OBJECT_STRUCT meshlessObjectStruct = PointCloud::PointCloudHandler::ProcessPointCloud(pointCloudXmlFile);
+
+		tree = NULL;
+		volume = NULL;
+		
+		Helpers::Globals::DebugInformation.StartTimer();
+		
+		Structs::MESHLESS_OBJECT_STRUCT meshlessObjectStruct = PointCloud::PointCloudHandler::ProcessPointCloud(pointCloudXmlFile, *&tree, *&volume);
+
+		Helpers::Globals::DebugInformation.EndTimer(D3DXCOLOR(0.0f, 1.0f, 0.0f, 0.0f), "%s - Ran the Pointcloud handler. ", meshlessObjectStruct.name.c_str());
+
 		this->texture = meshlessObjectStruct.texture;
 		this->deformable = meshlessObjectStruct.deformable;
 		this->name = meshlessObjectStruct.name;
 		this->world = meshlessObjectStruct.world;
 		this->position = meshlessObjectStruct.transform;
 
-		this->surfelObject = SurfelObject(meshlessObjectStruct.surfels);
-		this->surfelObject.SetSurfelsSolidTexture(texture);
-		this->surfelObject.SetMaterialInfo(meshlessObjectStruct.sigma, meshlessObjectStruct.rho);
-		this->surfelObject.SetWorld(this->world);
-		this->surfelObject.Init();
+		if(deformable){
+
+/*			Helpers::Globals::DebugInformation.StartTimer();
+			
+			this->phyxelObject = PhyxelObject(2.0f);
+			this->phyxelObject.Init(this->surfelObject.GetOctree());
+			
+			Helpers::Globals::DebugInformation.EndTimer(D3DXCOLOR(0.0f, 1.0f, 0.0f, 0.0f), "%s - Created the phyxel object", meshlessObjectStruct.name.c_str(), meshlessObjectStruct.surfels.size());
+*/
+		}
 
 		Helpers::ObjectHelper::MeshlessObjects[this->name] = this;		
 
+		Helpers::Globals::DebugInformation.StartTimer();
 		PhysicsWrapper::AddMeshlessObject(this);
-	}
-
-	void MeshlessObject::ResetBuffers()
-	{
-		this->surfelObject.ResetSurfels();
+		Helpers::Globals::DebugInformation.EndTimer(D3DXCOLOR(0.0f, 1.0f, 0.0f, 0.0f), "%s - Added the meshless object into Havok", meshlessObjectStruct.name.c_str(), meshlessObjectStruct.surfels.size());
 	}
 }

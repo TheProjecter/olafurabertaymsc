@@ -1,10 +1,11 @@
 #include "GlobalParameters.inc"
-float4x4 invViewMatrix;
 
 // shader method taken from Shaders for Game programmers and artists
 float4 Light_OrenNayer(float3 Normal, float3 EyeVect, float3 LightDir)
 {
 	float4 color;	
+
+	//Todo - can I put HalfVect into the vertex shader or CPU?
 	float3 HalfVect = normalize(LightDir+EyeVect);
 
 	// calculate all the dot products
@@ -19,8 +20,8 @@ float4 Light_OrenNayer(float3 Normal, float3 EyeVect, float3 LightDir)
 	float cosTheta_r = max(NdotE,0.001);
 	float sinTheta_i = length(cross(LightDir,Normal));
 	float cosTheta_i = max(NdotL,0.001);
-	float tanTheta_i = sinTheta_i / cosTheta_i;
-	float tanTheta_r = sinTheta_r / cosTheta_r;
+	float tanTheta_i = sinTheta_i * rcp(cosTheta_i);
+	float tanTheta_r = sinTheta_r * rcp(cosTheta_r);
 
 	// calculate the azimuth angles
 	float3 E_p = normalize(EyeVect-NdotE*Normal);

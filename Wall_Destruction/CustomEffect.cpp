@@ -3,6 +3,14 @@
 namespace Helpers{
 	
 	CustomEffect::CustomEffect(string shaderName, string technique, int effectType, D3D10_INPUT_ELEMENT_DESC *layout, int layoutCount){
+		Init(shaderName, technique, effectType, layout, layoutCount, NULL);
+	}
+
+	CustomEffect::CustomEffect(string shaderName, string technique, int effectType, D3D10_INPUT_ELEMENT_DESC *layout, int layoutCount, const D3D10_SHADER_MACRO *macros){
+		Init(shaderName, technique, effectType, layout, layoutCount, macros);
+	}
+
+	void CustomEffect::Init(string shaderName, string technique, int effectType, D3D10_INPUT_ELEMENT_DESC *layout, int layoutCount, const D3D10_SHADER_MACRO *macros){
 
 		texturesSet = false;
 		effect = NULL;
@@ -16,7 +24,7 @@ namespace Helpers{
 		
 		ID3D10Blob* compilationErrors = 0;
 
-		HRESULT hr = D3DX10CreateEffectFromFile( name.c_str(), NULL, NULL, "fx_4_0", shaderFlags, 0, Globals::Device, NULL,
+		HRESULT hr = D3DX10CreateEffectFromFile( name.c_str(), macros, NULL, "fx_4_0", shaderFlags, 0, Globals::Device, NULL,
 			NULL, &effect, &compilationErrors, NULL ) ;
 
 		if(FAILED(hr)){
@@ -37,7 +45,7 @@ namespace Helpers{
 			HR(Technique->GetPassByIndex( idx )->GetDesc( &PassDesc ));
 
 			ERR(Globals::Device->CreateInputLayout( layout, layoutCount, PassDesc.pIAInputSignature, PassDesc.IAInputSignatureSize, &pVertexLayout[idx]), 
-					"Error creating the layout, is the layoutCount equal to the layout array?");
+				"Error creating " +shaderName + "-" +technique+ " : Does the layout match the effect layout?");
 		}
 
 		this->effectType = effectType;
@@ -94,13 +102,14 @@ namespace Helpers{
 
 	void CustomEffect::AddVariable(string variable){
 		if(effectVariables.find(variable) == effectVariables.end()){
-			effectVariables[variable] = effect->GetVariableByName(variable.c_str());
+ 			effectVariables[variable] = effect->GetVariableByName(variable.c_str());
 		}
 	}
 
 	void CustomEffect::AddTexture( string variable, string texture ){
 		textureFileNames.push_back(texture);
 		AddVariable(variable);
+		texturesSet = false;
 	}
 
 	void CustomEffect::SetTexture(string variable, string texture){
@@ -116,6 +125,10 @@ namespace Helpers{
 		}
 
 		effectVariables[variable]->AsShaderResource()->SetResource(textureSRV[texture]);
+	}
+
+	void CustomEffect::SetTexture(string variable, ID3D10ShaderResourceView* texture){
+		effectVariables[variable]->AsShaderResource()->SetResource(texture);
 	}
 
 	void CustomEffect::SetMatrix(string variable, D3DXMATRIX matrix){
@@ -148,10 +161,12 @@ namespace Helpers{
 
 	void CustomEffect::CleanUp(){
 
-		for(unsigned int i = 0; i<vertexLayoutSize; i++){
- 			pVertexLayout[i]->Release();
+		if(pVertexLayout){
+			for(unsigned int i = 0; i<vertexLayoutSize; i++){
+ 				pVertexLayout[i]->Release();
+			}
+			delete pVertexLayout;
 		}
-		delete pVertexLayout;
 
 		std::map<std::string, ID3D10ShaderResourceView*, Structs::NameComparer>::const_iterator textureItr;
 		for(textureItr = textureSRV.begin(); textureItr != textureSRV.begin(); textureItr++){

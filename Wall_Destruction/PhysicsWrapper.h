@@ -46,7 +46,7 @@ public:
 			v = hkVector4(deltaPos.x, deltaPos.y, deltaPos.z);
 
 		rb->setPosition(v);
-		rb->unmarkForWrite();
+    	rb->unmarkForWrite();
 		rb->unlockAll();
 		physicsWorld->unlock();
 	}

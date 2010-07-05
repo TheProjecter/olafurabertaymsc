@@ -29,6 +29,7 @@ void Sphere::init(float radius, UINT numSlices, UINT numStacks)
 	mNumStacks = numStacks;
 
 	std::vector<Structs::SOLID_VERTEX> vertices;
+	std::vector<D3DXVECTOR3> depthVertices;
 	std::vector<DWORD> indices;
 
 	buildStacks(vertices, indices);
@@ -45,6 +46,20 @@ void Sphere::init(float radius, UINT numSlices, UINT numStacks)
 	D3D10_SUBRESOURCE_DATA vinitData;
     vinitData.pSysMem = &vertices[0];
 	HR(Helpers::Globals::Device->CreateBuffer(&vbd, &vinitData, &mVB));
+
+	for(int i = 0; i<mNumVertices; i++){
+		depthVertices.push_back(vertices[i].pos);
+	}
+
+	D3D10_BUFFER_DESC vbdDepth;
+	vbdDepth.Usage = D3D10_USAGE_IMMUTABLE;
+	vbdDepth.ByteWidth = sizeof(D3DXVECTOR3) * mNumVertices;
+	vbdDepth.BindFlags = D3D10_BIND_VERTEX_BUFFER;
+	vbdDepth.CPUAccessFlags = 0;
+	vbdDepth.MiscFlags = 0;
+	D3D10_SUBRESOURCE_DATA vinitDataDepth;
+	vinitDataDepth.pSysMem = &depthVertices[0];
+	HR(Helpers::Globals::Device->CreateBuffer(&vbdDepth, &vinitDataDepth, &mVBDepth));
 
 	D3D10_BUFFER_DESC ibd;
     ibd.Usage = D3D10_USAGE_IMMUTABLE;
@@ -65,6 +80,17 @@ void Sphere::Draw(Helpers::CustomEffect *effect)
     UINT offset = 0;
 	Helpers::Globals::Device->IASetPrimitiveTopology( D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	Helpers::Globals::Device->IASetVertexBuffers(0, 1, &mVB, &stride, &offset);
+	Helpers::Globals::Device->IASetIndexBuffer(mIB, DXGI_FORMAT_R32_UINT, 0);
+
+	effect->DrawIndexed(mNumFaces*3);
+}
+
+void Sphere::DrawDepth(Helpers::CustomEffect *effect)
+{
+	UINT stride = sizeof(D3DXVECTOR3);
+	UINT offset = 0;
+	Helpers::Globals::Device->IASetPrimitiveTopology( D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	Helpers::Globals::Device->IASetVertexBuffers(0, 1, &mVBDepth, &stride, &offset);
 	Helpers::Globals::Device->IASetIndexBuffer(mIB, DXGI_FORMAT_R32_UINT, 0);
 
 	effect->DrawIndexed(mNumFaces*3);

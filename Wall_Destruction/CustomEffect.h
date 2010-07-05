@@ -21,6 +21,7 @@ namespace Helpers{
 	public:
 		CustomEffect(){}
 		CustomEffect(string name, string technique, int effectType, D3D10_INPUT_ELEMENT_DESC layout[], int layoutCount);
+		CustomEffect(string shaderName, string technique, int effectType, D3D10_INPUT_ELEMENT_DESC *layout, int layoutCount, const D3D10_SHADER_MACRO *macros);
 		~CustomEffect(void){};
 
 		void PreDraw();
@@ -33,6 +34,7 @@ namespace Helpers{
 		void AddVariable(string variable);
 		void AddTexture(string variable, string texture);
 
+		void SetTexture(string variable, ID3D10ShaderResourceView* texture);
 		void SetTexture(string variable, string texture);
 		void SetMatrix(string variable, D3DXMATRIX matrix);
 		void SetBoolVector(string variable, BOOL *vector);
@@ -41,12 +43,16 @@ namespace Helpers{
 		void SetBool(string variable, BOOL scalar);
 		void SetInt(string variable, int scalar);
 		void SetFloat(string variable, float scalar);
+		
+		void ChangeTechnique();
+
 		ID3D10EffectTechnique* GetTechnique(){return Technique;}
 
 		// creates the vertex buffer every time, since this geometry shader is considered a special worker for the cpu
 		ID3D10Buffer* WriteToGeometryShader(D3D10_PRIMITIVE_TOPOLOGY inputTopology, ID3D10Buffer* inputBuffer, int inputVertexCount, ID3D10Buffer* outputBuffer);
 
 	private:
+		void Init(string shaderName, string technique, int effectType, D3D10_INPUT_ELEMENT_DESC *layout, int layoutCount, const D3D10_SHADER_MACRO *macros);
 		void CheckForGeometryShaderSupport(){
 			if(effectType & CUSTOM_EFFECT_TYPE_GEOMETRY)
 				return;

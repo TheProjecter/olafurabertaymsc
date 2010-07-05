@@ -172,11 +172,13 @@ void PhysicsWrapper::CleanUp()
 	//
 	// Clean up physics and graphics
 	//
+	if(stopWatch.isRunning())
+		stopWatch.stop();
 
-	stopWatch.stop();
 	// <PHYSICS-ONLY>: cleanup physics
 	{
 		physicsWorld->markForWrite();
+		physicsWorld->removeAll();
 		physicsWorld->removeReference();
 	}
 	vdb->removeReference();
@@ -200,71 +202,79 @@ void PhysicsWrapper::CleanUp()
 
 void PhysicsWrapper::AddMeshlessObject(MeshlessObject *mo)
 {
-	if(mo->GetName() == "Ceiling")
-		CeilingObject = mo;
-
 	hkpRigidBodyCinfo info;
 	hkpMassProperties massProperties;
 
 	hkGeometry geo;
 
 	// read from the surfel vertex buffer
-	
 	Structs::SOLID_VERTEX* vertices = 0;
-	
-	HR(mo->GetSurfelObject().GetReadableVertexBuffer()->Map(D3D10_MAP_READ, 0, reinterpret_cast< void** >(&vertices)));
-	mo->GetSurfelObject().GetReadableVertexBuffer()->Unmap();
 
-	int count = mo->GetSurfelObject().GetSurfels().size() * 4;
-	D3DXVECTOR4* vertexPositions = NULL;
-	
-	for(unsigned int surfelIndex = 0; surfelIndex < mo->GetSurfelObject().GetSurfels().size(); surfelIndex++){
-		vertexPositions = new D3DXVECTOR4[6];
-		int index = 0;
-		for(int i = 0; i<6;i+=3){
-			vertexPositions[index++] = D3DXVECTOR4(vertices[surfelIndex*6 + i].pos, 0.0f);
-			vertexPositions[index++] = D3DXVECTOR4(vertices[surfelIndex*6 + i+1].pos, 0.0f);
-			vertexPositions[index++] = D3DXVECTOR4(vertices[surfelIndex*6 + i+2].pos, 0.0f);
+	for(int surfaceIndex = 0; surfaceIndex<mo->GetVolume()->GetSurfaceCount(); surfaceIndex++){
+
+		HR(mo->GetVolume()->GetSurface(surfaceIndex)->GetReadableBuffer()->Map(D3D10_MAP_READ, 0, reinterpret_cast< void** >(&vertices)));
+		mo->GetVolume()->GetSurface(surfaceIndex)->GetReadableBuffer()->Unmap();
+		
+		D3DXVECTOR4* vertexPositions = NULL;
+
+		for(int surfelIndex = 0; surfelIndex < mo->GetVolume()->GetSurface(surfaceIndex)->GetSurfaceSurfelCount(); surfelIndex++){
+			vertexPositions = new D3DXVECTOR4[6];
+			int index = 0;
+			for(int i = 0; i<6;i+=3){
+				vertexPositions[index++] = D3DXVECTOR4(vertices[surfelIndex*6 + i].pos , 0.0f);
+				vertexPositions[index++] = D3DXVECTOR4(vertices[surfelIndex*6 + i+1].pos , 0.0f);
+				vertexPositions[index++] = D3DXVECTOR4(vertices[surfelIndex*6 + i+2].pos , 0.0f);
+			}
+
+			if(vertexPositions[0].x == 0.0f && vertexPositions[0].y == 0.0f && vertexPositions[0].z == 0.0f && 
+				vertexPositions[1].x == 0.0f && vertexPositions[1].y == 0.0f && vertexPositions[1].z == 0.0f && 
+				vertexPositions[2].x == 0.0f && vertexPositions[2].y == 0.0f && vertexPositions[2].z == 0.0f && 
+				vertexPositions[3].x == 0.0f && vertexPositions[3].y == 0.0f && vertexPositions[3].z == 0.0f && 
+				vertexPositions[4].x == 0.0f && vertexPositions[4].y == 0.0f && vertexPositions[4].z == 0.0f && 
+				vertexPositions[5].x == 0.0f && vertexPositions[5].y == 0.0f && vertexPositions[5].z == 0.0f)
+			{
+				continue;
+			}
+
+			hkStridedVertices stridedVerts;
+			stridedVerts.m_numVertices = index;
+			stridedVerts.m_striding = sizeof(D3DXVECTOR4);
+			stridedVerts.m_vertices = &(vertexPositions[0].x);
+
+			hkGeometry geom;
+			hkArray<hkVector4> planeEquations;
+
+			hkGeometryUtility::createConvexGeometry( stridedVerts, geom, planeEquations);
+
+			stridedVerts.m_numVertices = geom.m_vertices.getSize();
+			stridedVerts.m_striding = sizeof(hkVector4);
+			stridedVerts.m_vertices = &(geom.m_vertices[0](0));
+			hkReal convexRadius = 0.05f;
+			hkGeometryUtility::expandPlanes(planeEquations, convexRadius);
+			hkpConvexVerticesShape* shape = new hkpConvexVerticesShape(stridedVerts, planeEquations, convexRadius);
+
+			info.m_position = hkVector4(mo->Position().x, mo->Position().y, mo->Position().z);
+			info.m_motionType = hkpMotion::MOTION_FIXED;
+			info.m_shape = shape;
+
+			info.m_qualityType = HK_COLLIDABLE_QUALITY_FIXED;
+
+			hkpRigidBody* rigid = new hkpRigidBody( info );
+
+			physicsWorld->addEntity( rigid );
+
+			rigid->removeReference();
+
+			info.m_shape->removeReference();
+
+			//mo->SetRigidBody(rigid);
+			delete vertexPositions;
 		}
-
-		hkStridedVertices stridedVerts;
-		stridedVerts.m_numVertices = index;
-		stridedVerts.m_striding = sizeof(D3DXVECTOR4);
-		stridedVerts.m_vertices = &(vertexPositions[0].x);
-
-		hkGeometry geom;
-		hkArray<hkVector4> planeEquations;
-
-		hkGeometryUtility::createConvexGeometry( stridedVerts, geom, planeEquations);
-
-		stridedVerts.m_numVertices = geom.m_vertices.getSize();
-		stridedVerts.m_striding = sizeof(hkVector4);
-		stridedVerts.m_vertices = &(geom.m_vertices[0](0));
-		hkReal convexRadius = 0.05f;
-		hkGeometryUtility::expandPlanes(planeEquations, convexRadius);
-		hkpConvexVerticesShape* shape = new hkpConvexVerticesShape(stridedVerts, planeEquations, convexRadius);
-
-		info.m_position = hkVector4(mo->Position().x, mo->Position().y, mo->Position().z);
-		info.m_motionType = hkpMotion::MOTION_FIXED;
-		info.m_shape = shape;
-
-		info.m_qualityType = HK_COLLIDABLE_QUALITY_FIXED;
-
-		hkpRigidBody* rigid = new hkpRigidBody( info );
-
-		physicsWorld->addEntity( rigid );
-
-		rigid->removeReference();
-		info.m_shape->removeReference();
-
-		mo->SetRigidBody(rigid);
-
 	}
 }
 
 void PhysicsWrapper::AddProjectile(Structs::PROJECTILE *projectile)
 {
-
 	physicsWorld->lock();
 	physicsWorld->markForWrite();
 	hkpRigidBody* rb = SetupSphericalRigidBody(1.0f, 40.0f, projectile->position, projectile->velocity, false);	
@@ -379,88 +389,6 @@ hkpRigidBody* PhysicsWrapper::SetupSphericalRigidBody(float radius, float mass, 
 }
 
 void PhysicsWrapper::LinkSphereToPlane(WreckingBall* wreckingball, hkpRigidBody* plane){
-
-	//hkpHingeConstraintData* constraintData = new hkpHingeConstraintData();
-/*
-	hkpBallAndSocketConstraintData* constraintData = new hkpBallAndSocketConstraintData(); 
-	constraintData->setInWorldSpace(wreckingball->GetRigidBody()->getTransform(), plane->getTransform(), plane->getTransform().getTranslation());
-
-	hkVector4 spherePivot = plane->getTransform().getTranslation();
-	spherePivot.sub4(wreckingball->GetRigidBody()->getTransform().getTranslation());
-*/
-	//constraintData->setInBodySpace(hkVector4(0.0f, 0.0f, 0.0f), spherePivot, hkVector4(1.0f, 0.0f, 0.0f), hkVector4(1.0f, 0.0f, 0.0f));
-//	constraintData->setInWorldSpace(sphere->getTransform(), plane->getTransform(), pivot, hkVector4(0.32f, 0.32f, 0.32f));
-/*
-	hkpBallSocketChainData* constraintData = new hkpBallSocketChainData();
-	hkpConstraintChainInstance* constraint;
-	constraint = new hkpConstraintChainInstance(constraintData);
-
-	hkVector4 posHalfSize = hkVector4(wreckingball->GetChain().GetDelta().x, wreckingball->GetChain().GetDelta().y, wreckingball->GetChain().GetDelta().z);
-	posHalfSize.mul4(0.5f);
-	hkVector4 negHalfSize = posHalfSize;
-	negHalfSize.mul4(-1.0f);
-
-	constraint->addEntity(plane);
-	int count = wreckingball->GetChain().GetCount()-1;
-	for(int i = 0; i< count; i++){
-		constraintData->addConstraintInfoInBodySpace(posHalfSize, negHalfSize);
-		constraint->addEntity(wreckingball->GetChain()[i]->GetRigidBody());
-
-	}
-	constraintData->addConstraintInfoInBodySpace(posHalfSize, negHalfSize);
-	constraint->addEntity(wreckingball->GetRigidBody());
-*/
-
-/*	constraintData->removeReference();
-	physicsWorld->addConstraint( constraint); 
-	constraint->removeReference();
-*/
 	
-}
-
-void PhysicsWrapper::LinkChain(WreckingBall *wreckingball){
-
-	// Create constraint
-/*	hkpBallSocketChainData* hc = new hkpBallSocketChainData(); 
-
-	hkVector4 pivot, pivotA, pivotB;
-
-	for(int i = 0; i<wreckingball->GetChain().GetCount()-1; i++){
-		if(i == 0){
-			pivot.setInterpolate4( wreckingball->GetChain()[i]->GetRigidBody()->getTransform().getTranslation(), wreckingball->GetRigidBody()->getTransform().getTranslation(), 0.5f);
-			pivot.normalize4();
-			pivotA = pivot;
-			pivotB = pivot;
-
-			pivotA.mul4(hkVector4(wreckingball->GetRadius(), wreckingball->GetRadius(), wreckingball->GetRadius()));
-			pivotB.mul4(hkVector4(-wreckingball->GetChain()[i]->GetRadius(), -wreckingball->GetChain()[i]->GetRadius(), -wreckingball->GetChain()[i]->GetRadius()));
-			hc->addConstraintInfoInBodySpace(pivotA, pivotB);
-		}
-
-		pivot.setInterpolate4( wreckingball->GetChain()[i]->GetRigidBody()->getTransform().getTranslation(), wreckingball->GetChain()[i+1]->GetRigidBody()->getTransform().getTranslation(), 0.5f);
-
-		pivot.normalize4();
-		pivotA = pivot;
-		pivotB = pivot;
-
-		pivotA.mul4(hkVector4(wreckingball->GetChain()[i]->GetRadius(), wreckingball->GetChain()[i]->GetRadius(), wreckingball->GetChain()[i]->GetRadius()));
-		pivotB.mul4(hkVector4(-wreckingball->GetChain()[i+1]->GetRadius(), -wreckingball->GetChain()[i+1]->GetRadius(), -wreckingball->GetChain()[i+1]->GetRadius()));
-		hc->addConstraintInfoInBodySpace(pivotA, pivotA);
-	}
-	hc->m_maxErrorDistance = 0.0001f;
-
-	//hc->setInWorldSpace( rb1->getTransform(), rb2->getTransform(), pivot, axis);
-
-	hkpConstraintChainInstance* constraint = new hkpConstraintChainInstance(hc);
-	constraint->addEntity(wreckingball->GetRigidBody());
-
-	for(int i = 0; i<wreckingball->GetChain().GetCount(); i++){
-		constraint->addEntity(wreckingball->GetChain()[i]->GetRigidBody());
-	}
-
-	physicsWorld->addConstraint( constraint );
-	constraint->removeReference();
-	hc->removeReference();
-*/	
 }
 
