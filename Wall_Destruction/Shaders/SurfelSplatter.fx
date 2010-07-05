@@ -146,7 +146,7 @@ void SurfelGS(point Surfel_GS_Input input[1], inout TriangleStream<Surfel_PS_Inp
 		// Determine the eye vector for the light
 		output.EyeVect = -normalize(float4(CameraPos, 1.0f) + originalPos).xyz;
 
-		output.UV = float2(input[0].UV.x + U[i]*DeltaUV.x, input[0].UV.y + V[i]*DeltaUV.y);
+		output.UV = float2(input[0].UV.x + U[i]*DeltaUV.x * RadiusScale, input[0].UV.y + V[i]*DeltaUV.y * RadiusScale);
 		output.EWAUV = float2(U[i]*0.5f + 0.5f, V[i]*0.5f + 0.5f);
 		surfelStream.Append(output);
     }
@@ -315,7 +315,7 @@ void SurfelEdgeGS(point Surfel_Edge_GS_Input input[1], inout TriangleStream<Surf
 		// Determine the eye vector for the light
 		output.EyeVect = -normalize(float4(CameraPos, 1.0f) + originalPos).xyz;
 
-		output.UV = float2(input[0].UV.x + props.U[i] * DeltaUV.x, input[0].UV.y + props.V[i] * DeltaUV.y);
+		output.UV = float2(input[0].UV.x + props.U[i] * DeltaUV.x * RadiusScale, input[0].UV.y + props.V[i] * DeltaUV.y * RadiusScale);
 		output.EWAUV = float2(props.U[i]*0.5f + 0.5f, props.V[i]*0.5f + 0.5f);
 		
 		surfelStream.Append(output);	
@@ -361,11 +361,11 @@ Quad_PS_Input QuadVS(Quad_VS_Input vsIn){
 	return psOut;
 }
 
-float4 QuadPS(Quad_PS_Input psIn) : SV_Target{
-	float4 surfelColor = EWATexture.Sample(Filter, psIn.UV);
+float4 QuadPS(Quad_PS_Input psIn, uniform bool useTexture) : SV_Target{
+	float4 surfelColor;
 	
-	if(any(surfelColor)){
-		surfelColor *= SurfaceTexture.Sample(Filter, psIn.UV) * Light_OrenNayer(psIn.NormalW.xyz, psIn.EyeVect, psIn.LightDir);
+	if(useTexture){
+		surfelColor = EWATexture.Sample(Filter, psIn.UV) * SurfaceTexture.Sample(Filter, psIn.UV) * Light_OrenNayer(psIn.NormalW.xyz, psIn.EyeVect, psIn.LightDir);
 	}
 	else{
 		surfelColor = SurfaceTexture.Sample(Filter, psIn.UV) * Light_OrenNayer(psIn.NormalW.xyz, psIn.EyeVect, psIn.LightDir);
@@ -435,7 +435,7 @@ technique10 SolidTechnique
     {
 		SetVertexShader( CompileShader( vs_4_0, QuadVS() ) );
 		SetGeometryShader ( NULL );
-	    SetPixelShader( CompileShader( ps_4_0, QuadPS() ) );
+	    SetPixelShader( CompileShader( ps_4_0, QuadPS(true) ) );
 	    SetDepthStencilState( EnableDepth, 0 );
 		SetRasterizerState(SOLID);
 		SetBlendState( NoAlphaBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
@@ -448,7 +448,7 @@ technique10 WireframeTechnique
     {
         SetVertexShader( CompileShader( vs_4_0, QuadVS() ) );
 		SetGeometryShader ( NULL );
-	    SetPixelShader( CompileShader( ps_4_0, QuadPS() ) );
+	    SetPixelShader( CompileShader( ps_4_0, QuadPS(false) ) );
 	    SetDepthStencilState( EnableDepth, 0 );
 		SetRasterizerState(WF);
 		SetBlendState( NoAlphaBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );

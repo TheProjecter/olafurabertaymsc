@@ -248,11 +248,13 @@ void WallDestructionApp::updateScene(float dt)
 		}		
 	}
 	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_H)){
+		Helpers::Globals::DebugInformation.AddText(GREEN, "F - Decrease surfel scale");	
+		Helpers::Globals::DebugInformation.AddText(LIGHT_YELLOW_GREEN, "F - Increase surfel scale");	
 		Helpers::Globals::DebugInformation.AddText(GREEN, "Enter - Reset scene");	
-		Helpers::Globals::DebugInformation.AddText(LIGHT_YELLOW_GREEN, "Tab - Enable camera / wrecking ball movement");	
-		Helpers::Globals::DebugInformation.AddText(GREEN, "Caps Lock - Acquire / Unacquire mouse");	
 		Helpers::Globals::DebugInformation.AddText(LIGHT_YELLOW_GREEN, "Left Mouse Button - Fire a projectile");	
-		Helpers::Globals::DebugInformation.AddText(GREEN, "Mouse - Change camera's direction");	
+		Helpers::Globals::DebugInformation.AddText(GREEN, "Caps Lock - Acquire / Unacquire mouse");	
+		Helpers::Globals::DebugInformation.AddText(LIGHT_YELLOW_GREEN, "Mouse - Change camera's direction");	
+		Helpers::Globals::DebugInformation.AddText(GREEN, "Tab - Enable camera / wrecking ball movement");	
 		Helpers::Globals::DebugInformation.AddText(LIGHT_YELLOW_GREEN, "WASD - Move camera / Move wrecking ball");	
 		Helpers::Globals::DebugInformation.AddText(GREEN, "F1 - Surfel / Wireframe representation");
 	}

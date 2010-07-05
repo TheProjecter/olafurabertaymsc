@@ -60,8 +60,7 @@
       <minorAxis x="0.0" y="5.0" z="0.0"/>
       <normal x="0.0" y="0.0" z="1.0"/>
       <count u="1" v="1"/>
-    </surfel>
-      
+    </surfel>      
   </volume>
 
 </meshless_object>
