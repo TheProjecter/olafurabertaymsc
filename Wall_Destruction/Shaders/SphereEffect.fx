@@ -49,6 +49,14 @@ struct VS_DEPTH_OUTPUT{
 	float Depth : Depth;
 };
 
+struct VS_SIMPLE_INPUT{
+	float4 Pos : POSITION;
+};
+
+struct PS_SIMPLE_INPUT{
+	float4 Pos : SV_POSITION;
+};
+
 //
 // Vertex Shader
 //
@@ -127,6 +135,21 @@ float4 PSDepth( VS_DEPTH_OUTPUT input) : SV_Target
 	return float4(pixelDepth , pixelDepth , pixelDepth , 1.0f);
 }
 
+// simple vs
+PS_SIMPLE_INPUT SimpleVS(VS_SIMPLE_INPUT vsIn){
+	PS_SIMPLE_INPUT vsOut = (PS_SIMPLE_INPUT) 0;
+	
+	vsOut.Pos = mul( mul( mul( vsIn.Pos, World), View), Projection);
+	
+	return vsOut;	
+}
+
+// simple ps
+float4 SimplePS(PS_SIMPLE_INPUT vsIn) : SV_TARGET{
+	return Color;
+}
+
+
 technique10 SphereDepthTechnique
 {
     pass P0
@@ -159,9 +182,9 @@ technique10 PhyxelTechnique
 {
 	pass P0
 	{
-	    SetVertexShader( CompileShader( vs_4_0, VS() ) );
+	    SetVertexShader( CompileShader( vs_4_0, SimpleVS() ) );
 	    SetGeometryShader( NULL);
-        SetPixelShader( CompileShader( ps_4_0, PS() ) );
+        SetPixelShader( CompileShader( ps_4_0, SimplePS() ) );
 		
 		SetDepthStencilState( EnableDepth, 0 );
 		

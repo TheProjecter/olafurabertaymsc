@@ -1,6 +1,7 @@
 #include "GlobalParameters.inc"
 
 Texture2D tex;
+float4 Color;
 
 SamplerState Filter
 {
@@ -43,7 +44,7 @@ VS_OUTPUT VS( VS_INPUT input)
 //
 float4 PS( VS_OUTPUT input) : SV_Target
 {
-	return float4(1.0f, 0.0f, 0.0f, 1.0f);
+	return Color;
 }
 
 //

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="9,00"
 	Name="Wall_Destruction"
 	ProjectGUID="{3F3C6B3C-29D0-4C41-8E2F-6FA3F13CD8F1}"
 	RootNamespace="Wall_Destruction"
@@ -43,8 +43,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;C:\Program Files (x86)\Visual Leak Detector\include&quot;;Havok\Source"
-				PreprocessorDefinitions="WIN32;_DEBUG;DEBUG;_WINDOWS;TIXML_USE_STL;DETECT_MEMORY_LEAKS"
+				AdditionalIncludeDirectories="&quot;C:\Program Files (x86)\Visual Leak Detector\include&quot;;Havok\Source;&quot;C:\Dropbox\My Dropbox\Skoli\Programming\Masters\Wall_Destruction\Helpers&quot;;&quot;C:\Dropbox\My Dropbox\Skoli\Programming\Masters\Wall_Destruction\Framework&quot;;&quot;C:\Dropbox\My Dropbox\Skoli\Programming\Masters\Wall_Destruction\External\ANN\Include&quot;;&quot;C:\Dropbox\My Dropbox\Skoli\Programming\Masters\Wall_Destruction\External&quot;;&quot;C:\Dropbox\My Dropbox\Skoli\Programming\Masters\Wall_Destruction\Drawables&quot;;&quot;C:\Dropbox\My Dropbox\Skoli\Programming\Masters\Wall_Destruction\Algorithms&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;DEBUG;_WINDOWS;TIXML_USE_STL;HK_DEBUG;MEMORY_LEAK_CHECK;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -63,11 +63,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="hkaAnimation.lib hkaInternal.lib hkaRagdoll.lib hkBase.lib hkCompat.lib hkgBridge.lib hkgCommon.lib hkgDx9.lib hkgDx9s.lib hkgDx10.lib hkGeometryUtilities.lib hkgOgl.lib hkgOgls.lib hkInternal.lib hkpCollide.lib hkpConstraintSolver.lib hkpDynamics.lib hkpInternal.lib hkpUtilities.lib hkpVehicle.lib hkSceneData.lib hksCommon.lib hkSerialize.lib hksXAudio2.lib hkVisualize.lib VdbClient.lib"
+				AdditionalDependencies="hkaAnimation.lib hkaInternal.lib hkaRagdoll.lib hkBase.lib hkCompat.lib hkgBridge.lib hkgCommon.lib hkgDx9.lib hkgDx9s.lib hkgDx10.lib hkGeometryUtilities.lib hkgOgl.lib hkgOgls.lib hkInternal.lib hkpCollide.lib hkpConstraintSolver.lib hkpDynamics.lib hkpInternal.lib hkpUtilities.lib hkpVehicle.lib hkSceneData.lib hksCommon.lib hkSerialize.lib hksXAudio2.lib hkVisualize.lib VdbClient.lib DbgHelp.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;C:\Program Files (x86)\Visual Leak Detector\lib\Win32&quot;;Havok\Lib_Debug"
+				AdditionalLibraryDirectories="&quot;C:\Program Files (x86)\Visual Leak Detector\lib\Win32&quot;;Havok\Lib_Debug;Lib"
 				IgnoreAllDefaultLibraries="false"
-				IgnoreDefaultLibraryNames="libc.lib;libcmt.lib;msvcrt.lib;libcd.lib;libcmtd.lib"
+				IgnoreDefaultLibraryNames="libc.lib;libcmt.lib;libcd.lib;libcmtd.lib;msvcrt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -123,8 +123,8 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="Havok\Source"
-				PreprocessorDefinitions="WIN32;_WINDOWS;TIXML_USE_STL"
-				RuntimeLibrary="2"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;TIXML_USE_STL;HK_DEBUG"
+				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -141,11 +141,12 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="hkaAnimation.lib hkaInternal.lib hkaRagdoll.lib hkBase.lib hkCompat.lib hkgBridge.lib hkgCommon.lib hkgDx9.lib hkgDx9s.lib hkgDx10.lib hkGeometryUtilities.lib hkgOgl.lib hkgOgls.lib hkInternal.lib hkpCollide.lib hkpConstraintSolver.lib hkpDynamics.lib hkpInternal.lib hkpUtilities.lib hkpVehicle.lib hkSceneData.lib hksCommon.lib hkSerialize.lib hksXAudio2.lib hkVisualize.lib VdbClient.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;Havok\Lib_Release&quot;"
-				IgnoreDefaultLibraryNames="libc.lib;libcmt.lib;msvcrt.lib;libcd.lib;libcmtd.lib"
-				GenerateDebugInformation="true"
+				IgnoreDefaultLibraryNames="libc.lib;libcmt.lib;libcd.lib;libcmtd.lib"
+				GenerateDebugInformation="false"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -171,7 +172,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine=""
+				CommandLine="mkdir ..\..\..\..\..\..\MASTERS\Output\Textures&#x0D;&#x0A;mkdir ..\..\..\..\..\..\MASTERS\Output\MeshlessObjects&#x0D;&#x0A;mkdir ..\..\..\..\..\..\MASTERS\Output\Shaders&#x0D;&#x0A;&#x0D;&#x0A;copy .\MeshlessObjects\*.* ..\..\..\..\..\..\MASTERS\Output\MeshlessObjects\&#x0D;&#x0A;copy .\Shaders\*.* ..\..\..\..\..\..\MASTERS\Output\Shaders\&#x0D;&#x0A;copy .\Textures\*.* ..\..\..\..\..\..\MASTERS\Output\Textures\&#x0D;&#x0A;&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>
@@ -184,6 +185,14 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\Helpers\ChangedPhyxels.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Algorithms\PhyxelGrid.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\WallDestructionMain.cpp"
 				>
 			</File>
@@ -191,35 +200,31 @@
 				Name="Helpers"
 				>
 				<File
-					RelativePath=".\CustomEffect.cpp"
+					RelativePath=".\Helpers\CustomEffect.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\Globals.cpp"
+					RelativePath=".\Helpers\Globals.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\KeyboardHandler.cpp"
+					RelativePath=".\Helpers\KeyboardHandler.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\MathHelper.cpp"
+					RelativePath=".\Helpers\MathHelper.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\MouseHandler.cpp"
+					RelativePath=".\Helpers\MouseHandler.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\ObjectHelper.cpp"
+					RelativePath=".\Helpers\ObjectHelper.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\Octree.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\PhysicsWrapper.cpp"
+					RelativePath=".\Helpers\PhysicsWrapper.cpp"
 					>
 				</File>
 			</Filter>
@@ -227,23 +232,23 @@
 				Name="Framework"
 				>
 				<File
-					RelativePath=".\Camera.cpp"
+					RelativePath=".\Framework\Camera.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\d3dApp.cpp"
+					RelativePath=".\Framework\d3dApp.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\DrawableTex2D.cpp"
+					RelativePath=".\Framework\DrawableTex2D.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\GameTimer.cpp"
+					RelativePath=".\Framework\GameTimer.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\Light.cpp"
+					RelativePath=".\Framework\Light.cpp"
 					>
 				</File>
 			</Filter>
@@ -251,47 +256,43 @@
 				Name="Drawables"
 				>
 				<File
-					RelativePath=".\Chain.cpp"
+					RelativePath=".\Drawables\Chain.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\InfoText.cpp"
+					RelativePath=".\Drawables\InfoText.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\MeshlessObject.cpp"
+					RelativePath=".\Drawables\MeshlessObject.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\PhyxelObject.cpp"
+					RelativePath=".\Drawables\PhyxelObject.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\Projectiles.cpp"
+					RelativePath=".\Drawables\Projectiles.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\SpriteViewPort.cpp"
+					RelativePath=".\Drawables\SpriteViewPort.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\Surface.cpp"
+					RelativePath=".\Drawables\Surface.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\SurfelObject.cpp"
+					RelativePath=".\Helpers\TextureCreator.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\TextureCreator.cpp"
+					RelativePath=".\Drawables\Volume.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\Volume.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\WreckingBall.cpp"
+					RelativePath=".\Drawables\WreckingBall.cpp"
 					>
 				</File>
 			</Filter>
@@ -299,15 +300,15 @@
 				Name="Algorithms"
 				>
 				<File
-					RelativePath=".\Algorithms.cpp"
+					RelativePath=".\Algorithms\Algorithms.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\CSGTree.cpp"
+					RelativePath=".\Algorithms\CSGTree.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\PointCloudHandler.cpp"
+					RelativePath=".\Algorithms\PointCloudHandler.cpp"
 					>
 				</File>
 			</Filter>
@@ -315,29 +316,37 @@
 				Name="External"
 				>
 				<File
-					RelativePath=".\Sphere.cpp"
+					RelativePath=".\External\Sphere.cpp"
 					>
 				</File>
 				<Filter
 					Name="TinyXML"
 					>
 					<File
-						RelativePath=".\tinystr.cpp"
+						RelativePath=".\External\tinystr.cpp"
 						>
 					</File>
 					<File
-						RelativePath=".\tinyxml.cpp"
+						RelativePath=".\External\tinyxml.cpp"
 						>
 					</File>
 					<File
-						RelativePath=".\tinyxmlerror.cpp"
+						RelativePath=".\External\tinyxmlerror.cpp"
 						>
 					</File>
 					<File
-						RelativePath=".\tinyxmlparser.cpp"
+						RelativePath=".\External\tinyxmlparser.cpp"
 						>
 					</File>
 				</Filter>
+			</Filter>
+			<Filter
+				Name="Havok"
+				>
+				<File
+					RelativePath=".\Helpers\ContactListener.cpp"
+					>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter
@@ -345,6 +354,10 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\Helpers\ChangedPhyxels.h"
+				>
+			</File>
 			<File
 				RelativePath=".\Shaders\phong splatting\fps\fp_clip_pass1.h"
 				>
@@ -366,11 +379,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\resource.h"
+				RelativePath=".\Algorithms\PhyxelGrid.h"
 				>
 			</File>
 			<File
-				RelativePath=".\Shaders\phong splatting\vps\vp_clip_pass1.h"
+				RelativePath=".\resource.h"
 				>
 			</File>
 			<File
@@ -389,51 +402,51 @@
 				Name="Helpers"
 				>
 				<File
-					RelativePath=".\CustomEffect.h"
+					RelativePath=".\Helpers\CustomEffect.h"
 					>
 				</File>
 				<File
-					RelativePath=".\Globals.h"
+					RelativePath=".\Helpers\Globals.h"
 					>
 				</File>
 				<File
-					RelativePath=".\HavokPhysicsInclude.h"
+					RelativePath=".\Helpers\HavokPhysicsInclude.h"
 					>
 				</File>
 				<File
-					RelativePath=".\KeyboardHandler.h"
+					RelativePath=".\Helpers\KeyboardHandler.h"
 					>
 				</File>
 				<File
-					RelativePath=".\MathHelper.h"
+					RelativePath=".\Helpers\MathHelper.h"
 					>
 				</File>
 				<File
-					RelativePath=".\MouseHandler.h"
+					RelativePath=".\Helpers\MouseHandler.h"
 					>
 				</File>
 				<File
-					RelativePath=".\ObjectHelper.h"
+					RelativePath=".\Helpers\ObjectHelper.h"
 					>
 				</File>
 				<File
-					RelativePath=".\Octree.h"
+					RelativePath=".\Helpers\PhysicsWrapper.h"
 					>
 				</File>
 				<File
-					RelativePath=".\PhysicsWrapper.h"
+					RelativePath=".\Helpers\RandRange.h"
 					>
 				</File>
 				<File
-					RelativePath=".\RandRange.h"
+					RelativePath=".\Helpers\Structs.h"
 					>
 				</File>
 				<File
-					RelativePath=".\Structs.h"
+					RelativePath=".\Helpers\TextureCreator.h"
 					>
 				</File>
 				<File
-					RelativePath=".\ThreeInOneArray.h"
+					RelativePath=".\Helpers\ThreeInOneArray.h"
 					>
 				</File>
 			</Filter>
@@ -441,27 +454,27 @@
 				Name="Framework"
 				>
 				<File
-					RelativePath=".\Camera.h"
+					RelativePath=".\Framework\Camera.h"
 					>
 				</File>
 				<File
-					RelativePath=".\d3dApp.h"
+					RelativePath=".\Framework\d3dApp.h"
 					>
 				</File>
 				<File
-					RelativePath=".\d3dUtil.h"
+					RelativePath=".\Framework\d3dUtil.h"
 					>
 				</File>
 				<File
-					RelativePath=".\DrawableTex2D.h"
+					RelativePath=".\Framework\DrawableTex2D.h"
 					>
 				</File>
 				<File
-					RelativePath=".\GameTimer.h"
+					RelativePath=".\Framework\GameTimer.h"
 					>
 				</File>
 				<File
-					RelativePath=".\Light.h"
+					RelativePath=".\Framework\Light.h"
 					>
 				</File>
 			</Filter>
@@ -469,51 +482,43 @@
 				Name="Drawables"
 				>
 				<File
-					RelativePath=".\Chain.h"
+					RelativePath=".\Drawables\Chain.h"
 					>
 				</File>
 				<File
-					RelativePath=".\Drawable.h"
+					RelativePath=".\Drawables\Drawable.h"
 					>
 				</File>
 				<File
-					RelativePath=".\InfoText.h"
+					RelativePath=".\Drawables\InfoText.h"
 					>
 				</File>
 				<File
-					RelativePath=".\MeshlessObject.h"
+					RelativePath=".\Drawables\MeshlessObject.h"
 					>
 				</File>
 				<File
-					RelativePath=".\PhyxelObject.h"
+					RelativePath=".\Drawables\PhyxelObject.h"
 					>
 				</File>
 				<File
-					RelativePath=".\Projectiles.h"
+					RelativePath=".\Drawables\Projectiles.h"
 					>
 				</File>
 				<File
-					RelativePath=".\SpriteViewPort.h"
+					RelativePath=".\Drawables\SpriteViewPort.h"
 					>
 				</File>
 				<File
-					RelativePath=".\Surface.h"
+					RelativePath=".\Drawables\Surface.h"
 					>
 				</File>
 				<File
-					RelativePath=".\SurfelObject.h"
+					RelativePath=".\Drawables\Volume.h"
 					>
 				</File>
 				<File
-					RelativePath=".\TextureCreator.h"
-					>
-				</File>
-				<File
-					RelativePath=".\Volume.h"
-					>
-				</File>
-				<File
-					RelativePath=".\WreckingBall.h"
+					RelativePath=".\Drawables\WreckingBall.h"
 					>
 				</File>
 			</Filter>
@@ -521,15 +526,15 @@
 				Name="Algorithms"
 				>
 				<File
-					RelativePath=".\Algorithms.h"
+					RelativePath=".\Algorithms\Algorithms.h"
 					>
 				</File>
 				<File
-					RelativePath=".\CSGTree.h"
+					RelativePath=".\Algorithms\CSGTree.h"
 					>
 				</File>
 				<File
-					RelativePath=".\PointCloudHandler.h"
+					RelativePath=".\Algorithms\PointCloudHandler.h"
 					>
 				</File>
 			</Filter>
@@ -537,21 +542,29 @@
 				Name="External"
 				>
 				<File
-					RelativePath=".\Sphere.h"
+					RelativePath=".\External\Sphere.h"
 					>
 				</File>
 				<Filter
 					Name="TinyXML"
 					>
 					<File
-						RelativePath=".\tinystr.h"
+						RelativePath=".\External\tinystr.h"
 						>
 					</File>
 					<File
-						RelativePath=".\tinyxml.h"
+						RelativePath=".\External\tinyxml.h"
 						>
 					</File>
 				</Filter>
+			</Filter>
+			<Filter
+				Name="Havok"
+				>
+				<File
+					RelativePath=".\Helpers\ContactListener.h"
+					>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter
@@ -600,6 +613,10 @@
 				</File>
 				<File
 					RelativePath=".\Shaders\Viewport.fx"
+					>
+				</File>
+				<File
+					RelativePath=".\Shaders\phong splatting\vps\vp_clip_pass1.h"
 					>
 				</File>
 			</Filter>
@@ -706,7 +723,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Debug\hkgdx10.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Debug\hkgDx9.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Release\hkgdx9.pdb"
 						>
 					</File>
 					<File
@@ -714,7 +739,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Debug\hkgdx9s.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Debug\hkGeometryUtilities.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Release\hkgeometryutilities.pdb"
 						>
 					</File>
 					<File
@@ -722,7 +755,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Release\hkgogl.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Debug\hkgOgls.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Release\hkgogls.pdb"
 						>
 					</File>
 					<File
@@ -730,7 +771,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Release\hkinternal.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Debug\hkpCollide.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkpcollide.pdb"
 						>
 					</File>
 					<File
@@ -738,7 +787,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Debug\hkpconstraintsolver.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Debug\hkpDynamics.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Release\hkpdynamics.pdb"
 						>
 					</File>
 					<File
@@ -746,7 +803,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Release\hkpinternal.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Debug\hkpUtilities.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkputilities.pdb"
 						>
 					</File>
 					<File
@@ -754,7 +819,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Release\hkpvehicle.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Debug\hkSceneData.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Release\hkscenedata.pdb"
 						>
 					</File>
 					<File
@@ -762,7 +835,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Release\hkscommon.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Debug\hkSerialize.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Release\hkserialize.pdb"
 						>
 					</File>
 					<File
@@ -770,11 +851,23 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Release\hksxaudio2.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Debug\hkVisualize.lib"
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Release\hkvisualize.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Debug\VdbClient.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\vdbclient.pdb"
 						>
 					</File>
 				</Filter>
@@ -786,7 +879,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Release\hkaanimation.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Release\hkaInternal.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Release\hkainternal.pdb"
 						>
 					</File>
 					<File
@@ -794,7 +895,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Release\hkaragdoll.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Release\hkBase.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Release\hkbase.pdb"
 						>
 					</File>
 					<File
@@ -802,7 +911,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Release\hkcompat.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Release\hkgBridge.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Release\hkgbridge.pdb"
 						>
 					</File>
 					<File
@@ -810,7 +927,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Release\hkgcommon.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Release\hkgDx10.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Release\hkgdx10.pdb"
 						>
 					</File>
 					<File
@@ -818,7 +943,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Debug\hkgdx9.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Release\hkgDx9s.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Release\hkgdx9s.pdb"
 						>
 					</File>
 					<File
@@ -826,7 +959,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Debug\hkgeometryutilities.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Release\hkgOgl.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkgogl.pdb"
 						>
 					</File>
 					<File
@@ -834,7 +975,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Debug\hkgogls.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Release\hkInternal.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkinternal.pdb"
 						>
 					</File>
 					<File
@@ -842,7 +991,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Release\hkpcollide.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Release\hkpConstraintSolver.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Release\hkpconstraintsolver.pdb"
 						>
 					</File>
 					<File
@@ -850,7 +1007,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Debug\hkpdynamics.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Release\hkpInternal.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkpinternal.pdb"
 						>
 					</File>
 					<File
@@ -858,7 +1023,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Release\hkputilities.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Release\hkpVehicle.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkpvehicle.pdb"
 						>
 					</File>
 					<File
@@ -866,7 +1039,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Debug\hkscenedata.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Release\hksCommon.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hkscommon.pdb"
 						>
 					</File>
 					<File
@@ -874,7 +1055,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Debug\hkserialize.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Release\hksXAudio2.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Debug\hksxaudio2.pdb"
 						>
 					</File>
 					<File
@@ -882,12 +1071,24 @@
 						>
 					</File>
 					<File
+						RelativePath=".\Havok\Lib_Debug\hkvisualize.pdb"
+						>
+					</File>
+					<File
 						RelativePath=".\Havok\Lib_Release\VdbClient.lib"
+						>
+					</File>
+					<File
+						RelativePath=".\Havok\Lib_Release\vdbclient.pdb"
 						>
 					</File>
 				</Filter>
 			</Filter>
 		</Filter>
+		<File
+			RelativePath=".\Shaders\PhyxelEffect.fx"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

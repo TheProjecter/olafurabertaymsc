@@ -56,7 +56,7 @@ struct Surfel_PS_Input{
 	float2 UV : TEXCOORD;
 	float2 EWAUV: TEXCOORD1;
 	float3 EyeVect: TEXCOORD2;
-	float3 LightDir : TEXCOORD3;	
+	float3 LightDir : TEXCOORD3;
 };
 
 struct Quad_VS_Input{
