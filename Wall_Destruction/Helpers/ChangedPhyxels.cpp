@@ -38,8 +38,10 @@ void ChangedPhyxels::CleanUp(){
 
 void ChangedPhyxels::AddPhyxel(ProjectStructs::PHYXEL_NODE* node){
 
-	if(find(phyxels.begin(), phyxels.end(), node) == phyxels.end())
-		phyxels.push_back(node);
+	if(node->isChanged)
+		return;
+
+	phyxels.push_back(node);
 
 }
 
@@ -47,9 +49,9 @@ void ChangedPhyxels::Update(float dt){
 	for(int i = 0; i<phyxels.size(); i++){
 		if(phyxels[i]->force.x != 0.0f || phyxels[i]->force.y != 0.0f || phyxels[i]->force.z != 0.0f ){
 			
-			phyxels[i]->force.x -= dt * 200.0f;
-			phyxels[i]->force.y -= dt * 200.0f;
-			phyxels[i]->force.z -= dt * 200.0f;
+			phyxels[i]->force.x -= dt * 1000.0f;
+			phyxels[i]->force.y -= dt * 1000.0f;
+			phyxels[i]->force.z -= dt * 1000.0f;
 
 			if(phyxels[i]->force.x < 0.0f)
 				phyxels[i]->force.x = 0.0f;
@@ -59,6 +61,7 @@ void ChangedPhyxels::Update(float dt){
 				phyxels[i]->force.z = 0.0f;
 		}	
 		else{
+			phyxels[i]->isChanged = false;
 			phyxels.erase(phyxels.begin() + i);
 			i--;
 		}

@@ -64,20 +64,43 @@ int MathHelper::Round(float x){
 	return (int)(x + 0.5f);
 }
 
+bool MathHelper::Facing(D3DXVECTOR3 p1, D3DXVECTOR3 p2, D3DXVECTOR3 n2){
+	return D3DXVec3Dot(&(p1 - p2), &n2) <= 0.0f;
+}
+/*
+			Clip planes can be
+			(1, -1, 0)		(-1, -1, 0)		(1, 1, 0)		(-1, 1, 0)	   (0, 1, 0)		(1, 0, 0)
+			 _ _			 _ _				 _			    _			   _
+			|  _|			|_	|				| |_		  _| |			  | |			  _ _
+			|_| 			  |_|				|_ _|	   	 |_ _|			  |_|			 |_ _|
+
+			(1, -1, 1)		(-1, -1, 1)		(1, 1, 1)		(-1, 1, 1)	   (0, 1, 1)		(1, 0, 1)
+			    			 				       _		  _				 _				  _ _
+			   _			 _					  |_|		 |_| 			| |				 |_ _|
+			  |_| 			|_|   			     	   	     				|_|				 
+
+		*/
+bool MathHelper::D3DXVECTOR3Equals(D3DXVECTOR3 vec, float x, float y, float z){
+	return vec.x == x && vec.y == y && vec.z == z;
+}
+
 bool MathHelper::PositiveMajor(ProjectStructs::SURFEL_EDGE *edge){
-	return (edge->vertex.clipPlane.x == 1) || (edge->vertex.clipPlane.x == 0 && edge->vertex.clipPlane.y == 1 && edge->vertex.clipPlane.z == 1);
+	return !D3DXVECTOR3Equals(edge->vertex.clipPlane, 0, 1, 1) && !D3DXVECTOR3Equals(edge->vertex.clipPlane, -1, 1, 1) && !D3DXVECTOR3Equals(edge->vertex.clipPlane, -1, -1, 1);
 }
 
 bool MathHelper::PositiveMinor(ProjectStructs::SURFEL_EDGE *edge){
-	return (edge->vertex.clipPlane.y == 1) || (edge->vertex.clipPlane.y == 0 && edge->vertex.clipPlane.x == 1 && edge->vertex.clipPlane.z == 1);
+	return !D3DXVECTOR3Equals(edge->vertex.clipPlane, 1, 0, 0) && !D3DXVECTOR3Equals(edge->vertex.clipPlane, -1, -1, 1) && !D3DXVECTOR3Equals(edge->vertex.clipPlane, 1, -1, 1);
 }
 
 bool MathHelper::NegativeMajor(ProjectStructs::SURFEL_EDGE *edge){
-	return ((edge->vertex.clipPlane.x == -1) || (edge->vertex.clipPlane.y == 1 && edge->vertex.clipPlane.z == 0) 
-		|| (edge->vertex.clipPlane.x == 1 && edge->vertex.clipPlane.y == 0));
+	return !D3DXVECTOR3Equals(edge->vertex.clipPlane, 0, 1, 0) && !D3DXVECTOR3Equals(edge->vertex.clipPlane, 1, 1, 1) && !D3DXVECTOR3Equals(edge->vertex.clipPlane, 1, -1, 1);
 }
 
 bool MathHelper::NegativeMinor(ProjectStructs::SURFEL_EDGE *edge){
-	return ((edge->vertex.clipPlane.y == -1) || (edge->vertex.clipPlane.x == 1 && edge->vertex.clipPlane.z == 0) 
-		|| (edge->vertex.clipPlane.y == 1 && edge->vertex.clipPlane.x == 0));
+	return !D3DXVECTOR3Equals(edge->vertex.clipPlane, 1, 0, 1) && !D3DXVECTOR3Equals(edge->vertex.clipPlane, -1, 1, 1) && !D3DXVECTOR3Equals(edge->vertex.clipPlane, 1, 1, 1);
+}
+
+int MathHelper::Sign(float x){
+	return x < 0.0f ? -1 : x > 0.0f ? 1 : 0 ;
+
 }

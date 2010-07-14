@@ -77,6 +77,7 @@ namespace Helpers{
 		std::map<string, ID3D10ShaderResourceView*, ProjectStructs::NameComparer> textureSRV;
 
 		D3D10_TECHNIQUE_DESC techDesc;
+
 	};
 }
 

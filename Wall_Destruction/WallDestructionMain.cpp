@@ -7,7 +7,7 @@
 
 #ifdef _DEBUG
 #ifdef MEMORY_LEAK_CHECK
-//#include "vld.h"
+//#include "vld/vld.h"
 #endif
 #endif
 
@@ -143,7 +143,7 @@ void WallDestructionApp::Reset(){
 
 	ChangedPhyxels::Init();
 
-	Helpers::Globals::DebugInformation.EndTimer("Restart ");
+	Helpers::Globals::DebugInformation.EndTimer(INFO_TYPE, "Restart ");
 	resetLastFrame = true;
 }
 
@@ -184,18 +184,6 @@ void WallDestructionApp::initApp()
 	projectiles.Init();
 
 	PhysicsWrapper::FinishInit();
-
-	DepthPass.init(Helpers::Globals::ClientWidth, Helpers::Globals::ClientHeight, 1, DXGI_FORMAT_R16G16B16A16_FLOAT);
-	AttributePass.init(Helpers::Globals::ClientWidth, Helpers::Globals::ClientHeight, 3, DXGI_FORMAT_R32G32B32A32_FLOAT);
-	NormalizationPass.init(Helpers::Globals::ClientWidth, Helpers::Globals::ClientHeight, 1, DXGI_FORMAT_R16G16B16A16_FLOAT);
-
-	depthMapVP = SpriteViewPort(0.3f, 0.3f, D3DXVECTOR2(0.7f, -0.99f));
-	normalMapVP = SpriteViewPort(0.3f, 0.3f, D3DXVECTOR2(0.4f, -0.99f));
-	occlusionMapVP = SpriteViewPort(0.3f, 0.3f, D3DXVECTOR2(0.1f, -0.99f));
-
-	this->depthMapVP.Init();
-	this->normalMapVP.Init();
-	this->occlusionMapVP.Init();
 
 	resetLastFrame = false;
 }
@@ -245,36 +233,72 @@ void WallDestructionApp::updateScene(float dt)
 	D3DApp::updateScene(dt);
 	
 	if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_F1)){
-		if(Helpers::Globals::SurfelRenderMethod == Helpers::WIREFRAME){
-			Helpers::Globals::DebugInformation.AddText("Setting SurfelObject.RenderMethod to SOLID");
+		if(Helpers::Globals::SurfelRenderMethod == Helpers::SURFEL){
+			Helpers::Globals::DebugInformation.AddText(ALWAYS, "Setting SurfelObject.RenderMethod to SOLID");
 			Helpers::Globals::SurfelRenderMethod = Helpers::SOLID;
 		}
-		else{
-			Helpers::Globals::DebugInformation.AddText("Setting SurfelObject.RenderMethod to WIREFRAME");
+		else if(Helpers::Globals::SurfelRenderMethod == Helpers::SOLID){
+			Helpers::Globals::DebugInformation.AddText(ALWAYS, "Setting SurfelObject.RenderMethod to WIREFRAME");
 			Helpers::Globals::SurfelRenderMethod = Helpers::WIREFRAME;
+		}
+		else{
+			Helpers::Globals::DebugInformation.AddText(ALWAYS, "Setting SurfelObject.RenderMethod to SURFEL");
+			Helpers::Globals::SurfelRenderMethod = Helpers::SURFEL;
 		}		
 	}
+	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_F5)){
+		Helpers::Globals::SHOW_DEBUG = !Helpers::Globals::SHOW_DEBUG;
+	
+		if(Helpers::Globals::SHOW_DEBUG)
+			Helpers::Globals::DebugInformation.AddText(ALWAYS, GREEN, "Showing Debug Output");	
+		else
+			Helpers::Globals::DebugInformation.AddText(ALWAYS, RED, "Hiding Debug Output");	
+	}
+	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_F6)){
+		Helpers::Globals::SHOW_INFO= !Helpers::Globals::SHOW_INFO;
+
+		if(Helpers::Globals::SHOW_INFO)
+			Helpers::Globals::DebugInformation.AddText(ALWAYS, GREEN, "Showing Info Output");	
+		else
+			Helpers::Globals::DebugInformation.AddText(ALWAYS, RED, "Hiding Info Output");	
+	}
+	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_F7)){
+		Helpers::Globals::SHOW_ERRORS = !Helpers::Globals::SHOW_ERRORS;
+
+		if(Helpers::Globals::SHOW_ERRORS)
+			Helpers::Globals::DebugInformation.AddText(ALWAYS, GREEN, "Showing Error Output");	
+		else
+			Helpers::Globals::DebugInformation.AddText(ALWAYS, RED, "Hiding Error Output");	
+	}
 	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_H)){
-		Helpers::Globals::DebugInformation.AddText(GREEN, "F - Decrease surfel scale");	
-		Helpers::Globals::DebugInformation.AddText(LIGHT_YELLOW_GREEN, "R - Increase surfel scale");	
-		Helpers::Globals::DebugInformation.AddText(GREEN, "Enter - Reset scene");	
-		Helpers::Globals::DebugInformation.AddText(LIGHT_YELLOW_GREEN, "Left Mouse Button - Fire a projectile");	
-		Helpers::Globals::DebugInformation.AddText(GREEN, "Caps Lock - Acquire / Unacquire mouse");	
-		Helpers::Globals::DebugInformation.AddText(LIGHT_YELLOW_GREEN, "Mouse - Change camera's direction");	
-		Helpers::Globals::DebugInformation.AddText(GREEN, "Tab - Enable camera / wrecking ball movement");	
-		Helpers::Globals::DebugInformation.AddText(LIGHT_YELLOW_GREEN, "WASD - Move camera / Move wrecking ball (Right Shift + W / S = Move wrecking ball up / down)");	
-		Helpers::Globals::DebugInformation.AddText(GREEN, "F3 - Draw Phyxels");
-		Helpers::Globals::DebugInformation.AddText(LIGHT_YELLOW_GREEN, "F2 - Draw PhyxelGrid");
-		Helpers::Globals::DebugInformation.AddText(GREEN, "F1 - Surfel / Wireframe representation");
+		Helpers::Globals::DebugInformation.AddText(ALWAYS, LIGHT_YELLOW_GREEN, "F - Decrease surfel scale");	
+		Helpers::Globals::DebugInformation.AddText(ALWAYS, GREEN, "R - Increase surfel scale");	
+		
+		Helpers::Globals::DebugInformation.AddText(ALWAYS, LIGHT_YELLOW_GREEN, "Enter - Reset scene");	
+		Helpers::Globals::DebugInformation.AddText(ALWAYS, GREEN, "Left Mouse Button - Fire a projectile");	
+		Helpers::Globals::DebugInformation.AddText(ALWAYS, LIGHT_YELLOW_GREEN, "Caps Lock - Acquire / Unacquire mouse");	
+		
+		Helpers::Globals::DebugInformation.AddText(ALWAYS, GREEN, "Mouse - Change camera's direction");	
+		Helpers::Globals::DebugInformation.AddText(ALWAYS, LIGHT_YELLOW_GREEN, "Tab - Enable camera / wrecking ball movement");	
+		Helpers::Globals::DebugInformation.AddText(ALWAYS, GREEN, "(Right Shift + W / S = Move wrecking ball up / down)");			
+		Helpers::Globals::DebugInformation.AddText(ALWAYS, GREEN, "WASD - Move camera / Move wrecking ball ");	
+
+		Helpers::Globals::DebugInformation.AddText(ALWAYS, LIGHT_YELLOW_GREEN, "F7 - Enable / Disable Error Output");	
+		Helpers::Globals::DebugInformation.AddText(ALWAYS, GREEN, "F6 - Enable / Disable Info Output");	
+		Helpers::Globals::DebugInformation.AddText(ALWAYS, LIGHT_YELLOW_GREEN, "F5 - Enable / Disable Debug Output");	
+
+		Helpers::Globals::DebugInformation.AddText(ALWAYS, GREEN, "F3 - Draw Phyxels");
+		Helpers::Globals::DebugInformation.AddText(ALWAYS, LIGHT_YELLOW_GREEN, "F2 - Draw PhyxelGrid");
+		Helpers::Globals::DebugInformation.AddText(ALWAYS, GREEN, "F1 - Surfel / Wireframe / Solid representation");
 	}
 	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_CAPSLOCK)){
 		if(Helpers::Globals::MOUSE_ACQUIRED){
 			Helpers::MouseHandler::CleanUp();
-			Helpers::Globals::DebugInformation.AddText(RED, "Mouse unacquired");
+			Helpers::Globals::DebugInformation.AddText(INFO_TYPE, RED, "Mouse unacquired");
 		}
 		else{
 			Helpers::MouseHandler::SetUp(this->mhAppInst, this->mhMainWnd);
-			Helpers::Globals::DebugInformation.AddText(GREEN, "Mouse acquired");
+			Helpers::Globals::DebugInformation.AddText(INFO_TYPE, GREEN, "Mouse acquired");
 		}
 	}
 	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_RETURN)){
@@ -282,33 +306,33 @@ void WallDestructionApp::updateScene(float dt)
 	}
 	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_TAB)){
 		if(!Helpers::Globals::MOVE_WRECKINGBALL){
-			Helpers::Globals::DebugInformation.AddText("Moving wreckingball");
+			Helpers::Globals::DebugInformation.AddText(INFO_TYPE, "Moving wreckingball");
 			Helpers::Globals::MOVE_WRECKINGBALL = true;
 		}
 		else{
-			Helpers::Globals::DebugInformation.AddText("Moving camera");
+			Helpers::Globals::DebugInformation.AddText(INFO_TYPE, "Moving camera");
 			Helpers::Globals::MOVE_WRECKINGBALL = false;
 		}
 	}
 	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_F2)){
-		if(!Helpers::Globals::DRAW_OCTREE){
-			Helpers::Globals::DebugInformation.AddText(D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f), "Drawing PhyxelGrid");
-			Helpers::Globals::DRAW_OCTREE = true;
+		if(!Helpers::Globals::DRAW_PHYXEL_GRID){
+			Helpers::Globals::DebugInformation.AddText(INFO_TYPE, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f), "Drawing PhyxelGrid");
+			Helpers::Globals::DRAW_PHYXEL_GRID = true;
 
 		}
 		else{
-			Helpers::Globals::DebugInformation.AddText(D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f), "Not Drawing PhyxelGrid");
-			Helpers::Globals::DRAW_OCTREE= false;
+			Helpers::Globals::DebugInformation.AddText(INFO_TYPE, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f), "Not Drawing PhyxelGrid");
+			Helpers::Globals::DRAW_PHYXEL_GRID= false;
 		}
 	}
 	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_F3)){
 		if(!Helpers::Globals::DRAW_PHYXELS){
-			Helpers::Globals::DebugInformation.AddText(D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f), "Drawing Phyxels");
+			Helpers::Globals::DebugInformation.AddText(INFO_TYPE, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f), "Drawing Phyxels");
 			Helpers::Globals::DRAW_PHYXELS= true;
 
 		}
 		else{
-			Helpers::Globals::DebugInformation.AddText(D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f), "Not Drawing Phyxels");
+			Helpers::Globals::DebugInformation.AddText(INFO_TYPE, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f), "Not Drawing Phyxels");
 			Helpers::Globals::DRAW_PHYXELS = false;
 		}
 	}
@@ -318,14 +342,14 @@ void WallDestructionApp::updateScene(float dt)
 		if(Surface::RadiusScale > 2.0f)
 			Surface::RadiusScale = 2.0f;
 
-		Helpers::Globals::DebugInformation.AddText(D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f), "Radius Scale = %f", Surface::RadiusScale );
+		Helpers::Globals::DebugInformation.AddText(DEBUG_TYPE, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f), "Radius Scale = %f", Surface::RadiusScale );
 	}
 	else if(Helpers::KeyboardHandler::IsKeyDown(DIK_F)){
 		Surface::RadiusScale -= 0.01f;
 		if(Surface::RadiusScale < 0.01f)
 			Surface::RadiusScale = 0.01f;
 
-		Helpers::Globals::DebugInformation.AddText(D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f), "Radius Scale = %f", Surface::RadiusScale );
+		Helpers::Globals::DebugInformation.AddText(DEBUG_TYPE, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f), "Radius Scale = %f", Surface::RadiusScale );
 	}
 
 	if(Helpers::MouseHandler::IsButtonPressed(Helpers::MouseHandler::MOUSE_LEFTBUTTON)){

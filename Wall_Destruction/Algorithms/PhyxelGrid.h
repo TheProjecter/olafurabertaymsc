@@ -8,7 +8,6 @@
 #include "Surface.h"
 #include "Structs.h"
 
-
 using namespace ProjectStructs;
 
 class PhyxelGrid
@@ -18,14 +17,16 @@ public:
 	PhyxelGrid(int dimensions, D3DXVECTOR3 Min, D3DXVECTOR3 Max, D3DXVECTOR3 Pos);
 	~PhyxelGrid(void);
 
-	void InsertSurface(Surface* surface);
+	//void InsertSurface(Surface* surface);
+	void InsertPoints(std::vector<D3DXVECTOR3> points, std::vector<ProjectStructs::SURFEL*> surfels);
+	void InsertEdges(std::vector<D3DXVECTOR3> edgePoints, std::vector<ProjectStructs::SURFEL_EDGE*> edges);
 
 	void PopulateNode( D3DXVECTOR3 surfelPos, ProjectStructs::SURFEL *surfel, ProjectStructs::SURFEL_EDGE *edge);
 
 	void PopulateNodeAndCheckNormal( D3DXVECTOR3 &index, D3DXVECTOR3 surfelPos, ProjectStructs::SURFEL * surfel, ProjectStructs::SURFEL_EDGE * edge );
 	bool InitCellAndPushSurfels( D3DXVECTOR3 index, ProjectStructs::SURFEL * surfel, ProjectStructs::SURFEL_EDGE * edge );
 	D3DXVECTOR3 GetIndexOfPosition( D3DXVECTOR3 surfelPos );
-	void InitCell( D3DXVECTOR3 &index );
+	void InitCell( D3DXVECTOR3 &index);
 	void PopulateNeighbors( D3DXVECTOR3 index );
 	D3DXVECTOR3 GetPositionOfIndex(int x, int y, int z, bool relative);
 
@@ -53,8 +54,8 @@ private:
 	D3DXMATRIX invWorld, World, tmpWorld;
 	D3DXVECTOR3 tmp;
 
-
 	int* indices;
+	int dimensions;
 };
 
 #endif

@@ -28,7 +28,7 @@ void Sphere::init(float radius, UINT numSlices, UINT numStacks)
 	mNumSlices = numSlices;
 	mNumStacks = numStacks;
 
-	std::vector<ProjectStructs::SOLID_VERTEX> vertices;
+	std::vector<ProjectStructs::SPHERE_VERTEX> vertices;
 	std::vector<D3DXVECTOR3> depthVertices;
 	std::vector<DWORD> indices;
 
@@ -39,7 +39,7 @@ void Sphere::init(float radius, UINT numSlices, UINT numStacks)
 
 	D3D10_BUFFER_DESC vbd;
     vbd.Usage = D3D10_USAGE_IMMUTABLE;
-    vbd.ByteWidth = sizeof(ProjectStructs::SOLID_VERTEX) * mNumVertices;
+    vbd.ByteWidth = sizeof(ProjectStructs::SPHERE_VERTEX) * mNumVertices;
     vbd.BindFlags = D3D10_BIND_VERTEX_BUFFER;
     vbd.CPUAccessFlags = 0;
     vbd.MiscFlags = 0;
@@ -76,7 +76,7 @@ void Sphere::init(float radius, UINT numSlices, UINT numStacks)
 
 void Sphere::Draw(Helpers::CustomEffect *effect)
 {
-	UINT stride = sizeof(ProjectStructs::SOLID_VERTEX);
+	UINT stride = sizeof(ProjectStructs::SPHERE_VERTEX);
     UINT offset = 0;
 	Helpers::Globals::Device->IASetPrimitiveTopology( D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	Helpers::Globals::Device->IASetVertexBuffers(0, 1, &mVB, &stride, &offset);
@@ -114,7 +114,7 @@ void Sphere::buildStacks(VertexList& vertices, IndexList& indices)
 		{
 			float theta = j*thetaStep;
 
-			ProjectStructs::SOLID_VERTEX v;
+			ProjectStructs::SPHERE_VERTEX v;
 
 			// spherical to cartesian
 			v.pos.x = mRadius*sinf(phi)*cosf(theta);
@@ -136,8 +136,8 @@ void Sphere::buildStacks(VertexList& vertices, IndexList& indices)
 	}
 
 	// poles: note that there will be texture coordinate distortion
-	vertices.push_back( ProjectStructs::SOLID_VERTEX(D3DXVECTOR3(0.0f, -mRadius, 0.0f), D3DXVECTOR3(0.0f, -1.0f, 0.0f), D3DXVECTOR2(0.0f, 1.0f)) );
-	vertices.push_back( ProjectStructs::SOLID_VERTEX(D3DXVECTOR3(0.0f, mRadius, 0.0f), D3DXVECTOR3(0.0f, 1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.0f)) );
+	vertices.push_back( ProjectStructs::SPHERE_VERTEX(D3DXVECTOR3(0.0f, -mRadius, 0.0f), D3DXVECTOR3(0.0f, -1.0f, 0.0f), D3DXVECTOR2(0.0f, 1.0f)) );
+	vertices.push_back( ProjectStructs::SPHERE_VERTEX(D3DXVECTOR3(0.0f, mRadius, 0.0f), D3DXVECTOR3(0.0f, 1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.0f)) );
 
 	UINT northPoleIndex = (UINT)vertices.size()-1;
 	UINT southPoleIndex = (UINT)vertices.size()-2;

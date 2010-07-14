@@ -59,18 +59,29 @@ struct Surfel_PS_Input{
 	float3 LightDir : TEXCOORD3;
 };
 
+struct Surfel_Edge_PS_Input{
+	float4 Pos : SV_POSITION;
+	float4 NormalW : NORMAL;
+	float2 UV : TEXCOORD;
+	float2 EWAUV: TEXCOORD1;
+	float3 EyeVect: TEXCOORD2;
+	float3 LightDir : TEXCOORD3;
+};
+
 struct Quad_VS_Input{
 	float4 Pos : POSITION;
 	float4 Normal : NORMAL;
 	float2 UV: TEXCOORD0;
+	float2 EWAUV: TEXCOORD1;
 };
 
 struct Quad_PS_Input{
 	float4 Pos : SV_POSITION;
 	float4 NormalW : NORMAL;
-	float3 LightDir : TEXCOORD2;
-	float3 EyeVect: TEXCOORD1;
 	float2 UV : TEXCOORD0;
+	float3 EyeVect: TEXCOORD1;
+	float3 LightDir : TEXCOORD2;
+	float2 EWAUV: TEXCOORD3;
 };
 
 struct ClippedSurfelProperties{
@@ -116,11 +127,27 @@ void SurfelGS(point Surfel_GS_Input input[1], inout TriangleStream<Surfel_PS_Inp
 {
     Surfel_PS_Input output;
 
-	float xMultiplier[] = {-1.0, -1.0, 1.0, 1.0};
-	float yMultiplier[] = {-1.0, 1.0, -1.0, 1.0};
+	float3 calculatedNormal = cross(input[0].MinorRadius.xyz, input[0].MajorRadius.xyz);
+	bool facingWrongWay = sign(calculatedNormal.x) != sign(input[0].Normal.x) || sign(calculatedNormal.y) != sign(input[0].Normal.y) || sign(calculatedNormal.z) != sign(input[0].Normal.z);
+	
+	float xMultiplier[] = {-1.0f, -1.0f, 1.0f, 1.0f};;
+	float yMultiplier[] = {-1.0f, 1.0f, -1.0f, 1.0f};
+	float U[] = {-1.0f, -1.0f, 1.0f, 1.0f};
+	float V[] = {-1.0f, 1.0f, -1.0f, 1.0f};
+	
+	if(facingWrongWay){
+		xMultiplier[1] *= -1.0f;
+		xMultiplier[2] *= -1.0f;
+		
+		yMultiplier[1] *= -1.0f;
+		yMultiplier[2] *= -1.0f;
 
-	float U[] = {-1.0, -1.0, 1.0, 1.0};
-	float V[] = {-1.0, 1.0, -1.0, 1.0};
+		U[1] *= -1.0f;
+		U[2] *= -1.0f;
+		
+		V[1] *= -1.0f;
+		V[2] *= -1.0f;
+	}		
     
 	[unroll]
     for(int i=0; i<4; i++)
@@ -179,7 +206,7 @@ int GetVertexCount(float3 clipPlanes){
 	  |_| 			|_|   			     	   	     				|_|				 
 
 */
-ClippedSurfelProperties GetProperties(float3 clipPlane){
+ClippedSurfelProperties GetProperties(float3 clipPlane, bool facingTheWrongWay){
 	
 	ClippedSurfelProperties props = (ClippedSurfelProperties) 0;
 	
@@ -195,6 +222,21 @@ ClippedSurfelProperties GetProperties(float3 clipPlane){
 			props.xMultiplier[2] = clipPlane.z == 1 ? 1.0f : 0.0f; props.xMultiplier[3] = clipPlane.z == 1 ? 1.0f : 0.0f;
 			
 			props.yMultiplier[0] = -1.0f; props.yMultiplier[1] = 1.0f; props.yMultiplier[2] = -1.0f; props.yMultiplier[3] = 1.0f;
+			
+			if(facingTheWrongWay){
+				if(clipPlane.z == 1){
+					props.U[1] = 1.0f; 				props.U[2] = 0.0f;
+					props.xMultiplier[1] = 1.0f;	props.xMultiplier[2] = 0.0f; 
+				}
+				else{
+					props.U[1] = 0.0f; 				props.U[2] = -1.0f;
+					props.xMultiplier[1] = 0.0f;	props.xMultiplier[2] = -1.0f; 
+				}
+			
+				props.V[1] = -1.0f;				props.V[2] = 1.0f; 
+				props.yMultiplier[1] = -1.0f;	props.yMultiplier[2] = 1.0f;  
+			}
+			
 		}
 		else if(clipPlane.x == 1 && clipPlane.y == 0){		
 			props.U[0] = -1.0f; props.U[1] = -1.0f; props.U[2] = 1.0f;  props.U[3] = 1.0f;
@@ -204,6 +246,20 @@ ClippedSurfelProperties GetProperties(float3 clipPlane){
 			
 			props.yMultiplier[0] = clipPlane.z == 1 ? 0.0f : -1.0f; props.yMultiplier[1] = clipPlane.z == 1 ? 1.0f : 0.0f;
 			props.yMultiplier[2] = clipPlane.z == 1 ? 0.0f : -1.0f; props.yMultiplier[3] = clipPlane.z == 1 ? 1.0f : 0.0f;
+			
+			if(facingTheWrongWay){
+				if(clipPlane.z == 1){
+					props.V[1] = 0.0f; 				props.V[2] = 1.0f;
+					props.yMultiplier[1] = 0.0f;	props.yMultiplier[2] = 1.0f; 
+				}
+				else{
+					props.V[1] = -1.0f; 				props.V[2] = 0.0f;
+					props.yMultiplier[1] = -1.0f;	props.yMultiplier[2] = 0.0f; 
+				}
+			
+				props.U[1] = 1.0f;				props.U[2] = -1.0f; 
+				props.xMultiplier[1] = 1.0f;	props.xMultiplier[2] = -1.0f;  
+			}
 		}
 		else{
 			props.U[0] = (clipPlane.x == 1 ? 0.0f : -1.0f); 
@@ -225,6 +281,26 @@ ClippedSurfelProperties GetProperties(float3 clipPlane){
 			props.yMultiplier[1] = clipPlane.y == -1 ? 0.0f : 1.0f;
 			props.yMultiplier[2] = clipPlane.y == -1 ? -1.0f : 0.0f; 
 			props.yMultiplier[3] = clipPlane.y == -1 ? 0.0f : 1.0f;
+			
+			if(facingTheWrongWay){
+				if(clipPlane.y == 1){
+					props.V[1] = 0.0f; 				props.V[2] = 1.0f;
+					props.yMultiplier[1] = 0.0f;	props.yMultiplier[2] = 1.0f; 
+				}
+				else{
+					props.V[1] = -1.0f; 				props.V[2] = 0.0f;
+					props.yMultiplier[1] = -1.0f;	props.yMultiplier[2] = 0.0f; 
+				}
+				
+				if(clipPlane.x == 1){
+					props.U[1] = 1.0f; 				props.U[2] = 0.0f;
+					props.xMultiplier[1] = 1.0f;	props.xMultiplier[2] = 0.0f; 
+				}
+				else{
+					props.U[1] = 0.0f; 				props.U[2] = -1.0f;
+					props.xMultiplier[1] = 0.0f;	props.xMultiplier[2] = -1.0f; 
+				}			
+			}
 		}		
 	}
 	else{
@@ -277,13 +353,16 @@ ClippedSurfelProperties GetProperties(float3 clipPlane){
 // Takes in a surfel edge and outputs maximum 2 quads
 //
 [maxvertexcount(8)]
-void SurfelEdgeGS(point Surfel_Edge_GS_Input input[1], inout TriangleStream<Surfel_PS_Input> surfelStream, uniform bool useWVP)
+void SurfelEdgeGS(point Surfel_Edge_GS_Input input[1], inout TriangleStream<Surfel_Edge_PS_Input> surfelStream, uniform bool useWVP)
 {
-    Surfel_PS_Input output;
+    Surfel_Edge_PS_Input output;
         
 	float4 originalPos;
-	
-	ClippedSurfelProperties props = GetProperties(input[0].ClipPlane);
+
+	float3 calculatedNormal = cross(input[0].MinorRadius.xyz, input[0].MajorRadius.xyz);
+	bool facingWrongWay = sign(calculatedNormal.x) != sign(input[0].Normal.x) || sign(calculatedNormal.y) != sign(input[0].Normal.y) || sign(calculatedNormal.z) != sign(input[0].Normal.z);
+		
+	ClippedSurfelProperties props = GetProperties(input[0].ClipPlane, facingWrongWay);
 	
 	bool hasRestarted = false;
 		
@@ -317,7 +396,7 @@ void SurfelEdgeGS(point Surfel_Edge_GS_Input input[1], inout TriangleStream<Surf
 
 		output.UV = float2(input[0].UV.x + props.U[i] * DeltaUV.x * RadiusScale, input[0].UV.y + props.V[i] * DeltaUV.y * RadiusScale);
 		output.EWAUV = float2(props.U[i]*0.5f + 0.5f, props.V[i]*0.5f + 0.5f);
-		
+				
 		surfelStream.Append(output);	
 	}
 
@@ -345,15 +424,25 @@ float4 SurfelPS(Surfel_PS_Input psIn): SV_Target
 		clip(-1);
 	
 	return color;
+}
 
+float4 SurfelEdgePS(Surfel_Edge_PS_Input psIn): SV_Target
+{
+	float4 color = EWATexture.Sample(Filter, psIn.EWAUV ) * SurfaceTexture.Sample(Filter, psIn.UV) * Light_OrenNayer(psIn.NormalW.xyz, psIn.EyeVect, psIn.LightDir);
+	
+	if(color.a <= 0.5f)
+		clip(-1);
+		
+	return color;
 }
 
 Quad_PS_Input QuadVS(Quad_VS_Input vsIn){
 	Quad_PS_Input psOut = (Quad_PS_Input)0;
 	
 	psOut.Pos = mul(mul(mul(vsIn.Pos, World), View), Projection);
-	psOut.NormalW = mul(float4(vsIn.Normal.xyz, 0.0f), World);
+	psOut.NormalW = /*mul(float4(*/vsIn.Normal;/*.xyz, 0.0f), World);*/
 	psOut.UV= vsIn.UV;
+	psOut.EWAUV= vsIn.EWAUV;
 	
 	psOut.LightDir = -normalize(float4(LightDirection, 1.0f)).xyz;
 	psOut.EyeVect = -normalize(float4(CameraPos, 1.0f) + psOut.Pos).xyz;
@@ -365,17 +454,20 @@ float4 QuadPS(Quad_PS_Input psIn, uniform bool useTexture) : SV_Target{
 	float4 surfelColor;
 	
 	if(useTexture){
-		surfelColor = EWATexture.Sample(Filter, psIn.UV) * SurfaceTexture.Sample(Filter, psIn.UV) * Light_OrenNayer(psIn.NormalW.xyz, psIn.EyeVect, psIn.LightDir);
+		surfelColor = EWATexture.Sample(Filter, psIn.EWAUV) * SurfaceTexture.Sample(Filter, psIn.UV) * Light_OrenNayer(psIn.NormalW.xyz, psIn.EyeVect, psIn.LightDir);
 	}
 	else{
 		surfelColor = SurfaceTexture.Sample(Filter, psIn.UV) * Light_OrenNayer(psIn.NormalW.xyz, psIn.EyeVect, psIn.LightDir);
 	}
 	
+	if(surfelColor.a <= 0.5f)
+		clip(-1);
+	
 	return surfelColor;
 }
 
-GeometryShader SurfelGeometryOut = ConstructGSWithSO( CompileShader( gs_4_0, SurfelGS(false) ), "SV_POSITION.xyz; NORMAL.xyz; TEXCOORD.xy" );
-GeometryShader SurfelEdgeGeometryOut = ConstructGSWithSO( CompileShader( gs_4_0, SurfelEdgeGS(false) ), "SV_POSITION.xyz; NORMAL.xyz; TEXCOORD.xy" );
+GeometryShader SurfelGeometryOut = ConstructGSWithSO( CompileShader( gs_4_0, SurfelGS(false) ), "SV_POSITION.xyz; NORMAL.xyz; TEXCOORD.xy;  TEXCOORD1.xy" );
+GeometryShader SurfelEdgeGeometryOut = ConstructGSWithSO( CompileShader( gs_4_0, SurfelEdgeGS(false) ), "SV_POSITION.xyz; NORMAL.xyz; TEXCOORD.xy;  TEXCOORD1.xy" );
 
 technique10 GeometryTechnique
 {
@@ -410,7 +502,7 @@ technique10 SurfelTechnique
         SetVertexShader( CompileShader( vs_4_0, SurfelVS() ) );
 		SetGeometryShader ( CompileShader( gs_4_0, SurfelGS(true) ) );
 	    SetPixelShader( CompileShader( ps_4_0, SurfelPS() ) );
-	    SetDepthStencilState( SamePlaneDepth, 0 );
+	    SetDepthStencilState( EnableDepth, 0 );
 		SetRasterizerState(SURFEL);
  	    SetBlendState( NoAlphaBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
     }
@@ -422,8 +514,8 @@ technique10 SurfelEdgeTechnique
     {
         SetVertexShader( CompileShader( vs_4_0, SurfelEdgeVS() ) );
 		SetGeometryShader ( CompileShader( gs_4_0, SurfelEdgeGS(true) ) );
-	    SetPixelShader( CompileShader( ps_4_0, SurfelPS() ) );
-	    SetDepthStencilState( SamePlaneDepth, 0 );
+	    SetPixelShader( CompileShader( ps_4_0, SurfelEdgePS() ) );
+	    SetDepthStencilState( EnableDepth, 0 );
 		SetRasterizerState(SURFEL);
  	    SetBlendState( NoAlphaBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
     }
@@ -437,8 +529,8 @@ technique10 SolidTechnique
 		SetGeometryShader ( NULL );
 	    SetPixelShader( CompileShader( ps_4_0, QuadPS(true) ) );
 	    SetDepthStencilState( EnableDepth, 0 );
-		SetRasterizerState(SOLID);
-		SetBlendState( NoAlphaBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
+		SetRasterizerState(SURFEL);
+ 	    SetBlendState( NoAlphaBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
     }
 }
 

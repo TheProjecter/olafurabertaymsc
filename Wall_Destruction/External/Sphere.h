@@ -45,7 +45,7 @@ public:
 	D3DXMATRIX GetRadiusTranslation(){return RadiusTranslation;}
 
 private:
-	typedef std::vector<ProjectStructs::SOLID_VERTEX> VertexList;
+	typedef std::vector<ProjectStructs::SPHERE_VERTEX> VertexList;
 	typedef std::vector<DWORD> IndexList;
 
 	void buildStacks(VertexList& vertices, IndexList& indices);

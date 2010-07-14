@@ -44,7 +44,7 @@ namespace Drawables{
 		startTime.push_back(clock());
 	}
 
-	void InfoText::EndTimer(D3DXCOLOR color, const char *strText, ...){
+	void InfoText::EndTimer(TEXT_TYPE type, D3DXCOLOR color, const char *strText, ...){
 		va_list args;
 		char strBuffer[4096];
 
@@ -61,10 +61,10 @@ namespace Drawables{
 		double time = (double)(clock() - startTime.front())/ (double)CLOCKS_PER_SEC;
 		startTime.pop_front();
 
-		AddText(color, str.c_str(), time);
+		AddText(type, color, str.c_str(), time);
 	}
 
-	void InfoText::EndTimer(const char *strText, ...){
+	void InfoText::EndTimer(TEXT_TYPE type, const char *strText, ...){
 		va_list args;
 		char strBuffer[4096];
 
@@ -81,11 +81,11 @@ namespace Drawables{
 		double time = (double)(clock() - startTime.front())/ (double)CLOCKS_PER_SEC;
 		startTime.pop_front();
 
-		AddText(str.c_str(), time);
+		AddText(type, str.c_str(), time);
 	}
 
 	// printf wrapper idea taken from Henry Fortunas PS2 Framework (http://www.hsfortuna.pwp.blueyonder.co.uk/)
-	void InfoText::AddText(const char *strText, ...){
+	void InfoText::AddText(TEXT_TYPE type, const char *strText, ...){
 		va_list args;
 		char strBuffer[4096];
 
@@ -96,11 +96,11 @@ namespace Drawables{
 		vsprintf_s(strBuffer, strText, args);
 		va_end(args);
 
-		AddText(defaultColor, (std::string)strBuffer);
+		AddText(type, defaultColor, (std::string)strBuffer);
 	}
 
 	// printf wrapper idea taken from Henry Fortunas PS2 Framework (http://www.hsfortuna.pwp.blueyonder.co.uk/)
-	void InfoText::AddText(D3DXCOLOR color, const char *strText, ...){
+	void InfoText::AddText(TEXT_TYPE type, D3DXCOLOR color, const char *strText, ...){
 		va_list args;
 		char strBuffer[4096];
 
@@ -111,23 +111,32 @@ namespace Drawables{
 		vsprintf_s(strBuffer, strText, args);
 		va_end(args);
 
-		AddText(color, (std::string)strBuffer);
+		AddText(type, color, (std::string)strBuffer);
 	}
 
-	void InfoText::AddText(std::string text){
-		AddText(defaultColor, text);
+	void InfoText::AddText( TEXT_TYPE type,std::string text){
+		AddText(type, defaultColor, text);
 	}
 
-	void InfoText::AddText(D3DXCOLOR color, std::string text){
+	void InfoText::AddText(TEXT_TYPE type, D3DXCOLOR color, std::string text){
 		// put a cap on the texts
 		if(texts.size() == 30){
 			texts.pop_front();
 		}
 
 		INFO_TEXT it;
-		it.text = text;
+		if(type == DEBUG_TYPE)
+			it.text = "Debug - " +text;
+		else if(type == INFO_TYPE)
+			it.text = "Info - " +text;
+		else if(type == ERROR_TYPE)
+			it.text = "Error - " +text;
+		else
+			it.text = text;
+
 		it.color = color;
 		it.life = 1.0f;
+		it.type = type;
 		texts.push_back(it);
 	}
 
@@ -161,14 +170,29 @@ namespace Drawables{
 	}
 
 	void InfoText::Draw(){
-		std::list<INFO_TEXT>::iterator it;
-		int pos = texts.size()-1;
-		RECT dR = textRect;
 
-		for(it = texts.begin(); it != texts.end(); it++, pos--){		
-			dR.top = textRect.top + pos * deltaRect.top;
+		if(texts.size() > 0){
 
-			font->DrawTextA(0, it->text.c_str(), -1, &(dR), DT_NOCLIP, it->color);
+			std::list<INFO_TEXT>::iterator it = texts.end();
+			it--;
+			int pos = 0;
+			RECT dR = textRect;
+
+			for(; it != texts.begin(); it--){		
+				if((it->type == DEBUG_TYPE && Helpers::Globals::SHOW_DEBUG) || 
+					(it->type == INFO_TYPE && Helpers::Globals::SHOW_INFO) ||
+					(it->type == ERROR_TYPE && Helpers::Globals::SHOW_ERRORS) || it->type == ALWAYS){
+					dR.top = textRect.top + (pos++) * deltaRect.top;
+					font->DrawTextA(0, it->text.c_str(), -1, &(dR), DT_NOCLIP, it->color);
+				}
+			}
+			if((it->type == DEBUG_TYPE && Helpers::Globals::SHOW_DEBUG) || 
+				(it->type == INFO_TYPE && Helpers::Globals::SHOW_INFO) ||
+				(it->type == ERROR_TYPE && Helpers::Globals::SHOW_ERRORS) || it->type == ALWAYS){
+				dR.top = textRect.top + (pos++) * deltaRect.top;
+				font->DrawTextA(0, it->text.c_str(), -1, &(dR), DT_NOCLIP, it->color);
+			}
+
 		}
 	}
 }

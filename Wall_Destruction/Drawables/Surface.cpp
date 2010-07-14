@@ -1,14 +1,16 @@
 #include "Surface.h"
 #include "TextureCreator.h"
 #include "ChangedPhyxels.h"
+#include "KeyboardHandler.h"
+#include "MathHelper.h"
 
 namespace Drawables{
 		
 	ID3D10ShaderResourceView *Surface::SurfelTexture, *Surface::SurfelWireframeTexture;
 	ID3D10RasterizerState *Surface::SolidRenderState;
 	Helpers::CustomEffect Surface::surfelEffect, Surface::surfelEdgeEffect, Surface::solidEffect, Surface::wireframeEffect, Surface::geometryEffect, Surface::geometryEdgeEffect;
-	float Surface::RadiusScale = 1.0f;
-	
+	float Surface::RadiusScale = 1.0f, Surface::LastRadiusScale = 1.0f;
+
 	bool Surface::TextureLoaded = false;
 
 	Surface::Surface(void)
@@ -35,7 +37,6 @@ namespace Drawables{
 			InitSolid();
 		}
 
-
 		surfelEffect.AddTexture("SurfaceTexture", planeTexture);
 		surfelEffect.SetTexture("SurfaceTexture", planeTexture);
 
@@ -44,6 +45,9 @@ namespace Drawables{
 
 		wireframeEffect.AddTexture("SurfaceTexture", planeTexture);
 		wireframeEffect.SetTexture("SurfaceTexture", planeTexture);
+
+		solidEffect.AddTexture("SurfaceTexture", planeTexture);
+		solidEffect.SetTexture("SurfaceTexture", planeTexture);
 
 		surfelVertexBuffer = NULL;
 		solidVertexBuffer = NULL;
@@ -89,10 +93,16 @@ namespace Drawables{
 
 		InitCommonSolidAndWireframe();
 
+		geometryEffect.SetFloat("RadiusScale", RadiusScale);
+		geometryEffect.SetFloatVector("DeltaUV", DeltaSurfelUV);
 		geometryEffect.WriteToGeometryShader(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST, surfelVertexBuffer, surfelCount, solidVertexBuffer);
 
+		geometryEdgeEffect.SetFloat("RadiusScale", RadiusScale);
+		geometryEdgeEffect.SetFloatVector("DeltaUV", DeltaSurfelUV);
+		geometryEdgeEffect.WriteToGeometryShader(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST, surfelEdgeVertexBuffer, edgeCount, solidEdgeVertexBuffer);
+
 		Helpers::Globals::Device->CopyResource(readableVertexBuffer, solidVertexBuffer);
-		
+		Helpers::Globals::Device->CopyResource(readableEdgeVertexBuffer, solidEdgeVertexBuffer);
 	}
 
 	void Surface::AddSurfel(ProjectStructs::SURFEL *s){
@@ -110,16 +120,51 @@ namespace Drawables{
 	}
 
 	void Surface::AddForce(D3DXVECTOR3 force, D3DXVECTOR3 pos, int index){
-		
+		D3DXVECTOR3 direction;
+		D3DXVec3Normalize(&direction, &force);
+		direction.x = ceil(direction.x);
+		direction.y = ceil(direction.y);
+		direction.z = ceil(direction.z);
+
 		for(int i = 0; i < surfaceSurfels[index]->intersectingCells.size(); i++){
-			if(surfaceSurfels[index]->intersectingCells[i]->phyxel){
-				surfaceSurfels[index]->intersectingCells[i]->phyxel->force = force / D3DXVec3Length(&(pos - surfaceSurfels[index]->intersectingCells[i]->phyxel->pos));
-					/*D3DXVECTOR3(force.x / abs(pos.x - surfaceSurfels[index]->intersectingCells[i]->phyxel->pos.x), 
-					force.y / abs(pos.y - surfaceSurfels[index]->intersectingCells[i]->phyxel->pos.y), 
-					force.z / abs(pos.z - surfaceSurfels[index]->intersectingCells[i]->phyxel->pos.z));			*/
-				ChangedPhyxels::AddPhyxel(surfaceSurfels[index]->intersectingCells[i]->phyxel);
+			AddForceToPhyxel(force, pos, direction, surfaceSurfels[index]->intersectingCells[i]);
+		}
+	}
+
+	void Surface::AddForceToPhyxel(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::Phyxel_Grid_Cell *cell){
+		if(cell && cell->phyxel && !cell->phyxel->isChanged){
+
+			if(pos == cell->phyxel->pos)
+				return;
+
+			//if(!MathHelper::Facing(cell->phyxel->pos, pos, direction))
+			//	return;
+
+			D3DXVECTOR3 f = force / D3DXVec3Length(&(pos - cell->phyxel->pos));
+			
+			if(D3DXVec3Length(&force) < 100.0f || (MathHelper::Sign(f.x) != MathHelper::Sign(direction.x) && 
+				MathHelper::Sign(f.y) != MathHelper::Sign(direction.y) && 
+				MathHelper::Sign(f.z) != MathHelper::Sign(direction.z) )){
+				return;
+			}		
+
+			cell->phyxel->force.x += f.x;					
+			cell->phyxel->force.y += f.y;					
+			cell->phyxel->force.z += f.z;			
+
+			ChangedPhyxels::AddPhyxel(cell->phyxel);
+			
+			for(int i = 0; i<3; i++){
+				for(int j = 0; j<3; j++){
+					for(int k = 0; k<3; k++){
+						if((direction.x < 0 && i == 0) || (direction.x > 0 && i == 2) || (direction.y < 0 && j == 0) || 
+							(direction.y > 0 && j == 2) || (direction.z < 0 && k == 0) || (direction.z > 0 && k == 2))
+							AddForceToPhyxel(f / 10.0f, cell->phyxel->pos, direction, cell->neighbours(i, j, k));
+					}
+				}
 			}
 		}
+			
 	}
 
 	void Surface::InitGeometryPass(){
@@ -130,16 +175,39 @@ namespace Drawables{
 			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // normal
 			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 2*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // MajorRadius
 			{ "TEXCOORD", 1, DXGI_FORMAT_R32G32B32_FLOAT, 0, 3*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // MinorRadius
+			{ "TEXCOORD", 2, DXGI_FORMAT_R32G32_FLOAT, 0, 4*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // UV
 		};
 
 		// create the effect
-		geometryEffect = Helpers::CustomEffect("Surfels.fx", "GeometryTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_GEOMETRY | CUSTOM_EFFECT_TYPE_VERTEX , layout, 4);
+		geometryEffect = Helpers::CustomEffect("SurfelSplatter.fx", "GeometryTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_GEOMETRY | CUSTOM_EFFECT_TYPE_VERTEX , layout, 5);
 
 		geometryEffect.AddVariable("World");
 		geometryEffect.AddVariable("View");
 		geometryEffect.AddVariable("Projection");
+		geometryEffect.AddVariable("RadiusScale");
+		geometryEffect.AddVariable("DeltaUV");
 
 		geometryEffect.SetMatrix("World", world);
+
+		// Define the input layout
+		D3D10_INPUT_ELEMENT_DESC edgeLayout[] =
+		{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D10_INPUT_PER_VERTEX_DATA, 0 }, // pos
+			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // normal
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 2*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // MajorRadius
+			{ "TEXCOORD", 1, DXGI_FORMAT_R32G32B32_FLOAT, 0, 3*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // MinorRadius
+			{ "TEXCOORD", 2, DXGI_FORMAT_R32G32B32_FLOAT, 0, 4*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, //ClipPlane 
+			{ "TEXCOORD", 3, DXGI_FORMAT_R32G32_FLOAT, 0, 5*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // UV
+		};
+		geometryEdgeEffect = Helpers::CustomEffect("SurfelSplatter.fx", "GeometryEdgeTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_GEOMETRY | CUSTOM_EFFECT_TYPE_VERTEX , edgeLayout, 6);
+
+		geometryEdgeEffect.AddVariable("World");
+		geometryEdgeEffect.AddVariable("View");
+		geometryEdgeEffect.AddVariable("Projection");
+		geometryEdgeEffect.AddVariable("RadiusScale");
+		geometryEdgeEffect.AddVariable("DeltaUV");
+
+		geometryEdgeEffect.SetMatrix("World", world);
 	}
 
 	void Surface::InitSurfel(){
@@ -218,7 +286,7 @@ namespace Drawables{
 
 		D3D10_BUFFER_DESC vbdesc =
 		{
-			500000 * sizeof(ProjectStructs::SOLID_VERTEX),
+			6 * surfelCount * sizeof(ProjectStructs::SOLID_VERTEX),
 			D3D10_USAGE_DEFAULT,
 			D3D10_BIND_VERTEX_BUFFER | D3D10_BIND_STREAM_OUTPUT,
 			0,
@@ -227,9 +295,19 @@ namespace Drawables{
 
 		HR( Helpers::Globals::Device->CreateBuffer( &vbdesc, NULL, &solidVertexBuffer ) );		
 
+		D3D10_BUFFER_DESC vbedgedesc =
+		{
+			6 * edgeCount* sizeof(ProjectStructs::SOLID_VERTEX),
+			D3D10_USAGE_DEFAULT,
+			D3D10_BIND_VERTEX_BUFFER | D3D10_BIND_STREAM_OUTPUT,
+			0,
+			0
+		};
+		HR( Helpers::Globals::Device->CreateBuffer( &vbedgedesc, NULL, &solidEdgeVertexBuffer) );		
+
 		D3D10_BUFFER_DESC vbdesc2 =
 		{
-			500000 * sizeof(ProjectStructs::SOLID_VERTEX),
+			6 * surfelCount * sizeof(ProjectStructs::SOLID_VERTEX),
 			D3D10_USAGE_STAGING,
 			0,
 			D3D10_CPU_ACCESS_READ,
@@ -237,6 +315,17 @@ namespace Drawables{
 		};
 
 		HR( Helpers::Globals::Device->CreateBuffer( &vbdesc2, NULL, &readableVertexBuffer) );		
+
+		D3D10_BUFFER_DESC vbedgedesc2 =
+		{
+			6 * edgeCount * sizeof(ProjectStructs::SOLID_VERTEX),
+			D3D10_USAGE_STAGING,
+			0,
+			D3D10_CPU_ACCESS_READ,
+			0
+		};
+
+		HR( Helpers::Globals::Device->CreateBuffer( &vbedgedesc2, NULL, &readableEdgeVertexBuffer) );		
 	}
 
 	void Surface::InitWireframe(){
@@ -246,10 +335,11 @@ namespace Drawables{
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D10_INPUT_PER_VERTEX_DATA, 0 }, // pos
 			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // normal
 			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 2*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // UV
+			{ "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, 2*sizeof(D3DXVECTOR3) + sizeof(D3DXVECTOR2), D3D10_INPUT_PER_VERTEX_DATA, 0 }, //EWAUV;
 		};
 
 		// create the effect
-		wireframeEffect = Helpers::CustomEffect("SurfelSplatter.fx", "WireframeTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_VERTEX , layout, 3);
+		wireframeEffect = Helpers::CustomEffect("SurfelSplatter.fx", "WireframeTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_VERTEX , layout, 4);
 		wireframeEffect.AddVariable("World");
 		wireframeEffect.AddVariable("View");
 		wireframeEffect.AddVariable("Projection");
@@ -262,8 +352,8 @@ namespace Drawables{
 		wireframeEffect.AddVariable("B");
 		wireframeEffect.AddVariable("rhoOverPi");
 		wireframeEffect.AddVariable("LightColor");
+		wireframeEffect.AddVariable("DeltaUV");
 
-		wireframeEffect.SetMatrix("World", world);
 		wireframeEffect.SetFloatVector("AmbientColor", Helpers::Globals::AppLight.GetAmbientColor());
 		wireframeEffect.SetFloatVector("LightPos", Helpers::Globals::AppLight.GetPosition());
 		wireframeEffect.SetFloatVector("LightDirection", Helpers::Globals::AppLight.GetDirection());
@@ -280,22 +370,21 @@ namespace Drawables{
 	}
 
 	void Surface::InitSolid(){
+
 		// Define the input layout
 		D3D10_INPUT_ELEMENT_DESC layout[] =
 		{
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D10_INPUT_PER_VERTEX_DATA, 0 }, // pos
 			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // normal
 			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 2*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // UV
+			{ "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, 2*sizeof(D3DXVECTOR3) + sizeof(D3DXVECTOR2), D3D10_INPUT_PER_VERTEX_DATA, 0 }, //EWAUV;
 		};
 
 		// create the effect
-		solidEffect= Helpers::CustomEffect("Surfels.fx", "SolidTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_VERTEX , layout, 3);
-
+		solidEffect = Helpers::CustomEffect("SurfelSplatter.fx", "SolidTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_VERTEX , layout, 4);
 		solidEffect.AddVariable("World");
 		solidEffect.AddVariable("View");
 		solidEffect.AddVariable("Projection");
-		solidEffect.AddTexture("SurfaceTexture", "Textures\\Floor.jpg");
-		solidEffect.AddVariable("EWATexture");
 
 		solidEffect.AddVariable("LightPos");
 		solidEffect.AddVariable("AmbientColor");
@@ -304,11 +393,11 @@ namespace Drawables{
 		solidEffect.AddVariable("A");
 		solidEffect.AddVariable("B");
 		solidEffect.AddVariable("rhoOverPi");
-		solidEffect.AddVariable("LightColor");		
+		solidEffect.AddVariable("LightColor");
+		solidEffect.AddVariable("EWATexture");
+		solidEffect.AddVariable("DeltaUV");
 
 		solidEffect.SetTexture("EWATexture", SurfelTexture);
-		solidEffect.SetTexture("SurfaceTexture", "Textures\\Floor.jpg");
-		solidEffect.SetMatrix("World", world);
 		solidEffect.SetFloatVector("AmbientColor", Helpers::Globals::AppLight.GetAmbientColor());
 		solidEffect.SetFloatVector("LightPos", Helpers::Globals::AppLight.GetPosition());
 		solidEffect.SetFloatVector("LightDirection", Helpers::Globals::AppLight.GetDirection());
@@ -318,33 +407,37 @@ namespace Drawables{
 		solidEffect.SetFloatVector("LightColor", Helpers::Globals::AppLight.GetColor());
 	}
 
-
 	void Surface::Draw()
 	{
-/*		if(Helpers::Globals::SurfelDrawMethod == Helpers::SOLID){
-			DrawSolid();
-		}*/
-
-		if(Helpers::Globals::SurfelRenderMethod == Helpers::WIREFRAME){
+		if(Helpers::Globals::SurfelRenderMethod == Helpers::WIREFRAME)
 			DrawWireframe();
-		}
-		else if(Helpers::Globals::SurfelRenderMethod == Helpers::SOLID){
+		else if(Helpers::Globals::SurfelRenderMethod == Helpers::SOLID)
+			DrawSolid();
+		else if(Helpers::Globals::SurfelRenderMethod == Helpers::SURFEL)
 			DrawSurfel();
-		}
 	}
 
 	void Surface::DrawSolid(){
 		solidEffect.SetFloatVector("CameraPos", Helpers::Globals::AppCamera.Position());
 		solidEffect.SetMatrix("View", Helpers::Globals::AppCamera.View());
 		solidEffect.SetMatrix("Projection", Helpers::Globals::AppCamera.Projection());
-
+		solidEffect.SetMatrix("World", world);
+		solidEffect.SetTexture("SurfaceTexture", planeTexture);
+		solidEffect.SetFloat("A", this->A);
+		solidEffect.SetFloat("B", this->B);
+		solidEffect.SetFloat("rhoOverPi", this->rhoOverPi);
 		solidEffect.PreDraw();
 
-		UINT stride = sizeof( ProjectStructs::SOLID_VERTEX);
+		UINT stride = sizeof( ProjectStructs::SOLID_VERTEX );
 		UINT offset = 0;
 
 		Helpers::Globals::Device->IASetPrimitiveTopology( D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
 		Helpers::Globals::Device->IASetVertexBuffers( 0, 1, &solidVertexBuffer, &stride, &offset );
+
+		solidEffect.DrawAuto();
+
+		Helpers::Globals::Device->IASetVertexBuffers( 0, 1, &solidEdgeVertexBuffer, &stride, &offset );
 
 		solidEffect.DrawAuto();
 	}
@@ -358,21 +451,26 @@ namespace Drawables{
 		wireframeEffect.SetFloat("A", this->A);
 		wireframeEffect.SetFloat("B", this->B);
 		wireframeEffect.SetFloat("rhoOverPi", this->rhoOverPi);
-
+		
 		wireframeEffect.PreDraw();
 
 		UINT stride = sizeof( ProjectStructs::SOLID_VERTEX);
 		UINT offset = 0;
 
-		Helpers::Globals::Device->IASetPrimitiveTopology( D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
+		Helpers::Globals::Device->IASetPrimitiveTopology( D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		Helpers::Globals::Device->IASetVertexBuffers( 0, 1, &solidVertexBuffer, &stride, &offset );
 
 		wireframeEffect.DrawAuto();
+
+		Helpers::Globals::Device->IASetVertexBuffers( 0, 1, &solidEdgeVertexBuffer, &stride, &offset );
+
+		wireframeEffect.DrawAuto();
+
 		Helpers::Globals::Device->RSSetState(SolidRenderState);
 	}
 
 	void Surface::DrawSurfel(){
-		
+	
 		surfelEffect.SetFloatVector("CameraPos", Helpers::Globals::AppCamera.Position());
 		surfelEffect.SetMatrix("View", Helpers::Globals::AppCamera.View());
 		surfelEffect.SetMatrix("World", world);
@@ -382,7 +480,6 @@ namespace Drawables{
 		surfelEffect.SetFloat("A", this->A);
 		surfelEffect.SetFloat("B", this->B);
 		surfelEffect.SetFloat("rhoOverPi", this->rhoOverPi);
-		surfelEffect.SetFloatVector("DeltaUV", DeltaSurfelUV);
 
 		surfelEffect.PreDraw();
 
@@ -418,19 +515,30 @@ namespace Drawables{
 	}
 
 	void Surface::Update(float dt){
-		
+		if(RadiusScale != LastRadiusScale){
+			// reset the solid vertex buffers
+			geometryEffect.SetFloat("RadiusScale", RadiusScale);
+			geometryEffect.SetFloatVector("DeltaUV", DeltaSurfelUV);
+			geometryEffect.WriteToGeometryShader(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST, surfelVertexBuffer, surfelCount, solidVertexBuffer);
+
+			geometryEdgeEffect.SetFloat("RadiusScale", RadiusScale);
+			geometryEdgeEffect.SetFloatVector("DeltaUV", DeltaSurfelUV);
+			geometryEdgeEffect.WriteToGeometryShader(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST, surfelEdgeVertexBuffer, edgeCount, solidEdgeVertexBuffer);
+
+			Helpers::Globals::Device->CopyResource(readableVertexBuffer, solidVertexBuffer);
+			Helpers::Globals::Device->CopyResource(readableEdgeVertexBuffer, solidEdgeVertexBuffer);
+		}
 	}
 
 	void Surface::CleanUp(){
-		this->surfelVertexBuffer->Release();
-		this->solidVertexBuffer->Release();
-		this->readableVertexBuffer->Release();
 
 		if(Surface::TextureLoaded){
 
 			geometryEffect.CleanUp();
+			geometryEdgeEffect.CleanUp();
 			solidEffect.CleanUp();
 			surfelEffect.CleanUp();
+			surfelEdgeEffect.CleanUp();
 			wireframeEffect.CleanUp();
 
 			Surface::TextureLoaded = false;
@@ -449,5 +557,25 @@ namespace Drawables{
 
 		this->edgeSurfels.clear();
 		this->edgeSurfels.swap(std::vector<ProjectStructs::SURFEL_EDGE*>());
+
+		this->surfelVertexBuffer->Release();
+		this->surfelVertexBuffer = NULL;
+		delete this->surfelVertexBuffer;
+
+		this->solidVertexBuffer->Release();
+		this->solidVertexBuffer= NULL;
+		delete this->solidVertexBuffer;
+
+		this->readableVertexBuffer->Release();
+		this->readableVertexBuffer= NULL;
+		delete this->readableVertexBuffer;
+
+		this->readableEdgeVertexBuffer->Release();
+		this->readableEdgeVertexBuffer= NULL;
+		delete this->readableEdgeVertexBuffer;
+
+		this->solidEdgeVertexBuffer->Release();
+		this->solidEdgeVertexBuffer= NULL;
+		delete this->solidEdgeVertexBuffer;
 	}
 }

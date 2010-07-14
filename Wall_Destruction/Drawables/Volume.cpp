@@ -2,6 +2,8 @@
 #include "Globals.h"
 #include "TextureCreator.h"
 #include "MathHelper.h"
+#include <vector>
+#include <algorithm>
 
 Volume::Volume(){
 }
@@ -14,57 +16,89 @@ void Volume::Init(bool d)
 	if(deformable){
 		D3DXVECTOR3 Min = D3DXVECTOR3(FLT_MAX, FLT_MAX, FLT_MAX), Max = D3DXVECTOR3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
-		for (UINT i = 0; i < surfaces.size(); i++)
-		{
-			for (int j = 0; j < surfaces[i]->GetEdgeSurfelCount() ; j++)
-			{
-				bool posMaj = MathHelper::PositiveMajor(surfaces[i]->GetEdgeSurfel(j));
-				bool posMin = MathHelper::PositiveMinor(surfaces[i]->GetEdgeSurfel(j));
-				bool negMaj = MathHelper::NegativeMajor(surfaces[i]->GetEdgeSurfel(j));
-				bool negMin = MathHelper::NegativeMinor(surfaces[i]->GetEdgeSurfel(j));
+		std::vector<D3DXVECTOR3> surfelVertexList;
+		std::vector<D3DXVECTOR3> edgeVertexList;
+		std::vector<ProjectStructs::SURFEL*> surfelList;
+		std::vector<ProjectStructs::SURFEL_EDGE*> edgeList;
+		
+		for(int i = 0; i<surfaces.size(); i++){
+			// read from the surfel vertex buffer
+			ProjectStructs::SOLID_VERTEX* vertices = 0;
 
-				if(negMaj && Min.x > surfaces[i]->GetEdgeSurfel(j)->vertex.pos.x - surfaces[i]->GetEdgeSurfel(j)->vertex.majorAxis.x)
-					Min.x = surfaces[i]->GetEdgeSurfel(j)->vertex.pos.x - surfaces[i]->GetEdgeSurfel(j)->vertex.majorAxis.x;
-				if(posMaj && Max.x < surfaces[i]->GetEdgeSurfel(j)->vertex.pos.x + surfaces[i]->GetEdgeSurfel(j)->vertex.majorAxis.x)
-					Max.x = surfaces[i]->GetEdgeSurfel(j)->vertex.pos.x + surfaces[i]->GetEdgeSurfel(j)->vertex.majorAxis.x;
+			HR(surfaces[i]->GetSurfelReadableBuffer()->Map(D3D10_MAP_READ, 0, reinterpret_cast< void** >(&vertices)));
+			surfaces[i]->GetSurfelReadableBuffer()->Unmap();
 
-				if(negMin && Min.x > surfaces[i]->GetEdgeSurfel(j)->vertex.pos.x - surfaces[i]->GetEdgeSurfel(j)->vertex.minorAxis.x)
-					Min.x = surfaces[i]->GetEdgeSurfel(j)->vertex.pos.x - surfaces[i]->GetEdgeSurfel(j)->vertex.minorAxis.x;
-				if(posMin && Max.x < surfaces[i]->GetEdgeSurfel(j)->vertex.pos.x + surfaces[i]->GetEdgeSurfel(j)->vertex.minorAxis.x)
-					Max.x = surfaces[i]->GetEdgeSurfel(j)->vertex.pos.x + surfaces[i]->GetEdgeSurfel(j)->vertex.minorAxis.x;
+			for(int j = 0; j<surfaces[i]->GetSurfaceSurfelCount(); j++){
+				surfelVertexList.push_back(vertices[j*6].pos);
+				surfelList.push_back(surfaces[i]->GetSurfaceSurfel(j));
+				surfelVertexList.push_back(vertices[j*6+1].pos);
+				surfelList.push_back(surfaces[i]->GetSurfaceSurfel(j));
+				surfelVertexList.push_back(vertices[j*6+2].pos);
+				surfelList.push_back(surfaces[i]->GetSurfaceSurfel(j));
+				surfelVertexList.push_back(vertices[j*6+3].pos);
+				surfelList.push_back(surfaces[i]->GetSurfaceSurfel(j));
+				surfelVertexList.push_back(vertices[j*6+4].pos);
+				surfelList.push_back(surfaces[i]->GetSurfaceSurfel(j));
+				surfelVertexList.push_back(vertices[j*6+5].pos);
+				surfelList.push_back(surfaces[i]->GetSurfaceSurfel(j));
 
+			}
 
-				if(negMaj && Min.y > surfaces[i]->GetEdgeSurfel(j)->vertex.pos.y - surfaces[i]->GetEdgeSurfel(j)->vertex.majorAxis.y)
-					Min.y = surfaces[i]->GetEdgeSurfel(j)->vertex.pos.y - surfaces[i]->GetEdgeSurfel(j)->vertex.majorAxis.y;
-				if(posMaj && Max.y < surfaces[i]->GetEdgeSurfel(j)->vertex.pos.y + surfaces[i]->GetEdgeSurfel(j)->vertex.majorAxis.y)
-					Max.y = surfaces[i]->GetEdgeSurfel(j)->vertex.pos.y + surfaces[i]->GetEdgeSurfel(j)->vertex.majorAxis.y;
+			vertices = 0;
 
-				if(negMin && Min.y > surfaces[i]->GetEdgeSurfel(j)->vertex.pos.y - surfaces[i]->GetEdgeSurfel(j)->vertex.minorAxis.y)
-					Min.y = surfaces[i]->GetEdgeSurfel(j)->vertex.pos.y - surfaces[i]->GetEdgeSurfel(j)->vertex.minorAxis.y;
-				if(posMin && Max.y < surfaces[i]->GetEdgeSurfel(j)->vertex.pos.y + surfaces[i]->GetEdgeSurfel(j)->vertex.minorAxis.y)
-					Max.y = surfaces[i]->GetEdgeSurfel(j)->vertex.pos.y + surfaces[i]->GetEdgeSurfel(j)->vertex.minorAxis.y;
+			HR(surfaces[i]->GetEdgeReadableBuffer()->Map(D3D10_MAP_READ, 0, reinterpret_cast< void** >(&vertices)));
+			surfaces[i]->GetEdgeReadableBuffer()->Unmap();
 
-
-				if(negMaj && Min.z > surfaces[i]->GetEdgeSurfel(j)->vertex.pos.z - surfaces[i]->GetEdgeSurfel(j)->vertex.majorAxis.z)
-					Min.z = surfaces[i]->GetEdgeSurfel(j)->vertex.pos.z - surfaces[i]->GetEdgeSurfel(j)->vertex.majorAxis.z;
-				if(posMaj && Max.z < surfaces[i]->GetEdgeSurfel(j)->vertex.pos.z + surfaces[i]->GetEdgeSurfel(j)->vertex.majorAxis.z)
-					Max.z = surfaces[i]->GetEdgeSurfel(j)->vertex.pos.z + surfaces[i]->GetEdgeSurfel(j)->vertex.majorAxis.z;
-
-				if(negMin && Min.z > surfaces[i]->GetEdgeSurfel(j)->vertex.pos.z - surfaces[i]->GetEdgeSurfel(j)->vertex.minorAxis.z)
-					Min.z = surfaces[i]->GetEdgeSurfel(j)->vertex.pos.z - surfaces[i]->GetEdgeSurfel(j)->vertex.minorAxis.z;
-				if(posMin && Max.z < surfaces[i]->GetEdgeSurfel(j)->vertex.pos.z + surfaces[i]->GetEdgeSurfel(j)->vertex.minorAxis.z)
-					Max.z = surfaces[i]->GetEdgeSurfel(j)->vertex.pos.z + surfaces[i]->GetEdgeSurfel(j)->vertex.minorAxis.z;
+			for(int j = 0; j<surfaces[i]->GetEdgeSurfelCount(); j++){
+				edgeVertexList.push_back(vertices[j*6].pos);
+				edgeList.push_back(surfaces[i]->GetEdgeSurfel(j));
+				edgeVertexList.push_back(vertices[j*6+1].pos);
+				edgeList.push_back(surfaces[i]->GetEdgeSurfel(j));
+				edgeVertexList.push_back(vertices[j*6+2].pos);
+				edgeList.push_back(surfaces[i]->GetEdgeSurfel(j));
+				edgeVertexList.push_back(vertices[j*6+3].pos);
+				edgeList.push_back(surfaces[i]->GetEdgeSurfel(j));
+				edgeVertexList.push_back(vertices[j*6+4].pos);
+				edgeList.push_back(surfaces[i]->GetEdgeSurfel(j));
+				edgeVertexList.push_back(vertices[j*6+5].pos);
+				edgeList.push_back(surfaces[i]->GetEdgeSurfel(j));
 			}
 		}
 
-		float halfwidth = max(Max.x - Min.x, max(Max.y - Min.y, Max.z - Min.z))*0.5f;
+		for (UINT i = 0; i < edgeVertexList.size(); i++)
+		{
+			if(Min.x > edgeVertexList[i].x)
+				Min.x = edgeVertexList[i].x;
+			else if(Max.x < edgeVertexList[i].x)
+				Max.x = edgeVertexList[i].x;
 
-		grid = new PhyxelGrid(20, Min, Max, pos + (Min + (Max - Min)/2.0f));
+			if(Min.y > edgeVertexList[i].y)
+				Min.y = edgeVertexList[i].y;
+			else if(Max.y < edgeVertexList[i].y)
+				Max.y = edgeVertexList[i].y;
 
-		for(UINT i = 0; i<surfaces.size(); i++){
-			grid->InsertSurface(surfaces[i]);
+			if(Min.z > edgeVertexList[i].z)
+				Min.z = edgeVertexList[i].z;
+			else if(Max.z < edgeVertexList[i].z)
+				Max.z = edgeVertexList[i].z;
 		}
+
+		grid = new PhyxelGrid(30, Min, Max, pos + (Min + (Max - Min)/2.0f));
+
+		grid->InsertPoints(surfelVertexList, surfelList);
+		grid->InsertEdges(edgeVertexList, edgeList);
+		
 		grid->Init();
+
+		surfelList.clear();
+		surfelList.swap(std::vector<ProjectStructs::SURFEL*>());
+		edgeList.clear();
+		edgeList.swap(std::vector<ProjectStructs::SURFEL_EDGE*>());
+		surfelVertexList.clear();
+		surfelVertexList.swap(std::vector<D3DXVECTOR3>());
+		edgeVertexList.clear();
+		edgeVertexList.swap(std::vector<D3DXVECTOR3>());
+
 	}
 }
 
@@ -83,16 +117,9 @@ void Volume::Draw(){
 	}
 
 	if(deformable){
-		if(Helpers::Globals::DRAW_OCTREE){
+		if(Helpers::Globals::DRAW_PHYXEL_GRID){
 			grid->Draw();
-		//	octree->Draw(this->pos);
 		}
-		else{
-		//	octree->CleanUpDrawables();
-		}
-
-		/*if(Helpers::Globals::DRAW_PHYXELS)
-			phyxelObject.Draw();*/
 	}
 }
 
@@ -101,11 +128,6 @@ void Volume::Update(float dt){
 	for(int i = 0; i<surfaces.size(); i++){
 		surfaces[i]->Update(dt);
 	}
-
-	if(deformable){
-		//phyxelObject.Update(dt);
-	}
-
 }
 
 void Volume::AddSurface(Surface *surface){
@@ -122,11 +144,6 @@ void Volume::CleanUp(){
 	if(deformable){
 		grid->CleanUp();
 		delete grid;
-
-		//phyxelObject.CleanUp();
-
-		//octree->CleanUp();
-		//delete octree;
 	}
 }
 

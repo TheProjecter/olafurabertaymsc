@@ -6,7 +6,7 @@
 #include <ctime>
 
 namespace PointCloud{
-
+	
 	const string PointCloudHandler::XML_MESHLESS_ROOT = "meshless_object";
 	const string PointCloudHandler::XML_MESHLESS_NAME = "name";
 	const string PointCloudHandler::XML_MESHLESS_DEFORMABLE = "deformable";
@@ -219,6 +219,9 @@ namespace PointCloud{
 		D3DXVECTOR2 delta = D3DXVECTOR2(0.5f/(float)U, 0.5f/(float)V);
 		surface->SetDeltaSurfelUV(delta);
 
+		D3DXVECTOR3 calculatedNormal;
+		D3DXVec3Cross(&calculatedNormal, &minorAxis, &majorAxis);
+
 		for(float i = -U+1; i<=U-1; i++)
 		{
 			for (float j = -V+1; j <= V-1; j++)
@@ -231,8 +234,9 @@ namespace PointCloud{
 		// Top - bottom - works
 		for(float i = -U+1; i<=U-1; i++)
 		{
-			surface->AddEdgeSurfel(new ProjectStructs::SURFEL_EDGE(pos + i*majorAxis - V*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(1.0f, 0.0f, 1.0f), 
+			surface->AddEdgeSurfel(new ProjectStructs::SURFEL_EDGE(pos + i*majorAxis - V*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(1.0f, 0.0f, 1.0f ), 
 				D3DXVECTOR2(delta.x * (i+U), 0.0)));
+
  			surface->AddEdgeSurfel(new ProjectStructs::SURFEL_EDGE(pos + i*majorAxis + V*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(1.0f, 0.0f, 0.0f),
  				D3DXVECTOR2(delta.x * (i+U), V )));
 		}

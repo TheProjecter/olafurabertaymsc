@@ -64,7 +64,7 @@ namespace Drawables{
 		
 		ProjectStructs::MESHLESS_OBJECT_STRUCT meshlessObjectStruct = PointCloud::PointCloudHandler::ProcessPointCloud(pointCloudXmlFile, *&tree, *&volume);
 
-		Helpers::Globals::DebugInformation.EndTimer(D3DXCOLOR(0.0f, 1.0f, 0.0f, 0.0f), "%s - Ran the Pointcloud handler. ", meshlessObjectStruct.name.c_str());
+		Helpers::Globals::DebugInformation.EndTimer(DEBUG_TYPE, D3DXCOLOR(0.0f, 1.0f, 0.0f, 0.0f), "%s - Ran the Pointcloud handler. ", meshlessObjectStruct.name.c_str());
 
 		this->texture = meshlessObjectStruct.texture;
 		this->deformable = meshlessObjectStruct.deformable;
@@ -75,6 +75,6 @@ namespace Drawables{
 		Helpers::Globals::DebugInformation.StartTimer();
 		PhysicsWrapper::AddMeshlessObject(this);
 		
-		Helpers::Globals::DebugInformation.EndTimer(D3DXCOLOR(0.0f, 1.0f, 0.0f, 0.0f), "%s - Added the meshless object into Havok", meshlessObjectStruct.name.c_str(), meshlessObjectStruct.surfels.size());
+		Helpers::Globals::DebugInformation.EndTimer(DEBUG_TYPE, D3DXCOLOR(0.0f, 1.0f, 0.0f, 0.0f), "%s - Added the meshless object into Havok", meshlessObjectStruct.name.c_str(), meshlessObjectStruct.surfels.size());
 	}
 }

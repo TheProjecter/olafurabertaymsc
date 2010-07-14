@@ -220,8 +220,8 @@ void PhysicsWrapper::AddMeshlessObject(MeshlessObject *mo)
 
 	for(int surfaceIndex = 0; surfaceIndex < mo->GetVolume()->GetSurfaceCount(); surfaceIndex++){
 
-		HR(mo->GetVolume()->GetSurface(surfaceIndex)->GetReadableBuffer()->Map(D3D10_MAP_READ, 0, reinterpret_cast< void** >(&vertices)));
-		mo->GetVolume()->GetSurface(surfaceIndex)->GetReadableBuffer()->Unmap();
+		HR(mo->GetVolume()->GetSurface(surfaceIndex)->GetSurfelReadableBuffer()->Map(D3D10_MAP_READ, 0, reinterpret_cast< void** >(&vertices)));
+		mo->GetVolume()->GetSurface(surfaceIndex)->GetSurfelReadableBuffer()->Unmap();
 		
 		D3DXVECTOR4* vertexPositions = NULL;
 
@@ -232,16 +232,6 @@ void PhysicsWrapper::AddMeshlessObject(MeshlessObject *mo)
 				vertexPositions[index++] = D3DXVECTOR4(vertices[surfelIndex*6 + i].pos , 0.0f);
 				vertexPositions[index++] = D3DXVECTOR4(vertices[surfelIndex*6 + i+1].pos , 0.0f);
 				vertexPositions[index++] = D3DXVECTOR4(vertices[surfelIndex*6 + i+2].pos , 0.0f);
-			}
-
-			if(vertexPositions[0].x == 0.0f && vertexPositions[0].y == 0.0f && vertexPositions[0].z == 0.0f && 
-				vertexPositions[1].x == 0.0f && vertexPositions[1].y == 0.0f && vertexPositions[1].z == 0.0f && 
-				vertexPositions[2].x == 0.0f && vertexPositions[2].y == 0.0f && vertexPositions[2].z == 0.0f && 
-				vertexPositions[3].x == 0.0f && vertexPositions[3].y == 0.0f && vertexPositions[3].z == 0.0f && 
-				vertexPositions[4].x == 0.0f && vertexPositions[4].y == 0.0f && vertexPositions[4].z == 0.0f && 
-				vertexPositions[5].x == 0.0f && vertexPositions[5].y == 0.0f && vertexPositions[5].z == 0.0f)
-			{
-				continue;
 			}
 
 			hkStridedVertices stridedVerts;

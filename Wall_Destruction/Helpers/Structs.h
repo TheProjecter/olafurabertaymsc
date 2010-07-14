@@ -36,6 +36,7 @@ namespace ProjectStructs{
 		float radius;
 		float mass;
 		D3DXVECTOR3 force;
+		bool isChanged;
 	};
 
 	struct Phyxel_Grid_Cell{
@@ -119,7 +120,6 @@ namespace ProjectStructs{
 
 		SURFEL(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR3 majorAxis, D3DXVECTOR3 minorAxis, D3DXVECTOR2 UV){
 			this->vertex = SURFEL_VERTEX(pos, normal, majorAxis, minorAxis, UV);
-			/*intersectingCells = std::vector<Phyxel_Grid_Cell*>(5);*/
 		}
 
 		SURFEL(){}
@@ -131,18 +131,32 @@ namespace ProjectStructs{
 		
 		SURFEL_EDGE(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR3 majorAxis, D3DXVECTOR3 minorAxis, D3DXVECTOR3 clipPlane, D3DXVECTOR2 UV){
 			this->vertex = SURFEL_EDGE_VERTEX(pos, normal, majorAxis, minorAxis, clipPlane, UV);
-			/*intersectingCells = std::vector<Phyxel_Grid_Cell*>(5);*/
 		}
 
 		SURFEL_EDGE(){}
+	};
+
+	struct SPHERE_VERTEX{
+		D3DXVECTOR3 pos;
+		D3DXVECTOR3 normal;
+		D3DXVECTOR2 UV;
+
+		SPHERE_VERTEX(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR2 UV){
+			this->UV = UV;
+			this->normal = normal;
+			this->pos = pos;
+		}
+		SPHERE_VERTEX(){}
 	};
 
 	struct SOLID_VERTEX{
 		D3DXVECTOR3 pos;
 		D3DXVECTOR3 normal;
 		D3DXVECTOR2 UV;
+		D3DXVECTOR2 EWAUV;
 
-		SOLID_VERTEX(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR2 UV){
+		SOLID_VERTEX(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR2 UV, D3DXVECTOR2 EWAUV){
+			this->EWAUV = EWAUV;
 			this->UV = UV;
 			this->normal = normal;
 			this->pos = pos;
@@ -204,6 +218,16 @@ namespace ProjectStructs{
 
 		bool childrenContainObjects;
 		bool checked;
+	};
+
+	struct SurfaceSurfelIndex{
+		int SurfaceIndex;
+		int SurfelIndex;
+
+		SurfaceSurfelIndex(int surfaceIndex, int surfelIndex){
+			this->SurfaceIndex = surfaceIndex;
+			this->SurfelIndex = surfelIndex;
+		}
 	};
 }
 

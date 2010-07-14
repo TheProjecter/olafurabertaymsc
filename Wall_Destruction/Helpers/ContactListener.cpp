@@ -29,7 +29,7 @@ void ContactListener::contactPointCallback( const hkpContactPointEvent& event ){
 	}
 	
 	//Helpers::Globals::DebugInformation.AddText("f = (%f, %f, %f)", force(0), force(1), force(2));
-	surface->AddForce(D3DXVECTOR3(abs(force(0)), abs(force(1)), abs(force(2))), D3DXVECTOR3(event.m_contactPoint->getPosition()(0), event.m_contactPoint->getPosition()(1), event.m_contactPoint->getPosition()(2)), surfelIndex);
+	surface->AddForce(D3DXVECTOR3(force(0), force(1), force(2)), D3DXVECTOR3(event.m_contactPoint->getPosition()(0), event.m_contactPoint->getPosition()(1), event.m_contactPoint->getPosition()(2)), surfelIndex);
 
 /*
 	if(event.m_type == hkpContactPointEvent::TYPE_MANIFOLD)

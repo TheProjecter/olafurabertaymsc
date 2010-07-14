@@ -17,12 +17,15 @@ namespace Helpers{
 	bool Globals::CORRECTLY_SETUP = true;
 	bool Globals::MOUSE_ACQUIRED = false; // set as false, so the mouse gets acquired in the beginning
 	bool Globals::MOVE_WRECKINGBALL = false;
-	bool Globals::DRAW_OCTREE = false;
+	bool Globals::DRAW_PHYXEL_GRID = false;
 	bool Globals::DRAW_PHYXELS = false;
+	bool Globals::SHOW_DEBUG = true;
+	bool Globals::SHOW_INFO = true;
+	bool Globals::SHOW_ERRORS = true;
 
 	InfoText Globals::DebugInformation;
-	DrawMethod Globals::SurfelDrawMethod = SOLID;
-	DrawMethod Globals::SurfelRenderMethod = SOLID;
+	DrawMethod Globals::SurfelDrawMethod = SURFEL;
+	DrawMethod Globals::SurfelRenderMethod = SURFEL;
 
 	// constants
 	const float Globals::PI = (float)D3DX_PI;

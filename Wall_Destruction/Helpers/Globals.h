@@ -89,8 +89,11 @@ namespace Helpers{
 		static bool CORRECTLY_SETUP;
 		static bool MOUSE_ACQUIRED;
 		static bool MOVE_WRECKINGBALL;
-		static bool DRAW_OCTREE;
+		static bool DRAW_PHYXEL_GRID;
 		static bool DRAW_PHYXELS;
+		static bool SHOW_DEBUG;
+		static bool SHOW_INFO;
+		static bool SHOW_ERRORS;
 		static ID3D10RenderTargetView* RenderTargetView;
 		static ID3D10DepthStencilView* DepthStencilView;
 	};

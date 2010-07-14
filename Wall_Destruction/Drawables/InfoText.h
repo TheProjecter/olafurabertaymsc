@@ -9,10 +9,13 @@
 
 namespace Drawables{
 	
+	enum TEXT_TYPE {INFO_TYPE, DEBUG_TYPE, ERROR_TYPE, ALWAYS};
+
 	struct INFO_TEXT{
 		std::string text;
 		D3DXCOLOR color;
 		float life;
+		TEXT_TYPE type;
 	};
 
 	class InfoText
@@ -22,15 +25,15 @@ namespace Drawables{
 		InfoText(int x, int y);
 		~InfoText(void);
 
-		void AddText(const char *strText, ...);
-		void AddText(D3DXCOLOR color, const char *strText, ...);
+		void AddText(TEXT_TYPE type, const char *strText, ...);
+		void AddText(TEXT_TYPE type, D3DXCOLOR color, const char *strText, ...);
 		
-		void AddText(D3DXCOLOR color, std::string text);
-		void AddText(std::string text);
+		void AddText(TEXT_TYPE type, D3DXCOLOR color, std::string text);
+		void AddText(TEXT_TYPE type, std::string text);
 
 		void StartTimer();
-		void EndTimer(D3DXCOLOR color, const char *strText, ...);
-		void EndTimer(const char *strText, ...);
+		void EndTimer(TEXT_TYPE type, D3DXCOLOR color, const char *strText, ...);
+		void EndTimer(TEXT_TYPE type, const char *strText, ...);
 		
 		void Draw();
 		void Update(float dt);

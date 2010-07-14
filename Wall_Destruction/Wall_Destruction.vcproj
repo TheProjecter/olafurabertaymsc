@@ -18,7 +18,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="..\..\..\..\..\..\MASTERS\Output"
+			OutputDirectory=".\DEBUG"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
@@ -43,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;C:\Program Files (x86)\Visual Leak Detector\include&quot;;Havok\Source;&quot;C:\Dropbox\My Dropbox\Skoli\Programming\Masters\Wall_Destruction\Helpers&quot;;&quot;C:\Dropbox\My Dropbox\Skoli\Programming\Masters\Wall_Destruction\Framework&quot;;&quot;C:\Dropbox\My Dropbox\Skoli\Programming\Masters\Wall_Destruction\External\ANN\Include&quot;;&quot;C:\Dropbox\My Dropbox\Skoli\Programming\Masters\Wall_Destruction\External&quot;;&quot;C:\Dropbox\My Dropbox\Skoli\Programming\Masters\Wall_Destruction\Drawables&quot;;&quot;C:\Dropbox\My Dropbox\Skoli\Programming\Masters\Wall_Destruction\Algorithms&quot;"
+				AdditionalIncludeDirectories=".External\vld\;Havok\Source;.\Helpers;.\Framework;.\External;.\Drawables;.\Algorithms"
 				PreprocessorDefinitions="WIN32;_DEBUG;DEBUG;_WINDOWS;TIXML_USE_STL;HK_DEBUG;MEMORY_LEAK_CHECK;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -65,7 +65,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="hkaAnimation.lib hkaInternal.lib hkaRagdoll.lib hkBase.lib hkCompat.lib hkgBridge.lib hkgCommon.lib hkgDx9.lib hkgDx9s.lib hkgDx10.lib hkGeometryUtilities.lib hkgOgl.lib hkgOgls.lib hkInternal.lib hkpCollide.lib hkpConstraintSolver.lib hkpDynamics.lib hkpInternal.lib hkpUtilities.lib hkpVehicle.lib hkSceneData.lib hksCommon.lib hkSerialize.lib hksXAudio2.lib hkVisualize.lib VdbClient.lib DbgHelp.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;C:\Program Files (x86)\Visual Leak Detector\lib\Win32&quot;;Havok\Lib_Debug;Lib"
+				AdditionalLibraryDirectories="Havok\Lib_Debug;Lib"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames="libc.lib;libcmt.lib;libcd.lib;libcmtd.lib;msvcrt.lib"
 				GenerateDebugInformation="true"
@@ -92,7 +92,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="mkdir ..\..\..\..\..\..\MASTERS\Output\Textures&#x0D;&#x0A;mkdir ..\..\..\..\..\..\MASTERS\Output\MeshlessObjects&#x0D;&#x0A;mkdir ..\..\..\..\..\..\MASTERS\Output\Shaders&#x0D;&#x0A;&#x0D;&#x0A;copy .\MeshlessObjects\*.* ..\..\..\..\..\..\MASTERS\Output\MeshlessObjects\&#x0D;&#x0A;copy .\Shaders\*.* ..\..\..\..\..\..\MASTERS\Output\Shaders\&#x0D;&#x0A;copy .\Textures\*.* ..\..\..\..\..\..\MASTERS\Output\Textures\&#x0D;&#x0A;&#x0D;&#x0A;&#x0D;&#x0A;"
+				CommandLine="mkdir .\DEBUG\Textures&#x0D;&#x0A;mkdir .\DEBUG\MeshlessObjects&#x0D;&#x0A;mkdir .\DEBUG\Shaders&#x0D;&#x0A;&#x0D;&#x0A;copy .\MeshlessObjects\*.* .\DEBUG\MeshlessObjects\&#x0D;&#x0A;copy .\Shaders\*.* .\DEBUG\Shaders\&#x0D;&#x0A;copy .\Textures\*.* .\DEBUG\Textures\&#x0D;&#x0A;&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -387,6 +387,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\External\vld\vld.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Shaders\phong splatting\vps\vp_clip_pass2_phong.h"
 				>
 			</File>
@@ -572,10 +576,6 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
-			<File
-				RelativePath=".\Wall_Destruction.rc"
-				>
-			</File>
 			<Filter
 				Name="Shaders"
 				>
@@ -1087,6 +1087,10 @@
 		</Filter>
 		<File
 			RelativePath=".\Shaders\PhyxelEffect.fx"
+			>
+		</File>
+		<File
+			RelativePath=".\Lib\vld.lib"
 			>
 		</File>
 	</Files>

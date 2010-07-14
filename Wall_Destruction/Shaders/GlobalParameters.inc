@@ -93,7 +93,7 @@ DepthStencilState EnableDepth
 DepthStencilState SamePlaneDepth
 {
 	DepthEnable = TRUE;	
-	DepthWriteMask = ALL;
+	DepthWriteMask = ZERO;
 };
 
 BlendState NoAlphaBlending 

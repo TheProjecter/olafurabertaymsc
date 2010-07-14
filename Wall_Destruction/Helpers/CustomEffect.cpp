@@ -1,4 +1,5 @@
 #include "CustomEffect.h"
+#include <d3d10.h>
 
 namespace Helpers{
 	

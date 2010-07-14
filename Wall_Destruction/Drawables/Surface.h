@@ -28,12 +28,14 @@ namespace Drawables{
 		void SetWorld(D3DXMATRIX world){this->world = world;}
 		D3DXMATRIX GetWorld(){return world;}
 
-		ID3D10Buffer* GetReadableBuffer(){return readableVertexBuffer;}
+		ID3D10Buffer* GetSurfelReadableBuffer(){return readableVertexBuffer;}
+		ID3D10Buffer* GetEdgeReadableBuffer(){return readableEdgeVertexBuffer;}
 
 		int GetSurfaceSurfelCount(){return surfelCount;};
 		int GetEdgeSurfelCount(){return edgeCount;};
 
 		void AddForce(D3DXVECTOR3 force, D3DXVECTOR3 pos, int surfelIndex);
+		void AddForceToPhyxel(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::Phyxel_Grid_Cell *cell);
 
 		ProjectStructs::SURFEL* GetSurfaceSurfel(int i){
 			return surfaceSurfels[i];
@@ -84,12 +86,14 @@ namespace Drawables{
 		D3DXMATRIX world;
 		std::string planeTexture;
 
-		ID3D10Buffer *surfelVertexBuffer, *surfelEdgeVertexBuffer, *solidVertexBuffer, *readableVertexBuffer;
+		ID3D10Buffer *surfelVertexBuffer, *surfelEdgeVertexBuffer, *solidVertexBuffer, *solidEdgeVertexBuffer, *readableVertexBuffer, *readableEdgeVertexBuffer;
 		
 		static ID3D10RasterizerState *SolidRenderState;
 		static Helpers::CustomEffect surfelEffect, surfelEdgeEffect, solidEffect, wireframeEffect, geometryEffect, geometryEdgeEffect;
 		static ID3D10ShaderResourceView *SurfelTexture, *SurfelWireframeTexture;
 		static bool TextureLoaded;
+
+		static float LastRadiusScale;
 	};
 }
 

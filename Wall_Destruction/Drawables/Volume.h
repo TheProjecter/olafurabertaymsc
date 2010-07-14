@@ -3,8 +3,6 @@
 
 #include "Structs.h"
 #include "Surface.h"
-#include "Octree.h"
-#include "PhyxelObject.h"
 #include "PhyxelGrid.h"
 
 class Volume
@@ -40,11 +38,9 @@ private:
 	D3DXMATRIX World;
 	D3DXVECTOR3 pos;
 
-	Octree *octree;
 	bool deformable;
-	PhyxelObject phyxelObject;
 
-	PhyxelGrid *grid;
+	PhyxelGrid* grid;
 };
 
 #endif
