@@ -17,21 +17,19 @@ namespace Drawables{
 	}
 
 	void MeshlessObject::CleanUp(){
-//		surfelObject.CleanUp();
-		if(deformable){
-			phyxelObject.CleanUp();
-		}
-
 		if(volume){
 			volume->CleanUp();
 			delete volume;
+			volume = NULL;
 		}		
 		if(tree){
 			tree->CleanUp();
 			delete tree;
+			tree = NULL;
 		}
 		for(unsigned int i = 0; i< contactListeners.size();i++){
 			delete contactListeners[i];
+			contactListeners[i] = NULL;
 		}
 
 		contactListeners.clear();
@@ -43,12 +41,7 @@ namespace Drawables{
 
 
 	void MeshlessObject::Draw(){
-//		if(volume)
-			volume->Draw();
-
-		if(deformable){
-			this->phyxelObject.Draw();
-		}
+		volume->Draw();
 	}
 
 	void MeshlessObject::Update(float dt){
@@ -67,7 +60,6 @@ namespace Drawables{
 		Helpers::Globals::DebugInformation.EndTimer(DEBUG_TYPE, D3DXCOLOR(0.0f, 1.0f, 0.0f, 0.0f), "%s - Ran the Pointcloud handler. ", meshlessObjectStruct.name.c_str());
 
 		this->texture = meshlessObjectStruct.texture;
-		this->deformable = meshlessObjectStruct.deformable;
 		this->name = meshlessObjectStruct.name;
 		this->world = meshlessObjectStruct.world;
 		this->position = meshlessObjectStruct.transform;

@@ -6,7 +6,14 @@
   <!--texture taken from http://www.cgtextures.com/texview.php?id=15478&PHPSESSID=9fa800c43268de8fbb65b3683bce884e Image 1 Small-->
   <texture>Textures\\Concrete.jpg</texture>
 
-  <material sigma="0.600672" rho="0.668533"/>
+  <!-- Fracture paramters -->
+  <density>2403</density>  <!-- kg / cu.m value taken from http://www.simetric.co.uk/si_materials.htm-->
+  <youngs_modulus> 30000000000 </youngs_modulus>  <!-- GN/m^2 (10^9 N/m^2)  value taken from http://en.wikipedia.org/wiki/Young's_modulus -->
+  <poisson_ratio>0.20</poisson_ratio>  <!-- Value taken from http://en.wikipedia.org/wiki/Poisson's_ratio -->
+  <toughness>6030</toughness> <!-- Value taken from Graphical modeling an animation of brittle fracture -->
+    
+  <!-- parameters used for lighting calculations -->
+  <material sigma="0.600672" rho="0.668533"/> 
   
   <worldtranslation x="0.0" y="5.0" z="0.0"/>
   <worldscale x="1.0" y="1.0" z="1.0"/>

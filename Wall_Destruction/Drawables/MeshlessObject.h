@@ -20,9 +20,6 @@ namespace Drawables{
 		~MeshlessObject(void);
 
 		void Draw();
-		void DrawDepth();
-		void DrawAttributes(ID3D10ShaderResourceView* depth);
-		void DrawNormalization(ID3D10ShaderResourceView* attributeMap);
 		void Update(float dt);
 		void Init();
 		void CleanUp();
@@ -61,9 +58,6 @@ namespace Drawables{
 
 		D3DXMATRIX world;
 		D3DXVECTOR3 position;
-
-		ID3D10Buffer *pointVertexBuffer;
-		Helpers::CustomEffect pointEffect;
 
 		std::vector<hkpRigidBody*> rigidBodies;
 		std::vector<ContactListener*> contactListeners;

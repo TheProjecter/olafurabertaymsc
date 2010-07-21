@@ -76,6 +76,7 @@ void Chain::CleanUp(){
 	for(unsigned int i = 0; i<chainSpheres.size(); i++){
 		chainSpheres[i]->CleanUp();
 		delete chainSpheres[i];
+		chainSpheres[i] = 0;
 	}	
 
 	effect.CleanUp();

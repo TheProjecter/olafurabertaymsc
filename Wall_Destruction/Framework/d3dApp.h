@@ -56,6 +56,7 @@ protected:
 	GameTimer mTimer;
 	 
 	std::string mFrameStats;
+	float minSec, maxSec;
 
 	ID3D10Device*    md3dDevice;
 	IDXGISwapChain*  mSwapChain;

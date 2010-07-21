@@ -68,6 +68,7 @@ void SpriteViewPort::Draw(ID3D10ShaderResourceView* texture){
 }
 
 void SpriteViewPort::CleanUp(){
+	effect.CleanUp();
 	vb->Release();
 	vb = NULL;
 }

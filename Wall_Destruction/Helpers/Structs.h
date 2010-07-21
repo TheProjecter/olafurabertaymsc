@@ -1,6 +1,7 @@
 #ifndef SURFELS_H
 #define SURFELS_H
 
+#include <D3D10.h>
 #include <D3DX10.h>
 #include <string>
 #include <vector>
@@ -9,11 +10,11 @@
 
 namespace ProjectStructs{
 // forward declarations
+	struct CRACK_NODE;
 	struct SURFEL;
 	struct SURFEL_EDGE;
 	struct SURFEL_VERTEX;
 	struct SURFEL_EDGE_VERTEX;
-
 
 	struct NameComparer {
 		bool operator()(std::string s1, std::string s2) const {
@@ -29,31 +30,71 @@ namespace ProjectStructs{
 		TOP_LEFT, TOP_MIDDLE, TOP_RIGHT, 
 		BACK_BOTTOM_LEFT, BACK_BOTTOM_MIDDLE, BACK_BOTTOM_RIGHT, 
 		BACK_CENTER_LEFT, BACK_CENTER_MIDDLE, BACK_CENTER_RIGHT, 
-		BACK_TOP_LEFT, BACK_TOP_MIDDLE, BACK_TOP_RIGHT, };
+		BACK_TOP_LEFT, BACK_TOP_MIDDLE, BACK_TOP_RIGHT};
+/*
+	struct PHYXEL_NODE{
+		D3DXVECTOR3 pos;
+		float supportRadius;
+		float mass;
+		float volume;
+		float density;
+*/
+		/*   __________
+			|ux  vx  wx|
+			|uy  vy  wy|
+			|uz  vz  wz|
+			 ----------
+		*/
+/*		D3DXMATRIX momentMatrix;
+		
+		bool isChanged;
+		D3DXVECTOR3 force;
+		ThreeInOneArray<PHYXEL_NODE*> neighbours;
+		ThreeInOneArray<float> neighbourWeight;
+	};*/
 
 	struct PHYXEL_NODE{
 		D3DXVECTOR3 pos;
-		float radius;
+		D3DXVECTOR3 displacement;
+		D3DXVECTOR3 dotDisplacement;
+		float supportRadius;
 		float mass;
-		D3DXVECTOR3 force;
+		float volume;
+		float density;
+
+		/*   __________
+			|ux  vx  wx|
+			|uy  vy  wy|
+			|uz  vz  wz|
+			 ----------
+		*/
+		D3DXMATRIX displacementGradient;
+		D3DXMATRIX momentMatrix;
+		D3DXVECTOR3 bodyForce;
+		D3DXMATRIX stress;
+		D3DXMATRIX strain;
+		D3DXMATRIX jacobian;
+
 		bool isChanged;
+		D3DXVECTOR3 force;
+		ThreeInOneArray<PHYXEL_NODE*> neighbours;
+		ThreeInOneArray<float> neighbourWeight;
 	};
 
 	struct Phyxel_Grid_Cell{
 		ThreeInOneArray<Phyxel_Grid_Cell*> neighbours;
+		//std::vector<CRACK_NODE*> cracks;
 		std::vector<SURFEL*> surfels;
 		std::vector<SURFEL_EDGE*> edges;
 		PHYXEL_NODE* phyxel;
 		D3DXVECTOR3 halfWidth;
+	};
 
-		Phyxel_Grid_Cell(){
-			phyxel = NULL;
-
-			neighbours = ThreeInOneArray<Phyxel_Grid_Cell*>(3, 3, 3);
-			for(int i = 0; i<neighbours.GetSize(); i++){
-				neighbours[i] = NULL;
-			}
-		}
+	struct Vertex_Grid_Cell{
+		std::vector<CRACK_NODE*> cracks;
+		std::vector<SURFEL*> surfels;
+		std::vector<SURFEL_EDGE*> edges;
+		ID3D10Buffer* buffer;
 	};
 	
 	struct SURFEL_VERTEX{
@@ -64,17 +105,6 @@ namespace ProjectStructs{
 		D3DXVECTOR3 majorAxis;
 		D3DXVECTOR3 minorAxis;
 		D3DXVECTOR2 UV;
-
-		SURFEL_VERTEX(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR3 majorAxis, D3DXVECTOR3 minorAxis, D3DXVECTOR2 UV){
-			this->pos = pos;
-			this->normal = normal;
-			this->minorAxis = minorAxis;
-			this->majorAxis = majorAxis;			
-			this->UV = UV;
-		}
-
-		SURFEL_VERTEX(){
-		}
 	};
 
 
@@ -100,53 +130,24 @@ namespace ProjectStructs{
 		D3DXVECTOR3 minorAxis;
 		D3DXVECTOR3 clipPlane;
 		D3DXVECTOR2 UV;
-
-		SURFEL_EDGE_VERTEX(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR3 majorAxis, D3DXVECTOR3 minorAxis, D3DXVECTOR3 clipPlane, D3DXVECTOR2 UV){
-			this->pos = pos;
-			this->normal = normal;
-			this->minorAxis = minorAxis;
-			this->majorAxis = majorAxis;			
-			this->clipPlane = clipPlane;
-			this->UV = UV;
-		}
-
-		SURFEL_EDGE_VERTEX(){
-		}
 	};
 
 	struct SURFEL{
 		std::vector<Phyxel_Grid_Cell*> intersectingCells;
 		SURFEL_VERTEX vertex;
-
-		SURFEL(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR3 majorAxis, D3DXVECTOR3 minorAxis, D3DXVECTOR2 UV){
-			this->vertex = SURFEL_VERTEX(pos, normal, majorAxis, minorAxis, UV);
-		}
-
-		SURFEL(){}
+		std::vector<int> vertexBufferGridCell;
 	};
 
 	struct SURFEL_EDGE{
 		std::vector<Phyxel_Grid_Cell*> intersectingCells;
 		SURFEL_EDGE_VERTEX vertex;
-		
-		SURFEL_EDGE(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR3 majorAxis, D3DXVECTOR3 minorAxis, D3DXVECTOR3 clipPlane, D3DXVECTOR2 UV){
-			this->vertex = SURFEL_EDGE_VERTEX(pos, normal, majorAxis, minorAxis, clipPlane, UV);
-		}
-
-		SURFEL_EDGE(){}
+		std::vector<int> vertexBufferGridCell;
 	};
 
 	struct SPHERE_VERTEX{
 		D3DXVECTOR3 pos;
 		D3DXVECTOR3 normal;
 		D3DXVECTOR2 UV;
-
-		SPHERE_VERTEX(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR2 UV){
-			this->UV = UV;
-			this->normal = normal;
-			this->pos = pos;
-		}
-		SPHERE_VERTEX(){}
 	};
 
 	struct SOLID_VERTEX{
@@ -154,14 +155,6 @@ namespace ProjectStructs{
 		D3DXVECTOR3 normal;
 		D3DXVECTOR2 UV;
 		D3DXVECTOR2 EWAUV;
-
-		SOLID_VERTEX(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR2 UV, D3DXVECTOR2 EWAUV){
-			this->EWAUV = EWAUV;
-			this->UV = UV;
-			this->normal = normal;
-			this->pos = pos;
-		}
-		SOLID_VERTEX(){}
 	};
 
 	struct POINT_CLOUD_VERTEX {
@@ -175,15 +168,37 @@ namespace ProjectStructs{
 		float mass;
 	};
 
+	struct CRACK_NODE{
+		SURFEL s1;
+		SURFEL s2;
+		SURFEL_EDGE e1;
+		SURFEL_EDGE e2;
+
+		std::vector<int> vertexBufferGridCell;
+	};
+
+	struct MATERIAL_PROPERTIES{
+		// material parameters
+		bool deformable;
+		float density;
+		float toughness;
+		float poissonRatio;
+		float youngsModulus;
+		float damping_constant_phi;
+		float damping_constant_psi;
+	};
+
 	struct MESHLESS_OBJECT_STRUCT{
 		std::string name;
-		bool deformable;
 		std::string texture;
 		D3DXVECTOR3 transform;
 		D3DXVECTOR3 scale;
 		D3DXVECTOR3 rotation;
 		D3DXMATRIX world;
 
+		MATERIAL_PROPERTIES materialProperties;
+		
+		// lighting parameters
 		float rho;
 		float sigma;
 
@@ -196,37 +211,150 @@ namespace ProjectStructs{
 		D3DXVECTOR3 position;
 		float life;
 		hkpRigidBody* rigidBody;
+		D3DXVECTOR3 lastVelocity;
 	};
 
-	// Octree
-	struct SurfelNode{
-		ProjectStructs::SURFEL_VERTEX surfel;
-		ProjectStructs::SURFEL_EDGE_VERTEX surfelEdge;
-		D3DXVECTOR3 halfDimensions;
-		D3DXVECTOR3 pos;
-		bool edge;
-		SurfelNode *nextSurfel;
-	} ;
+	class StructHelper{
 
-	struct OctreeNode {
-		D3DXVECTOR3 center; // Center point of octree node 
-		float halfWidth; // Half the width of the node volume
+	public:
+		static SOLID_VERTEX CreateSolidVertex(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR2 UV, D3DXVECTOR2 EWAUV){
+			SOLID_VERTEX solidVertex;
+			solidVertex.pos = pos;
+			solidVertex.normal = normal;
+			solidVertex.UV = UV;
+			solidVertex.EWAUV;
+			return solidVertex;
+		}
+
+		static SOLID_VERTEX* CreateSolidVertexPointer(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR2 UV, D3DXVECTOR2 EWAUV){
+			SOLID_VERTEX* solidVertex = new SOLID_VERTEX;
+			solidVertex->pos = pos;
+			solidVertex->normal = normal;
+			solidVertex->UV = UV;
+			solidVertex->EWAUV;
+			return solidVertex;
+		}
+
+		static SPHERE_VERTEX CreateSphereVertex(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR2 UV){
+			SPHERE_VERTEX sphereVertex;
+			sphereVertex.pos = pos;
+			sphereVertex.normal = normal;
+			sphereVertex.UV;
+			return sphereVertex;
+		}
+
+		static SURFEL_EDGE CreateSurfelEdge(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR3 majorAxis, D3DXVECTOR3 minorAxis, D3DXVECTOR3 clipPlane, D3DXVECTOR2 UV){
+			SURFEL_EDGE surfelEdge;
+
+			surfelEdge.vertex = CreateSurfelEdgeVertex(pos, normal, majorAxis, minorAxis, clipPlane, UV);
+
+			return surfelEdge;
+		}
+
+		static SURFEL_EDGE* CreateSurfelEdgePointer(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR3 majorAxis, D3DXVECTOR3 minorAxis, D3DXVECTOR3 clipPlane, D3DXVECTOR2 UV){
+			SURFEL_EDGE* surfelEdge = new SURFEL_EDGE;
+
+			surfelEdge->vertex = CreateSurfelEdgeVertex(pos, normal, majorAxis, minorAxis, clipPlane, UV);
+
+			return surfelEdge;
+		}
+
+		static SURFEL CreateSurfel(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR3 majorAxis, D3DXVECTOR3 minorAxis, D3DXVECTOR2 UV){
+			SURFEL surfel;
+			surfel.vertex = CreateSurfelVertex(pos, normal, majorAxis, minorAxis, UV);
+			return surfel;
+		}
+
+		static SURFEL* CreateSurfelPointer(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR3 majorAxis, D3DXVECTOR3 minorAxis, D3DXVECTOR2 UV){
+			SURFEL* surfel = new SURFEL;
+			surfel->vertex = CreateSurfelVertex(pos, normal, majorAxis, minorAxis, UV);
+			return surfel;
+		}
+
+		static SURFEL_VERTEX CreateSurfelVertex(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR3 majorAxis, D3DXVECTOR3 minorAxis, D3DXVECTOR2 UV){
+			SURFEL_VERTEX surfelVertex;
+			surfelVertex.pos = pos;
+			surfelVertex.normal = normal;
+			surfelVertex.minorAxis = minorAxis;
+			surfelVertex.majorAxis = majorAxis;			
+			surfelVertex.UV = UV;
+
+			return surfelVertex;
+		}
+
+		static SURFEL_EDGE_VERTEX CreateSurfelEdgeVertex(D3DXVECTOR3 pos, D3DXVECTOR3 normal, D3DXVECTOR3 majorAxis, D3DXVECTOR3 minorAxis, D3DXVECTOR3 clipPlane, D3DXVECTOR2 UV){
+			SURFEL_EDGE_VERTEX surfelEdgeVertex;
+			
+			surfelEdgeVertex.pos = pos;
+			surfelEdgeVertex.normal = normal;
+			surfelEdgeVertex.minorAxis = minorAxis;
+			surfelEdgeVertex.majorAxis = majorAxis;			
+			surfelEdgeVertex.clipPlane = clipPlane;
+			surfelEdgeVertex.UV = UV;
+
+			return surfelEdgeVertex;
+		}
+
+
+		static Phyxel_Grid_Cell* CreatePhyxelGridCellPointer(){
+			Phyxel_Grid_Cell* phyxelGridCell = new Phyxel_Grid_Cell;
+			
+			phyxelGridCell->phyxel = NULL;
+
+			phyxelGridCell->neighbours = ThreeInOneArray<Phyxel_Grid_Cell*>(3, 3, 3);
+			for(unsigned int i = 0; i<phyxelGridCell->neighbours.GetSize(); i++){
+				phyxelGridCell->neighbours[i] = NULL;
+			}
+
+			return phyxelGridCell;
+		}
+
+		/*static PHYXEL_NODE* CreatePhyxelNodePointer(){
+			PHYXEL_NODE* phyxelNode = new PHYXEL_NODE;
+
+			phyxelNode->mass = 0.0f;
+			phyxelNode->density = 0.0f;
+			phyxelNode->volume = 0.0f;
+
+			phyxelNode->force = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 		
-		OctreeNode *pChild[8]; // Pointers to the eight children nodes
-		OctreeNode *parent;
-		SurfelNode *pObjList; // Linked list of objects contained at this node
+			phyxelNode->neighbours = ThreeInOneArray<PHYXEL_NODE*>(3, 3, 3);
+			phyxelNode->neighbourWeight = ThreeInOneArray<float>(3, 3, 3);
+			for(unsigned int i = 0; i<phyxelNode->neighbours.GetSize(); i++){
+				phyxelNode->neighbours[i] = NULL;
+				phyxelNode->neighbourWeight[i] = 0.0f;
+			}
 
-		bool childrenContainObjects;
-		bool checked;
-	};
+			return phyxelNode;
+		}*/
 
-	struct SurfaceSurfelIndex{
-		int SurfaceIndex;
-		int SurfelIndex;
+		static PHYXEL_NODE* CreatePhyxelNodePointer(){
+			PHYXEL_NODE* phyxelNode = new PHYXEL_NODE;
 
-		SurfaceSurfelIndex(int surfaceIndex, int surfelIndex){
-			this->SurfaceIndex = surfaceIndex;
-			this->SurfelIndex = surfelIndex;
+			phyxelNode->mass = 0.0f;
+			phyxelNode->density = 0.0f;
+			phyxelNode->volume = 0.0f;
+
+			phyxelNode->force = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
+			phyxelNode->dotDisplacement = phyxelNode->force;
+			phyxelNode->bodyForce = phyxelNode->force;
+			phyxelNode->displacement = phyxelNode->force;
+		
+			D3DXMatrixScaling(&phyxelNode->displacementGradient, 0.0f, 0.0f, 0.0f);
+			phyxelNode->displacementGradient._44 = 0.0f;
+			
+			phyxelNode->strain = phyxelNode->displacementGradient;
+			phyxelNode->stress = phyxelNode->strain;
+			phyxelNode->momentMatrix = phyxelNode->stress;
+
+			phyxelNode->neighbours = ThreeInOneArray<PHYXEL_NODE*>(3, 3, 3);
+			phyxelNode->neighbourWeight = ThreeInOneArray<float>(3, 3, 3);
+			for(unsigned int i = 0; i<phyxelNode->neighbours.GetSize(); i++){
+				phyxelNode->neighbours[i] = NULL;
+				phyxelNode->neighbourWeight[i] = 0.0f;
+			}
+
+			return phyxelNode;
 		}
 	};
 }

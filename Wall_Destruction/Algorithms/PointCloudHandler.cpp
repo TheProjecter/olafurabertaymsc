@@ -16,6 +16,12 @@ namespace PointCloud{
 	const string PointCloudHandler::XML_MESHLESS_WORLDYAWPITCHROLL = "worldyawpitchroll";
 
 	const string PointCloudHandler::XML_MESHLESS_MATERIAL = "material";
+	const string PointCloudHandler::XML_MESHLESS_DENSITY = "density";
+	const string PointCloudHandler::XML_MESHLESS_YOUNGS_MODULUS = "youngs_modulus";
+	const string PointCloudHandler::XML_MESHLESS_POISSON_RATIO = "poisson_ratio";
+	const string PointCloudHandler::XML_MESHLESS_DAMPING_CONSTANT_PHI = "damping_constant_phi";
+	const string PointCloudHandler::XML_MESHLESS_DAMPING_CONSTANT_PSI = "damping_constant_psi";
+	const string PointCloudHandler::XML_MESHLESS_TOUGHNESS = "toughness";
 	
 	const string PointCloudHandler::XML_MESHLESS_VOLUME = "volume";
 	const string PointCloudHandler::XML_MESHLESS_POINTSET = "pointset";
@@ -60,7 +66,7 @@ namespace PointCloud{
 		TiXmlNode *meshNode = pointCloudXml.FirstChild(XML_MESHLESS_ROOT);
 		
 		meshlessStruct.name = meshNode->FirstChild(XML_MESHLESS_NAME)->FirstChild()->Value();
-		meshlessStruct.deformable = meshNode->FirstChild(XML_MESHLESS_DEFORMABLE)->FirstChild()->Value() == XML_MESHLESS_TRUE;
+		meshlessStruct.materialProperties.deformable = meshNode->FirstChild(XML_MESHLESS_DEFORMABLE)->FirstChild()->Value() == XML_MESHLESS_TRUE;
 		meshlessStruct.texture= meshNode->FirstChild(XML_MESHLESS_TEXTURE)->FirstChild()->Value();
 
 		D3DXVECTOR3 translation = GetVector3(meshNode->FirstChild(XML_MESHLESS_WORLDTRANSLATION)->ToElement());
@@ -72,6 +78,13 @@ namespace PointCloud{
 		meshlessStruct.rho = (float)d;
 		meshNode->FirstChild(XML_MESHLESS_MATERIAL)->ToElement()->Attribute(XML_MESHLESS_MATERIAL_SIGMA.c_str(), &d);
 		meshlessStruct.sigma = (float)d;
+
+		if(meshlessStruct.materialProperties.deformable){
+			meshlessStruct.materialProperties.density = (float)atof(meshNode->FirstChild(XML_MESHLESS_DENSITY)->FirstChild()->Value());
+			meshlessStruct.materialProperties.toughness = (float)atof(meshNode->FirstChild(XML_MESHLESS_TOUGHNESS)->FirstChild()->Value());
+			meshlessStruct.materialProperties.youngsModulus = (float)atof(meshNode->FirstChild(XML_MESHLESS_YOUNGS_MODULUS)->FirstChild()->Value());// * pow(10.0f, 5.0f);
+			meshlessStruct.materialProperties.poissonRatio = (float)atof(meshNode->FirstChild(XML_MESHLESS_POISSON_RATIO)->FirstChild()->Value());
+		}
 
 		meshlessStruct.transform = translation;
 
@@ -108,7 +121,7 @@ namespace PointCloud{
 			
 			}while(surfel);
 
-			v->Init(meshlessStruct.deformable);
+			v->Init(meshlessStruct.materialProperties);
 			
 			volumes.push_back(v);
 
@@ -226,7 +239,7 @@ namespace PointCloud{
 		{
 			for (float j = -V+1; j <= V-1; j++)
 			{
-				surface->AddSurfel(new ProjectStructs::SURFEL(pos + i*majorAxis + j*minorAxis , normal, majorAxis, minorAxis, D3DXVECTOR2(delta.x * (i+U), delta.y *(j+V))));
+				surface->AddSurfel(ProjectStructs::StructHelper::CreateSurfelPointer(pos + i*majorAxis + j*minorAxis , normal, majorAxis, minorAxis, D3DXVECTOR2(delta.x * (i+U), delta.y *(j+V))));
 			}
 		}
 
@@ -234,30 +247,30 @@ namespace PointCloud{
 		// Top - bottom - works
 		for(float i = -U+1; i<=U-1; i++)
 		{
-			surface->AddEdgeSurfel(new ProjectStructs::SURFEL_EDGE(pos + i*majorAxis - V*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(1.0f, 0.0f, 1.0f ), 
+			surface->AddEdgeSurfel(ProjectStructs::StructHelper::CreateSurfelEdgePointer(pos + i*majorAxis - V*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(1.0f, 0.0f, 1.0f ), 
 				D3DXVECTOR2(delta.x * (i+U), 0.0)));
 
- 			surface->AddEdgeSurfel(new ProjectStructs::SURFEL_EDGE(pos + i*majorAxis + V*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(1.0f, 0.0f, 0.0f),
+ 			surface->AddEdgeSurfel(ProjectStructs::StructHelper::CreateSurfelEdgePointer(pos + i*majorAxis + V*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(1.0f, 0.0f, 0.0f),
  				D3DXVECTOR2(delta.x * (i+U), V )));
 		}
 
 		// left / right - works
 		for(float i = -V+1; i<=V-1; i++)
 		{
-			surface->AddEdgeSurfel(new ProjectStructs::SURFEL_EDGE(pos - U*majorAxis + i*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(0.0f, 1.0f, 1.0f), 
+			surface->AddEdgeSurfel(ProjectStructs::StructHelper::CreateSurfelEdgePointer(pos - U*majorAxis + i*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(0.0f, 1.0f, 1.0f), 
 				D3DXVECTOR2(0.0f, delta.y * (i+V))));
- 			surface->AddEdgeSurfel(new ProjectStructs::SURFEL_EDGE(pos + U*majorAxis + i*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(0.0f, 1.0f, 0.0f),
+ 			surface->AddEdgeSurfel(ProjectStructs::StructHelper::CreateSurfelEdgePointer(pos + U*majorAxis + i*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(0.0f, 1.0f, 0.0f),
 				D3DXVECTOR2(U, delta.y * (i+V))));
 		}
 
 		//corners
-		surface->AddEdgeSurfel(new ProjectStructs::SURFEL_EDGE(pos + U*majorAxis + V*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(-1.0f, -1.0f, 1.0f),
+		surface->AddEdgeSurfel(ProjectStructs::StructHelper::CreateSurfelEdgePointer(pos + U*majorAxis + V*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(-1.0f, -1.0f, 1.0f),
 			D3DXVECTOR2(U, V)));
-		surface->AddEdgeSurfel(new ProjectStructs::SURFEL_EDGE(pos - U*majorAxis + V*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(1.0f, -1.0f, 1.0f),
+		surface->AddEdgeSurfel(ProjectStructs::StructHelper::CreateSurfelEdgePointer(pos - U*majorAxis + V*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(1.0f, -1.0f, 1.0f),
 			D3DXVECTOR2(0.0f, V)));
-		surface->AddEdgeSurfel(new ProjectStructs::SURFEL_EDGE(pos + U*majorAxis - V*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(-1.0f, 1.0f, 1.0f),
+		surface->AddEdgeSurfel(ProjectStructs::StructHelper::CreateSurfelEdgePointer(pos + U*majorAxis - V*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(-1.0f, 1.0f, 1.0f),
 			D3DXVECTOR2(U, 0.0f)));
-		surface->AddEdgeSurfel(new ProjectStructs::SURFEL_EDGE(pos - U*majorAxis - V*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(1.0f, 1.0f, 1.0f),
+		surface->AddEdgeSurfel(ProjectStructs::StructHelper::CreateSurfelEdgePointer(pos - U*majorAxis - V*minorAxis, normal, majorAxis, minorAxis, D3DXVECTOR3(1.0f, 1.0f, 1.0f),
 			D3DXVECTOR2(0.0f, 0.0f)));
 
 		surface->SetTexture(texture);

@@ -136,8 +136,8 @@ void Sphere::buildStacks(VertexList& vertices, IndexList& indices)
 	}
 
 	// poles: note that there will be texture coordinate distortion
-	vertices.push_back( ProjectStructs::SPHERE_VERTEX(D3DXVECTOR3(0.0f, -mRadius, 0.0f), D3DXVECTOR3(0.0f, -1.0f, 0.0f), D3DXVECTOR2(0.0f, 1.0f)) );
-	vertices.push_back( ProjectStructs::SPHERE_VERTEX(D3DXVECTOR3(0.0f, mRadius, 0.0f), D3DXVECTOR3(0.0f, 1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.0f)) );
+	vertices.push_back( ProjectStructs::StructHelper::CreateSphereVertex(D3DXVECTOR3(0.0f, -mRadius, 0.0f), D3DXVECTOR3(0.0f, -1.0f, 0.0f), D3DXVECTOR2(0.0f, 1.0f)) );
+	vertices.push_back( ProjectStructs::StructHelper::CreateSphereVertex(D3DXVECTOR3(0.0f, mRadius, 0.0f), D3DXVECTOR3(0.0f, 1.0f, 0.0f), D3DXVECTOR2(0.0f, 0.0f)) );
 
 	UINT northPoleIndex = (UINT)vertices.size()-1;
 	UINT southPoleIndex = (UINT)vertices.size()-2;

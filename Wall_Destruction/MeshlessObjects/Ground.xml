@@ -5,7 +5,7 @@
   <deformable>false</deformable>
   <!-- Image taken from http://www.cgtextures.com/texview.php?id=48367&PHPSESSID=9fa800c43268de8fbb65b3683bce884e Image 1 small-->
   <texture>Textures\\Floor.jpg</texture>
- 
+
   <material sigma="0.598438" rho="0.132031"/>
 
   <worldtranslation x="0.0" y="-10.01" z="0.0"/>

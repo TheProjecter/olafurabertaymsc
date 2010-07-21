@@ -9,14 +9,14 @@ class ContactListener : public hkpContactListener
 {
 public:
 	ContactListener(void);
-	ContactListener(Surface *surface, int surfelIndex);
+	ContactListener(Surface *surface, int surfelIndex, int edgeIndex);
 	~ContactListener (void);
 
 	void contactPointCallback( const hkpContactPointEvent& event );
 
 private :
 	Surface *surface;
-	int surfelIndex;
+	int surfelIndex, edgeIndex;
 };
 
 #endif

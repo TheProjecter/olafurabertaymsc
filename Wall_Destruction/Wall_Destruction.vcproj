@@ -189,7 +189,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Algorithms\FractureManager.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Algorithms\PhyxelGrid.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Algorithms\VertexBufferGrid.cpp"
 				>
 			</File>
 			<File
@@ -265,10 +273,6 @@
 				</File>
 				<File
 					RelativePath=".\Drawables\MeshlessObject.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\Drawables\PhyxelObject.cpp"
 					>
 				</File>
 				<File
@@ -359,23 +363,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\Shaders\phong splatting\fps\fp_clip_pass1.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Shaders\phong splatting\fps\fp_clip_pass2_phong.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Shaders\phong splatting\fps\fp_normalize.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Shaders\phong splatting\fps\fp_pass1.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Shaders\phong splatting\fps\fp_pass2_phong.h"
+				RelativePath=".\Algorithms\FractureManager.h"
 				>
 			</File>
 			<File
@@ -387,19 +375,11 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Algorithms\VertexBufferGrid.h"
+				>
+			</File>
+			<File
 				RelativePath=".\External\vld\vld.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Shaders\phong splatting\vps\vp_clip_pass2_phong.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Shaders\phong splatting\vps\vp_pass1.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Shaders\phong splatting\vps\vp_pass2_phong.h"
 				>
 			</File>
 			<Filter
@@ -499,10 +479,6 @@
 				</File>
 				<File
 					RelativePath=".\Drawables\MeshlessObject.h"
-					>
-				</File>
-				<File
-					RelativePath=".\Drawables\PhyxelObject.h"
 					>
 				</File>
 				<File
@@ -613,10 +589,6 @@
 				</File>
 				<File
 					RelativePath=".\Shaders\Viewport.fx"
-					>
-				</File>
-				<File
-					RelativePath=".\Shaders\phong splatting\vps\vp_clip_pass1.h"
 					>
 				</File>
 			</Filter>

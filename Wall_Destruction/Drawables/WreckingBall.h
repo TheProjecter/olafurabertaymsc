@@ -29,6 +29,8 @@ namespace Drawables{
 		D3DXVECTOR3 GetPosition(){return sphere.GetPositionVector();}
 		void SetPosition(D3DXVECTOR3 pos){this->sphere.SetPosition(pos.x, pos.y, pos.z);}
 		Chain GetChain(){return chain;}
+		D3DXVECTOR3 GetLastVelocity(){return lastVelocity;}
+		void SetLastVelocity(D3DXVECTOR3 vel){lastVelocity = vel;}
 	private:
 		float radius;
 		D3DXVECTOR3 pos;
@@ -36,6 +38,7 @@ namespace Drawables{
 		Sphere sphere;
 		int subsets;
 		Chain chain;
+		D3DXVECTOR3 lastVelocity;
 
 		Helpers::CustomEffect wreckingBallEffect, depthEffect;
 	};

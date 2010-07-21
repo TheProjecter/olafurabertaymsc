@@ -95,6 +95,11 @@ int D3DApp::run()
 		{	
 			mTimer.tick();
 
+			if(minSec > mTimer.getDeltaTime())
+				minSec = mTimer.getDeltaTime();
+			else if(maxSec < mTimer.getDeltaTime())
+				maxSec = mTimer.getDeltaTime();
+
 			if( !mAppPaused )
 				updateScene(mTimer.getDeltaTime());	
 			else
@@ -188,12 +193,16 @@ void D3DApp::updateScene(float dt)
 		std::stringstream outs;   
 		outs.precision(6);
 		outs << "FPS: " << fps << "\n" 
-			<< "Milliseconds: Per Frame: " << mspf;
+			<< "Avg. ms/F: " << mspf << "\n"
+			<< "Max  ms/F: " << maxSec << "\n"
+			<< "Min  ms/F: " << minSec << "\n";
 		mFrameStats = outs.str();
 
 		// Reset for next average.
 		frameCnt = 0;
 		t_base  += 1.0f;
+		minSec = FLT_MAX;
+		maxSec = FLT_MIN;
 	}
 }
 

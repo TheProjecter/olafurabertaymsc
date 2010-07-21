@@ -22,8 +22,8 @@ DrawableTex2D::~DrawableTex2D()
 			ReleaseCOM(colorMapsRTV[i]);
 		}
 	}
-	delete [] colorMapsRTV;
-	delete [] colorMapsSRV;
+	colorMapsRTV = NULL;
+	colorMapsSRV = NULL;
 
 	ReleaseCOM(mDepthMapSRV);
 	ReleaseCOM(mDepthMapDSV);

@@ -14,17 +14,16 @@ class PhyxelGrid
 {
 public:
 	PhyxelGrid(void);
-	PhyxelGrid(int dimensions, D3DXVECTOR3 Min, D3DXVECTOR3 Max, D3DXVECTOR3 Pos);
+	PhyxelGrid(int dimensions, D3DXVECTOR3 Min, D3DXVECTOR3 Max, D3DXVECTOR3 Pos, ProjectStructs::MATERIAL_PROPERTIES materialProperties);
 	~PhyxelGrid(void);
 
-	//void InsertSurface(Surface* surface);
 	void InsertPoints(std::vector<D3DXVECTOR3> points, std::vector<ProjectStructs::SURFEL*> surfels);
 	void InsertEdges(std::vector<D3DXVECTOR3> edgePoints, std::vector<ProjectStructs::SURFEL_EDGE*> edges);
 
 	void PopulateNode( D3DXVECTOR3 surfelPos, ProjectStructs::SURFEL *surfel, ProjectStructs::SURFEL_EDGE *edge);
 
 	void PopulateNodeAndCheckNormal( D3DXVECTOR3 &index, D3DXVECTOR3 surfelPos, ProjectStructs::SURFEL * surfel, ProjectStructs::SURFEL_EDGE * edge );
-	bool InitCellAndPushSurfels( D3DXVECTOR3 index, ProjectStructs::SURFEL * surfel, ProjectStructs::SURFEL_EDGE * edge );
+	void InitCellAndPushSurfels( D3DXVECTOR3 index, ProjectStructs::SURFEL * surfel, ProjectStructs::SURFEL_EDGE * edge );
 	D3DXVECTOR3 GetIndexOfPosition( D3DXVECTOR3 surfelPos );
 	void InitCell( D3DXVECTOR3 &index);
 	void PopulateNeighbors( D3DXVECTOR3 index );
@@ -33,7 +32,7 @@ public:
 	ThreeInOneArray<ProjectStructs::Phyxel_Grid_Cell*> GetCells(){return cells;}
 
 	void PopulateNeighbor( D3DXVECTOR3 index, D3DXVECTOR3 neighbor, ProjectStructs::DIRECTIONS indexToNeighborDir);
-	void Init();
+	void Init(ChangedPhyxels *changedPhyxels);
 	void Draw();
 	void Update();
 	void CleanUp();
@@ -44,6 +43,7 @@ private:
 	ID3D10Buffer *vertexBuffer, *indexBuffer, *otherIndexBuffer;
 
 	Helpers::CustomEffect effect;
+	int allocatedCells, deallocatedCells, allocatedPhyxels, deallocatedPhyxels;
 	
 	D3DXVECTOR3 Min;
 	D3DXVECTOR3 Max;
@@ -54,7 +54,7 @@ private:
 	D3DXMATRIX invWorld, World, tmpWorld;
 	D3DXVECTOR3 tmp;
 
-	int* indices;
+	ProjectStructs::MATERIAL_PROPERTIES materialProperties;
 	int dimensions;
 };
 

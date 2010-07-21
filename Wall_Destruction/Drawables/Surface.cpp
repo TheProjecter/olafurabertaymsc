@@ -9,8 +9,8 @@ namespace Drawables{
 	ID3D10ShaderResourceView *Surface::SurfelTexture, *Surface::SurfelWireframeTexture;
 	ID3D10RasterizerState *Surface::SolidRenderState;
 	Helpers::CustomEffect Surface::surfelEffect, Surface::surfelEdgeEffect, Surface::solidEffect, Surface::wireframeEffect, Surface::geometryEffect, Surface::geometryEdgeEffect;
-	float Surface::RadiusScale = 1.0f, Surface::LastRadiusScale = 1.0f;
-
+	float Surface::RadiusScale = 0.5f;
+	bool Surface::isChanged = false;
 	bool Surface::TextureLoaded = false;
 
 	Surface::Surface(void)
@@ -119,52 +119,71 @@ namespace Drawables{
 		edgeSurfelsVertices.push_back(s->vertex);
 	}
 
-	void Surface::AddForce(D3DXVECTOR3 force, D3DXVECTOR3 pos, int index){
+	void Surface::AddForce(D3DXVECTOR3 force, D3DXVECTOR3 pos, int surfelIndex, int edgeIndex){
 		D3DXVECTOR3 direction;
 		D3DXVec3Normalize(&direction, &force);
 		direction.x = ceil(direction.x);
 		direction.y = ceil(direction.y);
 		direction.z = ceil(direction.z);
 
-		for(int i = 0; i < surfaceSurfels[index]->intersectingCells.size(); i++){
-			AddForceToPhyxel(force, pos, direction, surfaceSurfels[index]->intersectingCells[i]);
+		if(surfelIndex != -1){
+			for(unsigned int i = 0; i < surfaceSurfels[surfelIndex]->intersectingCells.size(); i++){
+				AddForceToPhyxels(force, pos, direction, surfaceSurfels[surfelIndex]->intersectingCells[i]->phyxel);			
+			}
+		}
+		else if(edgeIndex != -1){
+			for(unsigned int i = 0; i < edgeSurfels[edgeIndex]->intersectingCells.size(); i++){
+				AddForceToPhyxels(force, pos, direction, edgeSurfels[edgeIndex]->intersectingCells[i]->phyxel);			
+			}
 		}
 	}
 
-	void Surface::AddForceToPhyxel(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::Phyxel_Grid_Cell *cell){
-		if(cell && cell->phyxel && !cell->phyxel->isChanged){
-
-			if(pos == cell->phyxel->pos)
-				return;
-
-			//if(!MathHelper::Facing(cell->phyxel->pos, pos, direction))
-			//	return;
-
-			D3DXVECTOR3 f = force / D3DXVec3Length(&(pos - cell->phyxel->pos));
-			
-			if(D3DXVec3Length(&force) < 100.0f || (MathHelper::Sign(f.x) != MathHelper::Sign(direction.x) && 
-				MathHelper::Sign(f.y) != MathHelper::Sign(direction.y) && 
-				MathHelper::Sign(f.z) != MathHelper::Sign(direction.z) )){
-				return;
-			}		
-
-			cell->phyxel->force.x += f.x;					
-			cell->phyxel->force.y += f.y;					
-			cell->phyxel->force.z += f.z;			
-
-			ChangedPhyxels::AddPhyxel(cell->phyxel);
-			
+	void Surface::AddForceToPhyxels(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::PHYXEL_NODE *phyxel){
+		if(phyxel != NULL && !phyxel->isChanged){
+			ThreeInOneArray<bool> goDownToPhyxel = ThreeInOneArray<bool>(3, 3, 3);
+	
 			for(int i = 0; i<3; i++){
 				for(int j = 0; j<3; j++){
 					for(int k = 0; k<3; k++){
-						if((direction.x < 0 && i == 0) || (direction.x > 0 && i == 2) || (direction.y < 0 && j == 0) || 
-							(direction.y > 0 && j == 2) || (direction.z < 0 && k == 0) || (direction.z > 0 && k == 2))
-							AddForceToPhyxel(f / 10.0f, cell->phyxel->pos, direction, cell->neighbours(i, j, k));
+						if(phyxel->neighbours(i, j, k))
+							goDownToPhyxel(i, j, k) = AddForceToPhyxel(force, pos, direction, phyxel->neighbours(i, j, k));
+					}
+				}
+			}
+
+			for(int i = 0; i<3; i++){
+				for(int j = 0; j<3; j++){
+					for(int k = 0; k<3; k++){
+						if(i == 1 && j == 1 && k == 1 || phyxel->neighbours(i, j, k) || !goDownToPhyxel(i, j, k))
+							continue;
+
+						AddForceToPhyxels(force, pos, direction, phyxel->neighbours(i, j, k));
 					}
 				}
 			}
 		}
-			
+	}
+
+	bool Surface::AddForceToPhyxel(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::PHYXEL_NODE *phyxel){
+		float divider = abs(D3DXVec3Length(&(pos - (phyxel->pos + phyxel->displacement))));
+		if(divider <= 0.00001f)
+			return false;
+
+		D3DXVECTOR3 f = force / divider;
+
+		if(D3DXVec3Length(&f) < 50.0f || (MathHelper::Sign(f.x) != MathHelper::Sign(direction.x) && 
+			MathHelper::Sign(f.y) != MathHelper::Sign(direction.y) && 
+			MathHelper::Sign(f.z) != MathHelper::Sign(direction.z) )){
+				return false;
+		}		
+
+		phyxel->force.x = f.x;					
+		phyxel->force.y = f.y;					
+		phyxel->force.z = f.z;	
+
+		changedPhyxels->AddPhyxel(phyxel);
+
+		return true;
 	}
 
 	void Surface::InitGeometryPass(){
@@ -515,7 +534,7 @@ namespace Drawables{
 	}
 
 	void Surface::Update(float dt){
-		if(RadiusScale != LastRadiusScale){
+		if(isChanged){
 			// reset the solid vertex buffers
 			geometryEffect.SetFloat("RadiusScale", RadiusScale);
 			geometryEffect.SetFloatVector("DeltaUV", DeltaSurfelUV);
@@ -533,7 +552,6 @@ namespace Drawables{
 	void Surface::CleanUp(){
 
 		if(Surface::TextureLoaded){
-
 			geometryEffect.CleanUp();
 			geometryEdgeEffect.CleanUp();
 			solidEffect.CleanUp();
@@ -552,30 +570,22 @@ namespace Drawables{
 			delete this->edgeSurfels[i];
 		}
 
+		this->surfaceSurfelsVertices.clear();
+		this->surfaceSurfelsVertices.swap(std::vector<ProjectStructs::SURFEL_VERTEX>());
+
+		this->edgeSurfelsVertices.clear();
+		this->edgeSurfelsVertices.swap(std::vector<ProjectStructs::SURFEL_EDGE_VERTEX>());
+
 		this->surfaceSurfels.clear();
 		this->surfaceSurfels.swap(std::vector<ProjectStructs::SURFEL*>());
 
 		this->edgeSurfels.clear();
 		this->edgeSurfels.swap(std::vector<ProjectStructs::SURFEL_EDGE*>());
 
-		this->surfelVertexBuffer->Release();
-		this->surfelVertexBuffer = NULL;
-		delete this->surfelVertexBuffer;
-
-		this->solidVertexBuffer->Release();
-		this->solidVertexBuffer= NULL;
-		delete this->solidVertexBuffer;
-
-		this->readableVertexBuffer->Release();
-		this->readableVertexBuffer= NULL;
-		delete this->readableVertexBuffer;
-
-		this->readableEdgeVertexBuffer->Release();
-		this->readableEdgeVertexBuffer= NULL;
-		delete this->readableEdgeVertexBuffer;
-
-		this->solidEdgeVertexBuffer->Release();
-		this->solidEdgeVertexBuffer= NULL;
-		delete this->solidEdgeVertexBuffer;
+		ReleaseCOM(this->surfelVertexBuffer);
+		ReleaseCOM(this->solidVertexBuffer);
+		ReleaseCOM(this->readableVertexBuffer);
+		ReleaseCOM(this->readableEdgeVertexBuffer);
+		ReleaseCOM(this->surfelEdgeVertexBuffer);
 	}
 }

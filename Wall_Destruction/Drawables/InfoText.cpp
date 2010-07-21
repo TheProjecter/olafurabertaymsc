@@ -23,7 +23,8 @@ namespace Drawables{
 	void InfoText::Init(int x, int y){
 
 		D3DX10CreateFont(Globals::Device, 16, 0, 0, 1, false, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Times New Roman", &font);
-		deterioration = 0.2f;
+		
+		deterioration = 0.05f;
 
 		deltaRect.left = 0;
 		deltaRect.right = 0;
@@ -141,10 +142,7 @@ namespace Drawables{
 	}
 
 	void  InfoText::CleanUp(){
-		while(!texts.empty()){
-			texts.erase(texts.begin());
-		}
-
+		
 		texts.clear();
 		texts.swap( std::list<INFO_TEXT>() );
 
@@ -192,7 +190,6 @@ namespace Drawables{
 				dR.top = textRect.top + (pos++) * deltaRect.top;
 				font->DrawTextA(0, it->text.c_str(), -1, &(dR), DT_NOCLIP, it->color);
 			}
-
 		}
 	}
 }

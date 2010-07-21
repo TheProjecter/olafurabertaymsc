@@ -93,6 +93,7 @@ namespace Drawables{
 	void WreckingBall::Update(float dt){
 		this->sphere.SetWorld(PhysicsWrapper::GetWorld(this->sphere.GetRigidBody()));
 
+		this->lastVelocity = PhysicsWrapper::GetVector(&this->GetRigidBody()->getLinearVelocity());
 		this->chain.Update(dt);
 
 		if(Helpers::Globals::MOVE_WRECKINGBALL){
@@ -101,7 +102,7 @@ namespace Drawables{
 					PhysicsWrapper::SetPosition(this->chain[0]->GetRigidBody(), D3DXVECTOR3(0.0f, 0.0f, 15.0f*dt), true);
 				}
 				else if(Helpers::KeyboardHandler::IsKeyDown(DIK_S)){
-					PhysicsWrapper::SetPosition(this->chain[0]->GetRigidBody(), D3DXVECTOR3(0.0f, 0.0f, -	15.0f*dt), true);
+					PhysicsWrapper::SetPosition(this->chain[0]->GetRigidBody(), D3DXVECTOR3(0.0f, 0.0f, -15.0f*dt), true);
 				}
 			}
 			else {
@@ -113,8 +114,6 @@ namespace Drawables{
 				}
 			}
 
-
-
 			if(Helpers::KeyboardHandler::IsKeyDown(DIK_A)){
 				PhysicsWrapper::SetPosition(this->chain[0]->GetRigidBody(), D3DXVECTOR3(-15.0f*dt, 0.0f, 0.0f), true);
 			}
@@ -125,6 +124,7 @@ namespace Drawables{
 	}
 
 	void WreckingBall::CleanUp(){
+		depthEffect.CleanUp();
 		wreckingBallEffect.CleanUp();
 		sphere.CleanUp();
 

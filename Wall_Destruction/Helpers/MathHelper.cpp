@@ -4,6 +4,7 @@ D3DXVECTOR3 MathHelper::temp;
 D3DXVECTOR3 MathHelper::temp1;
 D3DXVECTOR3 MathHelper::temp2;
 D3DXVECTOR3 MathHelper::temp3;
+D3DXMATRIX MathHelper::I;
 
 // method taken from  Surface Splatting: Theory, Extensions and Implementation by Jussi Räsänen
 D3DXVECTOR3 MathHelper::Perpendicular( D3DXVECTOR3 v )
@@ -102,5 +103,61 @@ bool MathHelper::NegativeMinor(ProjectStructs::SURFEL_EDGE *edge){
 
 int MathHelper::Sign(float x){
 	return x < 0.0f ? -1 : x > 0.0f ? 1 : 0 ;
+}
+
+// method functionality taken from http://en.wikipedia.org/wiki/Eigenvalue_algorithm
+void MathHelper::CalculateMaximumEigenvalues(D3DXMATRIX matrix, float &maximumEigenValue, D3DXVECTOR3 &maximumEigenVector){
+
+	// transform matrix to 3x3
+	matrix._14 = 0.0f;
+	matrix._24 = 0.0f;
+	matrix._34 = 0.0f;
+	matrix._44 = 0.0f;
+	matrix._43 = 0.0f;
+	matrix._42 = 0.0f;
+	matrix._41 = 0.0f;
+
+	float a, b, c, d;
+	a = -1.0f;
+	b = matrix._11 + matrix._22 + matrix._33;
+	c = matrix._21 * matrix._12 + 
+		matrix._31 * matrix._13 + 
+		matrix._23 * matrix._32 - 
+		matrix._11 * matrix._22 - 
+		matrix._11 * matrix._33 + 
+		matrix._22 * matrix._33;
+	d = matrix._11 * matrix._22 * matrix._33 - 
+		matrix._11 * matrix._23 * matrix._32 - 
+		matrix._21 * matrix._12 * matrix._33 +
+		matrix._21 * matrix._13 * matrix._32 + 
+		matrix._31 * matrix._12 * matrix._23 - 
+		matrix._31 * matrix._13 * matrix._22;
+
+
+	float x, y, z;
+	x = ((3.0f*c/a) - b*b/ (a*a))/3.0f;
+	y = ((2.0f*b*b*b/(a*a*a)) - (9.0f*b*c/(a*a)) + (27.0f*d/a))/27.0f;
+	z = y*y/4.0f + x*x*x/27.0f;
+
+	float i, j, k, m, n, p;
+	i = sqrt(y*y / 4.0f - z);
+	j = -pow(i, 1.0f/3.0f);
+	k = acos(-(y/(2.0f * i)));
+
+	m = cos(k / 3.0f);
+	n = sqrt(3.0f)*sin(k / 3.0f);
+	p = -(b / (3.0f*a));
+
+	float eig1, eig2, eig3;
+
+	eig1 = -2.0f*j*m + p;
+	eig2 = j * (m+n) + p;
+	eig3 = j *(m - n) + p;
+
+	maximumEigenValue = max(eig1, max(eig2, eig3));
+	matrix = matrix - maximumEigenValue * GetIdentity();
+
+	// calculate the x, y and z of the maximum eigen vector
+	
 
 }

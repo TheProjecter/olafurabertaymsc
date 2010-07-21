@@ -54,11 +54,10 @@
 	#endif
 #endif
 
-// begin - these definitions are taken from GS-NPatch-Tesselation
-#define STR(x) #x
-#define DEF_STR(x) STR(x)
-#define DEF_MACRO(x) { #x, DEF_STR(x) }
-// end 
+#define HK_OBJECT_IS_PROJECTILE 1234
+#define HK_OBJECT_IS_WRECKINGBALL 1235
+#define HK_OBJECT_IS_CHAIN 1236
+
 
 using namespace Drawables;
 

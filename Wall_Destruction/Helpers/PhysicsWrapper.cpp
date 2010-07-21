@@ -1,6 +1,7 @@
 #include "PhysicsWrapper.h"
 #include "HavokPhysicsInclude.h"
 #include "ContactListener.h"
+#include "PostCollideListener.h"
 #include <D3DX10.h>
 #include <D3D10.h>
 #include "Structs.h"
@@ -14,7 +15,6 @@ hkJobThreadPool* PhysicsWrapper::threadPool;
 hkStopwatch PhysicsWrapper::stopWatch;
 hkReal PhysicsWrapper::lastTime;
 hkReal PhysicsWrapper::timestep;
-MeshlessObject* PhysicsWrapper::CeilingObject;
 D3DXMATRIX PhysicsWrapper::tempTranslationMatrix, PhysicsWrapper::tempRotationMatrix;
 D3DXVECTOR3 PhysicsWrapper::tempVector;
 bool PhysicsWrapper::setupComplete;
@@ -142,6 +142,8 @@ void PhysicsWrapper::FinishInit(){
 		context->addWorld(physicsWorld); // add the physics world so the viewers can see it
 		contexts.pushBack(context);
 
+		physicsWorld->addWorldPostCollideListener(new PostCollideListener());
+
 		// Now we have finished modifying the world, release our write marker.
 		physicsWorld->unmarkForWrite();
 	}
@@ -261,12 +263,67 @@ void PhysicsWrapper::AddMeshlessObject(MeshlessObject *mo)
 			info.m_collisionResponse = hkpMaterial::RESPONSE_SIMPLE_CONTACT;
 			
 			hkpRigidBody* rigid = new hkpRigidBody( info );
-		
+
 			physicsWorld->addEntity( rigid );
-			ContactListener *cl = new ContactListener(mo->GetVolume()->GetSurface(surfaceIndex), surfelIndex);
+			ContactListener *cl = new ContactListener(mo->GetVolume()->GetSurface(surfaceIndex), surfelIndex, -1);
 			rigid->addContactListener(cl);
 			
-			rigid->removeReference();
+			//rigid->removeReference();
+
+			info.m_shape->removeReference();
+			mo->AddRigidBody(rigid);
+			mo->AddContactListener(cl);
+
+			delete vertexPositions;
+		}
+
+		HR(mo->GetVolume()->GetSurface(surfaceIndex)->GetEdgeReadableBuffer()->Map(D3D10_MAP_READ, 0, reinterpret_cast< void** >(&vertices)));
+		mo->GetVolume()->GetSurface(surfaceIndex)->GetEdgeReadableBuffer()->Unmap();
+
+		vertexPositions = NULL;
+
+		for(int surfelIndex = 0; surfelIndex < mo->GetVolume()->GetSurface(surfaceIndex)->GetEdgeSurfelCount(); surfelIndex++){
+			vertexPositions = new D3DXVECTOR4[6];
+			int index = 0;
+			for(int i = 0; i<6;i+=3){
+				vertexPositions[index++] = D3DXVECTOR4(vertices[surfelIndex*6 + i].pos , 0.0f);
+				vertexPositions[index++] = D3DXVECTOR4(vertices[surfelIndex*6 + i+1].pos , 0.0f);
+				vertexPositions[index++] = D3DXVECTOR4(vertices[surfelIndex*6 + i+2].pos , 0.0f);
+			}
+
+			hkStridedVertices stridedVerts;
+			stridedVerts.m_numVertices = index;
+			stridedVerts.m_striding = sizeof(D3DXVECTOR4);
+			stridedVerts.m_vertices = &(vertexPositions[0].x);
+
+			hkGeometry geom;
+			hkArray<hkVector4> planeEquations;
+
+			hkGeometryUtility::createConvexGeometry( stridedVerts, geom, planeEquations);
+
+			stridedVerts.m_numVertices = geom.m_vertices.getSize();
+			stridedVerts.m_striding = sizeof(hkVector4);
+			stridedVerts.m_vertices = &(geom.m_vertices[0](0));
+			hkReal convexRadius = 0.05f;
+			hkGeometryUtility::expandPlanes(planeEquations, convexRadius);
+			hkpConvexVerticesShape* shape = new hkpConvexVerticesShape(stridedVerts, planeEquations, convexRadius);
+
+			info.m_position = hkVector4(mo->Position().x, mo->Position().y, mo->Position().z);
+
+			info.m_motionType = hkpMotion::MOTION_FIXED;
+
+			info.m_shape = shape;
+
+			info.m_qualityType = HK_COLLIDABLE_QUALITY_FIXED;
+			info.m_collisionResponse = hkpMaterial::RESPONSE_SIMPLE_CONTACT;
+
+			hkpRigidBody* rigid = new hkpRigidBody( info );
+
+			physicsWorld->addEntity( rigid );
+			ContactListener *cl = new ContactListener(mo->GetVolume()->GetSurface(surfaceIndex), -1, surfelIndex);
+			rigid->addContactListener(cl);
+
+			//rigid->removeReference();
 
 			info.m_shape->removeReference();
 			mo->AddRigidBody(rigid);
@@ -282,10 +339,11 @@ void PhysicsWrapper::AddProjectile(ProjectStructs::PROJECTILE *projectile)
 {
 	physicsWorld->lock();
 	physicsWorld->markForWrite();
-	hkpRigidBody* rb = SetupSphericalRigidBody(1.0f, 40.0f, projectile->position, projectile->velocity, false);	
 
-	physicsWorld->unlock();
+	hkpRigidBody* rb = SetupSphericalRigidBody(1.0f, 5.0f, projectile->position, projectile->velocity, false, projectile);	
+
 	physicsWorld->unmarkForWrite();
+	physicsWorld->unlock();
 	projectile->rigidBody = rb;
 }
 
@@ -293,12 +351,12 @@ void PhysicsWrapper::AddWreckingBall(WreckingBall *wreckingball)
 {
 	hkpRigidBodyCinfo chainBodyInfo, wreckingBallBodyInfo;
 	chainBodyInfo.m_shape = new hkpSphereShape(wreckingball->GetChain()[0]->GetRadius());
-	hkpInertiaTensorComputer::setShapeVolumeMassProperties(chainBodyInfo.m_shape, 500.0f, chainBodyInfo);
-	chainBodyInfo.m_mass = 500.0f;
+	hkpInertiaTensorComputer::setShapeVolumeMassProperties(chainBodyInfo.m_shape, 15000.0f, chainBodyInfo);
+	chainBodyInfo.m_mass = 15000.0f;
 
 	wreckingBallBodyInfo.m_shape = new hkpSphereShape(wreckingball->GetRadius());
-	hkpInertiaTensorComputer::setShapeVolumeMassProperties(wreckingBallBodyInfo.m_shape, 1500.0f, wreckingBallBodyInfo);
-	wreckingBallBodyInfo.m_mass = 1500.0f;
+	hkpInertiaTensorComputer::setShapeVolumeMassProperties(wreckingBallBodyInfo.m_shape, 50000.0f, wreckingBallBodyInfo);
+	wreckingBallBodyInfo.m_mass = 50000.0f;
 	wreckingBallBodyInfo.m_position.set(wreckingball->GetPosition().x, wreckingball->GetPosition().y, wreckingball->GetPosition().z);
 	wreckingBallBodyInfo.m_motionType = hkpMotion::MOTION_DYNAMIC;
 
@@ -319,18 +377,23 @@ void PhysicsWrapper::AddWreckingBall(WreckingBall *wreckingball)
 		chainBodyInfo.m_motionType = b ? hkpMotion::MOTION_DYNAMIC : hkpMotion::MOTION_FIXED;
 
 		hkpRigidBody* body = new hkpRigidBody(chainBodyInfo);
+		
+		body->addProperty(HK_OBJECT_IS_CHAIN, hkpPropertyValue(wreckingball->GetChain()[b]));
+
 		wreckingball->GetChain()[b]->SetRigidBody(body);
 		physicsWorld->addEntity(body);
 
 		entities.pushBack(body);
 		// we know, a reference is kept by the world
-		body->removeReference();
+		//body->removeReference();
 	}
 
 	hkpRigidBody* body = new hkpRigidBody(wreckingBallBodyInfo);
+	body->addProperty(HK_OBJECT_IS_WRECKINGBALL, hkpPropertyValue(wreckingball));
+
 	wreckingball->SetRigidBody(body);
 	physicsWorld->addEntity(body);
-	body->removeReference();	
+	//body->removeReference();	
 	
 	hkpConstraintChainInstance* chainInstance = HK_NULL;
 
@@ -358,7 +421,7 @@ void PhysicsWrapper::AddWreckingBall(WreckingBall *wreckingball)
 	chainBodyInfo.m_shape->removeReference();
 }
 
-hkpRigidBody* PhysicsWrapper::SetupSphericalRigidBody(float radius, float mass, D3DXVECTOR3 position, D3DXVECTOR3 velocity, bool isStatic){
+hkpRigidBody* PhysicsWrapper::SetupSphericalRigidBody(float radius, float mass, D3DXVECTOR3 position, D3DXVECTOR3 velocity, bool isStatic, ProjectStructs::PROJECTILE *projectile){
 	hkVector4 relPos( 0.0f,radius, 0.0f);
 
 	hkpRigidBodyCinfo info;
@@ -384,10 +447,11 @@ hkpRigidBody* PhysicsWrapper::SetupSphericalRigidBody(float radius, float mass, 
 	}
 
 	hkpRigidBody* rb = new hkpRigidBody( info );
+	rb->addProperty(HK_OBJECT_IS_PROJECTILE, hkpPropertyValue(projectile));
 	
 	physicsWorld->addEntity( rb );
 	
-	rb->removeReference();
+	//rb->removeReference();
 	info.m_shape->removeReference();
 
 	return rb;

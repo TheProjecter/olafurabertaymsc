@@ -18,22 +18,15 @@ namespace PointCloud{
 	class PointCloudHandler
 	{
 	public:
-		// Processing methods return an array of surfel vertices
-
 		// Load a xml file
-		//static std::vector<ThreeInOneArray<Structs::POINT_CLOUD_VERTEX>> ProcessPointCloud(std::string file, std::string *textureFile);
 		static ProjectStructs::MESHLESS_OBJECT_STRUCT ProcessPointCloud(std::string file, CSGTree *&surfaceTree, Volume *&surface);
 
-
-		//static Structs::SURFEL_VERTEX* ProcessPointCloud(ThreeInOneArray<Structs::POINT_CLOUD_VERTEX> points);
 	private:
 		static Drawables::Surface* CreateSurfelsFromPlane(D3DXVECTOR3 position, D3DXVECTOR3 normal, D3DXVECTOR2 dimensions, float radius);
 		static void CreateSurface( Volume * v, D3DXVECTOR3 pos, D3DXVECTOR3 majorAxis, D3DXVECTOR3 minorAxis, D3DXVECTOR3 normal, float U, float V, std::string texture);
 
 		static D3DXVECTOR3 GetVector3(TiXmlElement *element);
 		static D3DXVECTOR2 GetVector2(TiXmlElement *element);
-
-		//static ThreeInOneArray<Structs::POINT_CLOUD_VERTEX> CreateSurfelPlane(D3DXVECTOR3 from, D3DXVECTOR2 fromUV, D3DXVECTOR3 to, D3DXVECTOR2 toUV, D3DXVECTOR3 normal, D3DXVECTOR3 pointstep);
 
 		static const string XML_MESHLESS_ROOT;
 		static const string XML_MESHLESS_NAME;
@@ -42,6 +35,12 @@ namespace PointCloud{
 		static const string XML_MESHLESS_WORLDTRANSLATION;
 		static const string XML_MESHLESS_WORLDSCALE;
 		static const string XML_MESHLESS_WORLDYAWPITCHROLL;
+		static const string XML_MESHLESS_DENSITY;
+		static const string XML_MESHLESS_YOUNGS_MODULUS;
+		static const string XML_MESHLESS_POISSON_RATIO;
+		static const string XML_MESHLESS_DAMPING_CONSTANT_PHI;
+		static const string XML_MESHLESS_DAMPING_CONSTANT_PSI;
+		static const string XML_MESHLESS_TOUGHNESS;
 		static const string XML_MESHLESS_MATERIAL;
 
 		static const string XML_MESHLESS_VOLUME;

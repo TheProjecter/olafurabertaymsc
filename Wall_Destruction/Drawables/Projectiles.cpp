@@ -3,7 +3,7 @@
 #include "Globals.h"
 
 void Projectiles::Init(){
-	initialVelocity = 100.0f;
+	initialVelocity = 200.0f;
 
 	// have the deterioration slow so the projectiles can actually do something
 	deterioration = 0.3f;
@@ -49,7 +49,6 @@ void Projectiles::Init(){
 
 	// image taken from http://www.cgtextures.com/getfile.php/ConcreteRough0019_2_S.jpg?id=38615&s=s&PHPSESSID=fb96f672ea0d7aff54fd54fe3f539e00
 	projectileEffect.SetTexture("tex", "Textures\\Projectile.jpg");
-	projectileEffect.AddVariable("depthMap");
 
 	D3D10_INPUT_ELEMENT_DESC depthLayout[] =
 	{
@@ -70,64 +69,60 @@ void Projectiles::Draw()
 	projectileEffect.SetFloatVector("CameraPos", Helpers::Globals::AppCamera.Position());
 	projectileEffect.PreDraw();
 
-	std::list<ProjectStructs::PROJECTILE>::iterator it;
-
-	for(it = projectiles.begin(); it != projectiles.end(); it++){
-		projectileEffect.SetMatrix("World", it->world);
+	for(int i = 0; i<projectiles.size(); i++){
+		projectileEffect.SetMatrix("World", projectiles[i]->world);
 		projectileSphere.Draw(&projectileEffect);
 	}	
 }
 
 void Projectiles::DrawDepth(){
-
+/*
 	depthEffect.SetMatrix("View", Helpers::Globals::AppCamera.View());
 	depthEffect.PreDraw();
 
-	std::list<ProjectStructs::PROJECTILE>::iterator it;
+	std::list<ProjectStructs::PROJECTILE*>::iterator it;
 
 	for(it = projectiles.begin(); it != projectiles.end(); it++){
 		depthEffect.SetMatrix("World", it->world);
 		projectileSphere.DrawDepth(&depthEffect);
 	}	
+	*/
 }
 
 void Projectiles::Update(float dt){
-	std::list<ProjectStructs::PROJECTILE>::iterator it;
+	for(int i = 0; i< projectiles.size(); i++){
+		projectiles[i]->life -= dt*deterioration;
+		projectiles[i]->position = PhysicsWrapper::GetVector(&projectiles[i]->rigidBody->getPosition());
+		projectiles[i]->world = PhysicsWrapper::GetWorld(projectiles[i]->rigidBody);
+		projectiles[i]->lastVelocity = PhysicsWrapper::GetVector(&projectiles[i]->rigidBody->getLinearVelocity());
 
-	for(it = projectiles.begin(); it != projectiles.end(); it++){
-		it->life -= dt*deterioration;
-		it->position = PhysicsWrapper::GetVector(&it->rigidBody->getPosition());
-		it->world = PhysicsWrapper::GetWorld(it->rigidBody);
-
-		if(!it->rigidBody->isActive())
-			it->life = 0.0f;
+		if(!projectiles[i]->rigidBody->isActive())
+			projectiles[i]->life = 0.0f;
 	}
 
 	// take out the "dead" projectiles
-	while(projectiles.size() > 0 && projectiles.front().life <= 0.0f){
-		it = projectiles.begin();
+	while(projectiles.size() > 0 && projectiles[0]->life <= 0.0f){
+		if(projectiles[0]->rigidBody->isActive())
+			PhysicsWrapper::RemoveRigidBody(projectiles[0]->rigidBody);
 
-		if(it->rigidBody->isActive())
-			PhysicsWrapper::RemoveRigidBody(it->rigidBody);
+		projectiles.erase(projectiles.begin());
+	}
 
-		projectiles.pop_front();
-	}	
 	lastShotTime+=dt;
 }
 
 void Projectiles::CleanUp(){
 	projectileSphere.CleanUp();
 	projectileEffect.CleanUp();
+	depthEffect.CleanUp();
 
 	while(!projectiles.empty()){
-		/*if(projectiles.front().rigidBody)
-			delete projectiles.front().rigidBody;
-*/
+		delete projectiles[0];
 		projectiles.erase(projectiles.begin());
 	}
 
 	projectiles.clear();
-	projectiles.swap( std::list<ProjectStructs::PROJECTILE>() );
+	projectiles.swap( std::vector<ProjectStructs::PROJECTILE*>() );
 
 }
 
@@ -135,12 +130,13 @@ void Projectiles::Add(){
 	if(lastShotTime < deltaTime)
 		return;
 
-	ProjectStructs::PROJECTILE projectile;
-	projectile.life = 1.0f;
-	projectile.position = Helpers::Globals::AppCamera.Position() + 5*Helpers::Globals::AppCamera.Forward();
-	projectile.velocity = initialVelocity * Helpers::Globals::AppCamera.Forward();
+	ProjectStructs::PROJECTILE *projectile = new ProjectStructs::PROJECTILE;
+	projectile->life = 1.0f;
+	projectile->position = Helpers::Globals::AppCamera.Position() + 5*Helpers::Globals::AppCamera.Forward();
+	projectile->velocity = initialVelocity * Helpers::Globals::AppCamera.Forward();
+	projectile->lastVelocity = projectile->velocity;
 
-	PhysicsWrapper::AddProjectile(&projectile);
+	PhysicsWrapper::AddProjectile(projectile);
 	projectiles.push_back(projectile);
 	lastShotTime = 0.0f;
 }

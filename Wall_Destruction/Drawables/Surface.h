@@ -4,6 +4,7 @@
 #include "Structs.h"
 #include "Drawable.h"
 #include "CustomEffect.h"
+#include "ChangedPhyxels.h"
 #include <D3DX10.h>
 
 namespace Drawables{
@@ -12,6 +13,10 @@ namespace Drawables{
 	public:
 		Surface(void);
 		~Surface(void);
+
+		void SetChangedPhyxelsObject(ChangedPhyxels* changedPhyxels){
+			this->changedPhyxels = changedPhyxels;
+		}
 
 		void AddSurfel(ProjectStructs::SURFEL *s);
 		void AddEdgeSurfel(ProjectStructs::SURFEL_EDGE *s);
@@ -34,8 +39,8 @@ namespace Drawables{
 		int GetSurfaceSurfelCount(){return surfelCount;};
 		int GetEdgeSurfelCount(){return edgeCount;};
 
-		void AddForce(D3DXVECTOR3 force, D3DXVECTOR3 pos, int surfelIndex);
-		void AddForceToPhyxel(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::Phyxel_Grid_Cell *cell);
+		void AddForce(D3DXVECTOR3 force, D3DXVECTOR3 pos, int surfelIndex, int edgeIndex);
+		void AddForceToPhyxels(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::PHYXEL_NODE *phyxel);
 
 		ProjectStructs::SURFEL* GetSurfaceSurfel(int i){
 			return surfaceSurfels[i];
@@ -62,8 +67,10 @@ namespace Drawables{
 		}
 
 		static float RadiusScale;
+		static bool isChanged;
 
 	private:
+		bool AddForceToPhyxel(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::PHYXEL_NODE *phyxel);
 		void InitSurfel();
 		void InitWireframe();
 		void InitSolid();
@@ -76,6 +83,7 @@ namespace Drawables{
 
 		D3DXVECTOR3 SurfacePos;
 		D3DXVECTOR2 DeltaSurfelUV;
+
 		std::vector<ProjectStructs::SURFEL*> surfaceSurfels;
 		std::vector<ProjectStructs::SURFEL_EDGE*> edgeSurfels;
 
@@ -93,7 +101,7 @@ namespace Drawables{
 		static ID3D10ShaderResourceView *SurfelTexture, *SurfelWireframeTexture;
 		static bool TextureLoaded;
 
-		static float LastRadiusScale;
+		ChangedPhyxels* changedPhyxels;
 	};
 }
 

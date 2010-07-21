@@ -9,18 +9,29 @@
 class ChangedPhyxels
 {
 public:
-	static void AddPhyxel(ProjectStructs::PHYXEL_NODE* node);
+	void AddPhyxel(ProjectStructs::PHYXEL_NODE* node);
+	void AddDrawablePhyxel(ProjectStructs::PHYXEL_NODE* node);
 	
-	static void Init();
-	static void Update(float dt);
-	static void Draw();
-	static void CleanUp();
-	
+	void Init();
+	void Update(float dt);
+	void Emptylist();
+	void Draw();
+	void CleanUp();
+
+	unsigned int GetPhyxelCount(){return phyxels.size();}
+	ProjectStructs::PHYXEL_NODE* GetPhyxel(int i){return phyxels[i];}
+
 private:
-	static std::vector<ProjectStructs::PHYXEL_NODE*> phyxels;
-	static Helpers::CustomEffect phyxelEffect;
-	static Sphere phyxelSphere;
-	static D3DXMATRIX world;
+	bool SetupPhyxels();
+
+	std::vector<ProjectStructs::PHYXEL_NODE*> phyxels, drawablePhyxels;
+	Helpers::CustomEffect phyxelEffect;
+	
+	ID3D10Buffer *mVB;
+	bool hasBeenSetup;
+	int phyxelsToDraw;
+
+	D3DXMATRIX world;
 };
 
 #endif

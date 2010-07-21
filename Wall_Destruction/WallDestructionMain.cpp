@@ -6,9 +6,9 @@
 #include "d3dUtil.h"
 
 #ifdef _DEBUG
-#ifdef MEMORY_LEAK_CHECK
-//#include "vld/vld.h"
-#endif
+	#ifdef MEMORY_LEAK_CHECK
+		#include "vld/vld.h"
+	#endif		
 #endif
 
 // Keycode
@@ -22,9 +22,7 @@
 #include "PhysicsWrapper.h"
 #define DIRECTINPUT_VERSION 0x0800
 
-
 #include "Globals.h"
-#include "ChangedPhyxels.h"
 #include "Projectiles.h"
 #include "InfoText.h"
 #include "MouseHandler.h"
@@ -62,9 +60,6 @@ private:
 	Drawables::WreckingBall wreckingBall;
 	Projectiles projectiles;
 	bool resetLastFrame;
-
-	DrawableTex2D DepthPass, AttributePass, NormalizationPass;
-	SpriteViewPort depthMapVP, normalMapVP, occlusionMapVP;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -72,7 +67,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 {
 	WallDestructionApp theApp(hInstance);
 	
-
 	theApp.initApp();
 
 	if(!Helpers::Globals::CORRECTLY_SETUP)
@@ -102,8 +96,6 @@ void WallDestructionApp::CleanApp(){
 
 	Helpers::Globals::DebugInformation.CleanUp();
 
-	ChangedPhyxels::CleanUp();
-
 	PhysicsWrapper::CleanUp();
 
 	ground->CleanUp();
@@ -125,7 +117,6 @@ void WallDestructionApp::Reset(){
 
 	wreckingBall.CleanUp();
 	projectiles.CleanUp();
-	ChangedPhyxels::CleanUp();
 	PhysicsWrapper::CleanUp();
 
 	PhysicsWrapper::Init();
@@ -140,8 +131,6 @@ void WallDestructionApp::Reset(){
 	projectiles.Init();
 
 	PhysicsWrapper::FinishInit();
-
-	ChangedPhyxels::Init();
 
 	Helpers::Globals::DebugInformation.EndTimer(INFO_TYPE, "Restart ");
 	resetLastFrame = true;
@@ -161,9 +150,7 @@ void WallDestructionApp::initApp()
 
 	Helpers::MouseHandler::SetUp(mhAppInst, mhMainWnd);
 	Helpers::KeyboardHandler::Init();
-	PhysicsWrapper::Init();
-	ChangedPhyxels::Init();
-	
+	PhysicsWrapper::Init();	
 	
 	instructionRect.left = this->mClientWidth - 50;
 	instructionRect.right = 0;
@@ -208,6 +195,7 @@ void WallDestructionApp::onResize()
 
 void WallDestructionApp::updateScene(float dt)
 {
+	Surface::isChanged = false;
 	if(resetLastFrame){
 		resetLastFrame = false;
 		return;
@@ -215,22 +203,6 @@ void WallDestructionApp::updateScene(float dt)
 
 	Helpers::MouseHandler::DetectInput();
 	Helpers::KeyboardHandler::Update();
-	
-	Helpers::Globals::DebugInformation.Update(dt);
-	
-	Helpers::Globals::AppCamera.Update(dt);
-	
-	PhysicsWrapper::Update(dt);
-
-	wall->Update(dt);
-	ground->Update(dt);
-
-	wreckingBall.Update(dt);
-	projectiles.Update(dt);
-
-	ChangedPhyxels::Update(dt);
-	
-	D3DApp::updateScene(dt);
 	
 	if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_F1)){
 		if(Helpers::Globals::SurfelRenderMethod == Helpers::SURFEL){
@@ -342,6 +314,8 @@ void WallDestructionApp::updateScene(float dt)
 		if(Surface::RadiusScale > 2.0f)
 			Surface::RadiusScale = 2.0f;
 
+		Surface::isChanged = Surface::RadiusScale <= 2.0f;
+
 		Helpers::Globals::DebugInformation.AddText(DEBUG_TYPE, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f), "Radius Scale = %f", Surface::RadiusScale );
 	}
 	else if(Helpers::KeyboardHandler::IsKeyDown(DIK_F)){
@@ -349,12 +323,28 @@ void WallDestructionApp::updateScene(float dt)
 		if(Surface::RadiusScale < 0.01f)
 			Surface::RadiusScale = 0.01f;
 
+		Surface::isChanged = Surface::RadiusScale >= 0.01f;
+
 		Helpers::Globals::DebugInformation.AddText(DEBUG_TYPE, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f), "Radius Scale = %f", Surface::RadiusScale );
 	}
 
 	if(Helpers::MouseHandler::IsButtonPressed(Helpers::MouseHandler::MOUSE_LEFTBUTTON)){
 		projectiles.Add();
 	}
+
+	Helpers::Globals::DebugInformation.Update(dt);
+
+	Helpers::Globals::AppCamera.Update(dt);
+
+	wreckingBall.Update(dt);
+	projectiles.Update(dt);
+
+	wall->Update(dt);
+	ground->Update(dt);
+
+	PhysicsWrapper::Update(dt);
+
+	D3DApp::updateScene(dt);
 }
 
 void WallDestructionApp::drawScene()
@@ -365,9 +355,6 @@ void WallDestructionApp::drawScene()
 
 	ground->Draw();
 	wall->Draw();
-
-	if(Helpers::Globals::DRAW_PHYXELS)
-		ChangedPhyxels::Draw();
 
 	// draw text
 	RECT R = {5, 5, 0, 0};

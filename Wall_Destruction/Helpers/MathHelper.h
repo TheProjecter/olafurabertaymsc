@@ -20,12 +20,21 @@ public:
 	
 	static bool D3DXVECTOR3Equals(D3DXVECTOR3 vec, float x, float y, float z);
 	static bool Facing(D3DXVECTOR3 p1, D3DXVECTOR3 p2, D3DXVECTOR3 n2);
+	static void CalculateMaximumEigenvalues(D3DXMATRIX matrix, float &maximumEigenValue, D3DXVECTOR3 &maximumEigenVector);
+	
+	static D3DXMATRIX GetIdentity(){
+		if(I._11 == 0.0f)
+			D3DXMatrixIdentity(&I);
+
+		return I;
+	}
 
 private:
 	static D3DXVECTOR3 temp;
 	static D3DXVECTOR3 temp1;
 	static D3DXVECTOR3 temp2;
 	static D3DXVECTOR3 temp3;
+	static D3DXMATRIX I;
 
 };
 

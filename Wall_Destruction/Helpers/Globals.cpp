@@ -24,8 +24,8 @@ namespace Helpers{
 	bool Globals::SHOW_ERRORS = true;
 
 	InfoText Globals::DebugInformation;
-	DrawMethod Globals::SurfelDrawMethod = SURFEL;
-	DrawMethod Globals::SurfelRenderMethod = SURFEL;
+	DrawMethod Globals::SurfelDrawMethod = SOLID;
+	DrawMethod Globals::SurfelRenderMethod = SOLID;
 
 	// constants
 	const float Globals::PI = (float)D3DX_PI;

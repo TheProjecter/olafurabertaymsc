@@ -98,14 +98,14 @@ ThreeInOneArray<T>::ThreeInOneArray(const ThreeInOneArray &a)
 
 template <class T>
 bool ThreeInOneArray<T>::ValidIndex(int i, int j, int k){
-	return i >= 0 && j >= 0 && k >= 0 && i <width && j < height && k < depth;
+	return i >= 0 && j >= 0 && k >= 0 && (unsigned int)i <width && (unsigned int)j < height && (unsigned int)k < depth;
 }
 
 template <class T>
 bool ThreeInOneArray<T>::ValidIndex(D3DXVECTOR3 index){
 
 	// don't know why the indices are positive when they are passed over to ValidIndex(i, j, k)
-	return index.x >= 0 && index.y >= 0 && index.z >= 0 && ValidIndex(index.x, index.y, index.z);
+	return (int)index.x >= 0 && (int)index.y >= 0 && (int)index.z >= 0 && ValidIndex((int)index.x, (int)index.y, (int)index.z);
 }
  
 template <class T>
@@ -114,8 +114,9 @@ ThreeInOneArray<T>& ThreeInOneArray<T>::operator = (const ThreeInOneArray &a)
     if (this == &a) // in case somebody tries assign array to itself 
 		return *this;
 
-	if(oneDimArray != NULL)
+	if(oneDimArray != NULL){
 		delete [] oneDimArray;
+	}
 
 	this->size = a.size;
 	this->width = a.width;
@@ -193,7 +194,7 @@ INDEX ThreeInOneArray<T>::GetIndices(int index){
 
 template <class T>
 int ThreeInOneArray<T>::GetIndex(int i, int j, int k){
-	if(i < 0 || j < 0 || k < 0 || i > width-1 || j > height-1 || k > depth -1)
+	if(i < 0 || j < 0 || k < 0 || (unsigned int)i > width-1 || (unsigned int)j > height-1 || (unsigned int)k > depth -1)
 		return -1;
 
 	return i * depth * height + j * depth + k;
@@ -201,6 +202,7 @@ int ThreeInOneArray<T>::GetIndex(int i, int j, int k){
 
 template <class T>
 void ThreeInOneArray<T>::Clear(){
+	delete [] oneDimArray;
 	this->oneDimArray = NULL;
 }
 

@@ -2,18 +2,23 @@
 #include "Globals.h"
 #include "TextureCreator.h"
 #include "MathHelper.h"
+#include "FractureManager.h"
 #include <vector>
 #include <algorithm>
+
 
 Volume::Volume(){
 }
 
-void Volume::Init(bool d)
+void Volume::Init(ProjectStructs::MATERIAL_PROPERTIES materialProperties)
 {
 	this->pos = D3DXVECTOR3(World._41, World._42, World._43);
-	this->deformable = d;
+	this->materialProperties = materialProperties;
 
-	if(deformable){
+	if(this->materialProperties.deformable){
+		changedPhyxels = new ChangedPhyxels();
+		changedPhyxels->Init();
+
 		D3DXVECTOR3 Min = D3DXVECTOR3(FLT_MAX, FLT_MAX, FLT_MAX), Max = D3DXVECTOR3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
 		std::vector<D3DXVECTOR3> surfelVertexList;
@@ -21,9 +26,10 @@ void Volume::Init(bool d)
 		std::vector<ProjectStructs::SURFEL*> surfelList;
 		std::vector<ProjectStructs::SURFEL_EDGE*> edgeList;
 		
-		for(int i = 0; i<surfaces.size(); i++){
+		for(unsigned int i = 0; i<surfaces.size(); i++){
 			// read from the surfel vertex buffer
 			ProjectStructs::SOLID_VERTEX* vertices = 0;
+			surfaces[i]->SetChangedPhyxelsObject(changedPhyxels);
 
 			HR(surfaces[i]->GetSurfelReadableBuffer()->Map(D3D10_MAP_READ, 0, reinterpret_cast< void** >(&vertices)));
 			surfaces[i]->GetSurfelReadableBuffer()->Unmap();
@@ -83,12 +89,12 @@ void Volume::Init(bool d)
 				Max.z = edgeVertexList[i].z;
 		}
 
-		grid = new PhyxelGrid(30, Min, Max, pos + (Min + (Max - Min)/2.0f));
+		phyxelGrid = new PhyxelGrid(30, Min, Max, pos + (Min + (Max - Min)/2.0f), materialProperties);
 
-		grid->InsertPoints(surfelVertexList, surfelList);
-		grid->InsertEdges(edgeVertexList, edgeList);
+		phyxelGrid->InsertPoints(surfelVertexList, surfelList);
+		phyxelGrid->InsertEdges(edgeVertexList, edgeList);
 		
-		grid->Init();
+		phyxelGrid->Init(changedPhyxels);
 
 		surfelList.clear();
 		surfelList.swap(std::vector<ProjectStructs::SURFEL*>());
@@ -98,7 +104,6 @@ void Volume::Init(bool d)
 		surfelVertexList.swap(std::vector<D3DXVECTOR3>());
 		edgeVertexList.clear();
 		edgeVertexList.swap(std::vector<D3DXVECTOR3>());
-
 	}
 }
 
@@ -116,18 +121,29 @@ void Volume::Draw(){
 		surfaces[i]->Draw();
 	}
 
-	if(deformable){
-		if(Helpers::Globals::DRAW_PHYXEL_GRID){
-			grid->Draw();
-		}
+	if(materialProperties.deformable){
+		if(Helpers::Globals::DRAW_PHYXEL_GRID)
+			phyxelGrid->Draw();
+		if(Helpers::Globals::DRAW_PHYXELS)
+			changedPhyxels->Draw();
 	}
 }
 
 
 void Volume::Update(float dt){
-	for(int i = 0; i<surfaces.size(); i++){
+
+	if(materialProperties.deformable){
+		FractureManager::PreStepFractureAlgorithm(this, dt);
+		changedPhyxels->Update(dt);
+	}
+
+	for(unsigned int i = 0; i<surfaces.size(); i++){
 		surfaces[i]->Update(dt);
 	}
+}
+
+void Volume::CleanChangedPhyxels(){
+	changedPhyxels->Emptylist();
 }
 
 void Volume::AddSurface(Surface *surface){
@@ -141,9 +157,13 @@ void Volume::CleanUp(){
 		surfaces[i]->CleanUp();
 		delete surfaces[i];
 	}
-	if(deformable){
-		grid->CleanUp();
-		delete grid;
+
+	if(materialProperties.deformable){
+		phyxelGrid->CleanUp();
+		delete phyxelGrid;
+
+		changedPhyxels->CleanUp();
+		delete changedPhyxels;
 	}
 }
 

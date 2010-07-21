@@ -103,9 +103,10 @@ void CSGTree::CleanUpNode(OPERATOR_NODE* node){
 		node->Left->CleanUp();
 		delete node->Left;
 	}
-	if(node->Right)
+	if(node->Right){
 		node->Right->CleanUp();
 		delete node->Right;
+	}
 
 	delete node;
 }

@@ -22,7 +22,7 @@ public:
 private:
 	Sphere projectileSphere;
 	Helpers::CustomEffect projectileEffect, depthEffect;
-	std::list<ProjectStructs::PROJECTILE> projectiles;
+	std::vector<ProjectStructs::PROJECTILE*> projectiles;
 
 	float deltaTime, lastShotTime;
 	float initialVelocity, deterioration;

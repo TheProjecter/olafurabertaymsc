@@ -15,9 +15,10 @@ public:
 	void Init(D3DXVECTOR3 start, D3DXVECTOR3 end, int count);
 	void Update(float dt);
 	void Draw();
-	void DrawDepth();
 	void CleanUp();
 
+	D3DXVECTOR3 GetLastVelocity(){return lastVelocity;}
+	void SetLastVelocity(D3DXVECTOR3 vel){lastVelocity = vel;}
 	int GetCount(){return chainSpheres.size();}
 	D3DXVECTOR3 GetDelta(){return delta;}
 
@@ -28,7 +29,7 @@ public:
 private:
 	std::vector<Sphere*> chainSpheres;
 	Helpers::CustomEffect effect, depthEffect;
-
+	D3DXVECTOR3 lastVelocity;
 	D3DXVECTOR3 start, end, delta;
 	D3DXMATRIX invWorldView;
 

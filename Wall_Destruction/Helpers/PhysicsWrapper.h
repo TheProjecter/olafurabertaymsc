@@ -89,7 +89,7 @@ public:
 
 private:
 
-	static hkpRigidBody* SetupSphericalRigidBody(float radius, float mass, D3DXVECTOR3 position, D3DXVECTOR3 velocity, bool isStatic);
+	static hkpRigidBody* SetupSphericalRigidBody(float radius, float mass, D3DXVECTOR3 position, D3DXVECTOR3 velocity, bool isStatic, ProjectStructs::PROJECTILE *projectile);
 	static void LinkChain(WreckingBall *wreckingball);
 	static void LinkSphereToPlane(WreckingBall *wreckingball, hkpRigidBody* plane);
 
