@@ -1,7 +1,6 @@
 #include "PhysicsWrapper.h"
 #include "HavokPhysicsInclude.h"
 #include "ContactListener.h"
-#include "PostCollideListener.h"
 #include <D3DX10.h>
 #include <D3D10.h>
 #include "Structs.h"
@@ -141,8 +140,6 @@ void PhysicsWrapper::FinishInit(){
 		hkpPhysicsContext::registerAllPhysicsProcesses(); // all the physics viewers
 		context->addWorld(physicsWorld); // add the physics world so the viewers can see it
 		contexts.pushBack(context);
-
-		physicsWorld->addWorldPostCollideListener(new PostCollideListener());
 
 		// Now we have finished modifying the world, release our write marker.
 		physicsWorld->unmarkForWrite();
@@ -340,7 +337,7 @@ void PhysicsWrapper::AddProjectile(ProjectStructs::PROJECTILE *projectile)
 	physicsWorld->lock();
 	physicsWorld->markForWrite();
 
-	hkpRigidBody* rb = SetupSphericalRigidBody(1.0f, 5.0f, projectile->position, projectile->velocity, false, projectile);	
+	hkpRigidBody* rb = SetupSphericalRigidBody(1.0f, 10.0f, projectile->position, projectile->velocity, false, projectile);	
 
 	physicsWorld->unmarkForWrite();
 	physicsWorld->unlock();

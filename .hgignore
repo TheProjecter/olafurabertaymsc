@@ -3,3 +3,4 @@ relre:Wall_Destruction/Release
 relre:Wall_Destruction/UpgradeLog
 relre:Wall_Destruction/_UpgradeReport_Files/
 glob:Wall_Destruction/ipch/wall_destruction-d2bf6c47/wall_destruction-10ad88ef.ipch
+glob:Wall_Destruction/memory_leak_report.txt

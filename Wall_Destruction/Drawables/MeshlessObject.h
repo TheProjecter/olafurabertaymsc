@@ -1,7 +1,6 @@
 #ifndef MESHLESS_OBJECT_H
 #define MESHLESS_OBJECT_H
 
-#include "PhyxelObject.h"
 #include "Drawable.h"
 #include "Globals.h"
 #include "HavokPhysicsInclude.h"
@@ -44,9 +43,6 @@ namespace Drawables{
 		std::string GetName(){return name;}
 
 	private:
-//		SurfelObject surfelObject;
-		PhyxelObject phyxelObject;
-
 		CSGTree *tree;
 		Volume *volume;
 
