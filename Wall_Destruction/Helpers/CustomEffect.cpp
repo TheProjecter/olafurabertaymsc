@@ -153,7 +153,7 @@ namespace Helpers{
 	void CustomEffect::SetFloat(string variable, float scalar){
 		effectVariables[variable]->AsScalar()->SetFloat(scalar);
 	}
-
+	
 	void CustomEffect::CleanUp(){
 
 		if(pVertexLayout){

@@ -2,6 +2,12 @@
 
 Texture2D tex;
 
+SamplerState SimpleFilter{
+	Filter = ANISOTROPIC;
+ 	AddressU = WRAP;
+ 	AddressV = WRAP;
+}
+
 SamplerState Filter
 {
 	Filter = ANISOTROPIC;
@@ -40,7 +46,7 @@ VS_OUTPUT_WITH_TEXTURE VSWithTexture( VS_INPUT_WITH_TEXTURE input)
 //
 float4 PSWithTexture( VS_OUTPUT_WITH_TEXTURE input) : SV_Target
 {
-	return tex.Sample(Filter, input.UV);
+	return tex.Sample(SimpleFilter, input.UV);
 }
 
 technique10 ViewportTechnique

@@ -4,6 +4,7 @@
 #include <D3DX10.h>
 #include <D3D10.h>
 #include "Structs.h"
+#include "MathHelper.h"
 #include <vector>
 
 hkpWorld* PhysicsWrapper::physicsWorld;
@@ -17,6 +18,7 @@ hkReal PhysicsWrapper::timestep;
 D3DXMATRIX PhysicsWrapper::tempTranslationMatrix, PhysicsWrapper::tempRotationMatrix;
 D3DXVECTOR3 PhysicsWrapper::tempVector;
 bool PhysicsWrapper::setupComplete;
+float PhysicsWrapper::RigidBodyCount = 0;
 
 // fix for release
 hkTestEntry* hkUnitTestDatabase;
@@ -207,8 +209,96 @@ void PhysicsWrapper::CleanUp()
 	hkMemoryInitUtil::quit();
 }
 
-void PhysicsWrapper::AddMeshlessObject(MeshlessObject *mo)
+void PhysicsWrapper::AddSurfels(std::vector<D3DXVECTOR3> points, std::vector<ProjectStructs::SURFEL*> surfels, ProjectStructs::MATERIAL_PROPERTIES materialProperties, D3DXVECTOR3 pos){
+ AddSurfels(points, surfels, materialProperties, pos, true);
+}
+
+void PhysicsWrapper::AddSurfels(std::vector<D3DXVECTOR3> points, std::vector<ProjectStructs::SURFEL*> surfels, ProjectStructs::MATERIAL_PROPERTIES materialProperties, D3DXVECTOR3 pos, bool lockWorld){
+
+	if(lockWorld)
+		LockWorld();
+
+	hkpRigidBodyCinfo info;
+	hkpMassProperties massProperties;
+
+	hkGeometry geo;
+
+	D3DXVECTOR3* vertexPositions = NULL;
+
+	vertexPositions = new D3DXVECTOR3[6];
+
+	for(int i = 0; i<surfels.size(); i+=4){
+		int index = 0;
+		
+		if(!MathHelper::IsFiniteNumber(points[i].x) || !MathHelper::IsFiniteNumber(points[i].y) || !MathHelper::IsFiniteNumber(points[i].y) ||
+			!MathHelper::IsFiniteNumber(points[i+1].x) || !MathHelper::IsFiniteNumber(points[i+1].y) || !MathHelper::IsFiniteNumber(points[i+1].y) ||
+			!MathHelper::IsFiniteNumber(points[i+2].x) || !MathHelper::IsFiniteNumber(points[i+2].y) || !MathHelper::IsFiniteNumber(points[i+2].y) ||
+			!MathHelper::IsFiniteNumber(points[i+3].x) || !MathHelper::IsFiniteNumber(points[i+3].y) || !MathHelper::IsFiniteNumber(points[i+3].y)){
+				continue;
+		}
+
+		vertexPositions[index++] = D3DXVECTOR3(points[i + 0] + pos);
+		vertexPositions[index++] = D3DXVECTOR3(points[i + 1] + pos);
+		vertexPositions[index++] = D3DXVECTOR3(points[i + 2] + pos);
+		
+		vertexPositions[index++] = D3DXVECTOR3(points[i + 1] + pos);
+		vertexPositions[index++] = D3DXVECTOR3(points[i + 3] + pos);
+		vertexPositions[index++] = D3DXVECTOR3(points[i + 2] + pos);
+
+		hkStridedVertices stridedVerts;
+		stridedVerts.m_numVertices = index;
+		stridedVerts.m_striding = sizeof(D3DXVECTOR3);
+		stridedVerts.m_vertices = &(vertexPositions[0].x);
+
+		hkGeometry geom;
+		hkArray<hkVector4> planeEquations;
+
+		hkGeometryUtility::createConvexGeometry( stridedVerts, geom, planeEquations);
+
+		if(geom.m_vertices.getSize() == 0)
+			continue;
+
+		stridedVerts.m_numVertices = geom.m_vertices.getSize();
+		stridedVerts.m_striding = sizeof(hkVector4);
+		stridedVerts.m_vertices = &(geom.m_vertices[0](0));
+		hkReal convexRadius = 0.1f;
+		hkGeometryUtility::expandPlanes(planeEquations, convexRadius);
+		hkpConvexVerticesShape* shape = new hkpConvexVerticesShape(stridedVerts, planeEquations, convexRadius);
+
+		info.m_position = hkVector4(0.0f, 0.0f, 0.0f);
+
+		info.m_motionType = hkpMotion::MOTION_FIXED;
+
+		info.m_shape = shape;
+
+		info.m_qualityType = HK_COLLIDABLE_QUALITY_FIXED;
+		info.m_collisionResponse = hkpMaterial::RESPONSE_SIMPLE_CONTACT;
+
+		hkpRigidBody* rigid = new hkpRigidBody( info );
+
+		physicsWorld->addEntity( rigid );
+		
+		if(materialProperties.deformable){
+			rigid->addContactListener(new ContactListener(surfels[i]));
+		}
+
+		rigid->removeReference();
+		shape->removeReference();
+			
+		surfels[i]->rigidBody = rigid;
+		RigidBodyCount++;
+	}
+
+	delete vertexPositions;
+	
+	if(lockWorld)
+		UnLockWorld();
+}
+/*
+void PhysicsWrapper::AddSurface(Surface* surface)
 {
+	LockWorld();
+
 	hkpRigidBodyCinfo info;
 	hkpMassProperties massProperties;
 
@@ -217,143 +307,88 @@ void PhysicsWrapper::AddMeshlessObject(MeshlessObject *mo)
 	// read from the surfel vertex buffer
 	ProjectStructs::SOLID_VERTEX* vertices = 0;
 
-	for(int surfaceIndex = 0; surfaceIndex < mo->GetVolume()->GetSurfaceCount(); surfaceIndex++){
+	HR(surface->GetSurfelReadableBuffer()->Map(D3D10_MAP_READ, 0, reinterpret_cast< void** >(&vertices)));
+	surface->GetSurfelReadableBuffer()->Unmap();
+	
+	D3DXVECTOR4* vertexPositions = NULL;
 
-		HR(mo->GetVolume()->GetSurface(surfaceIndex)->GetSurfelReadableBuffer()->Map(D3D10_MAP_READ, 0, reinterpret_cast< void** >(&vertices)));
-		mo->GetVolume()->GetSurface(surfaceIndex)->GetSurfelReadableBuffer()->Unmap();
+	for(int surfelIndex = 0; surfelIndex < surface->GetSurfaceSurfelCount(); surfelIndex++){
+		vertexPositions = new D3DXVECTOR4[6];
+		int index = 0;
+		for(int i = 0; i<6;i+=3){
+			D3DXVec4Transform(&vertexPositions[index++], &D3DXVECTOR4(vertices[surfelIndex*6 + i].pos , 1.0f), &surface->GetWorld());
+			D3DXVec4Transform(&vertexPositions[index++], &D3DXVECTOR4(vertices[surfelIndex*6 + i+1].pos , 1.0f), &surface->GetWorld());
+			D3DXVec4Transform(&vertexPositions[index++], &D3DXVECTOR4(vertices[surfelIndex*6 + i+2].pos , 1.0f), &surface->GetWorld());
+		}
+
+		hkStridedVertices stridedVerts;
+		stridedVerts.m_numVertices = index;
+		stridedVerts.m_striding = sizeof(D3DXVECTOR4);
+		stridedVerts.m_vertices = &(vertexPositions[0].x);
+
+		hkGeometry geom;
+		hkArray<hkVector4> planeEquations;
+
+		hkGeometryUtility::createConvexGeometry( stridedVerts, geom, planeEquations);
+
+		if(geom.m_vertices.getSize() == 0)
+			continue;
+
+		stridedVerts.m_numVertices = geom.m_vertices.getSize();
+		stridedVerts.m_striding = sizeof(hkVector4);
+		stridedVerts.m_vertices = &(geom.m_vertices[0](0));
+		hkReal convexRadius = 0.05f;
+		hkGeometryUtility::expandPlanes(planeEquations, convexRadius);
+		hkpConvexVerticesShape* shape = new hkpConvexVerticesShape(stridedVerts, planeEquations, convexRadius);
+
+		info.m_position = hkVector4(0.0f, 0.0f, 0.0f);
 		
-		D3DXVECTOR4* vertexPositions = NULL;
+		info.m_motionType = hkpMotion::MOTION_FIXED;
+		
+		info.m_shape = shape;
 
-		for(int surfelIndex = 0; surfelIndex < mo->GetVolume()->GetSurface(surfaceIndex)->GetSurfaceSurfelCount(); surfelIndex++){
-			vertexPositions = new D3DXVECTOR4[6];
-			int index = 0;
-			for(int i = 0; i<6;i+=3){
-				vertexPositions[index++] = D3DXVECTOR4(vertices[surfelIndex*6 + i].pos , 0.0f);
-				vertexPositions[index++] = D3DXVECTOR4(vertices[surfelIndex*6 + i+1].pos , 0.0f);
-				vertexPositions[index++] = D3DXVECTOR4(vertices[surfelIndex*6 + i+2].pos , 0.0f);
-			}
+		info.m_qualityType = HK_COLLIDABLE_QUALITY_FIXED;
+		info.m_collisionResponse = hkpMaterial::RESPONSE_SIMPLE_CONTACT;
+		
+		hkpRigidBody* rigid = new hkpRigidBody( info );
 
-			hkStridedVertices stridedVerts;
-			stridedVerts.m_numVertices = index;
-			stridedVerts.m_striding = sizeof(D3DXVECTOR4);
-			stridedVerts.m_vertices = &(vertexPositions[0].x);
+		physicsWorld->addEntity( rigid );
+		ContactListener *cl = new ContactListener(surfel);
+		rigid->addContactListener(cl);
+		
+		rigid->removeReference();
 
-			hkGeometry geom;
-			hkArray<hkVector4> planeEquations;
+		info.m_shape->removeReference();
+		surface->AddRigidBody(rigid);
+		surface->AddContactListener(cl);
 
-			hkGeometryUtility::createConvexGeometry( stridedVerts, geom, planeEquations);
-
-			stridedVerts.m_numVertices = geom.m_vertices.getSize();
-			stridedVerts.m_striding = sizeof(hkVector4);
-			stridedVerts.m_vertices = &(geom.m_vertices[0](0));
-			hkReal convexRadius = 0.05f;
-			hkGeometryUtility::expandPlanes(planeEquations, convexRadius);
-			hkpConvexVerticesShape* shape = new hkpConvexVerticesShape(stridedVerts, planeEquations, convexRadius);
-
-			info.m_position = hkVector4(mo->Position().x, mo->Position().y, mo->Position().z);
-			
-			info.m_motionType = hkpMotion::MOTION_FIXED;
-			
-			info.m_shape = shape;
-
-			info.m_qualityType = HK_COLLIDABLE_QUALITY_FIXED;
-			info.m_collisionResponse = hkpMaterial::RESPONSE_SIMPLE_CONTACT;
-			
-			hkpRigidBody* rigid = new hkpRigidBody( info );
-
-			physicsWorld->addEntity( rigid );
-			ContactListener *cl = new ContactListener(mo->GetVolume()->GetSurface(surfaceIndex), surfelIndex, -1);
-			rigid->addContactListener(cl);
-			
-			//rigid->removeReference();
-
-			info.m_shape->removeReference();
-			mo->AddRigidBody(rigid);
-			mo->AddContactListener(cl);
-
-			delete vertexPositions;
-		}
-
-		HR(mo->GetVolume()->GetSurface(surfaceIndex)->GetEdgeReadableBuffer()->Map(D3D10_MAP_READ, 0, reinterpret_cast< void** >(&vertices)));
-		mo->GetVolume()->GetSurface(surfaceIndex)->GetEdgeReadableBuffer()->Unmap();
-
-		vertexPositions = NULL;
-
-		for(int surfelIndex = 0; surfelIndex < mo->GetVolume()->GetSurface(surfaceIndex)->GetEdgeSurfelCount(); surfelIndex++){
-			vertexPositions = new D3DXVECTOR4[6];
-			int index = 0;
-			for(int i = 0; i<6;i+=3){
-				vertexPositions[index++] = D3DXVECTOR4(vertices[surfelIndex*6 + i].pos , 0.0f);
-				vertexPositions[index++] = D3DXVECTOR4(vertices[surfelIndex*6 + i+1].pos , 0.0f);
-				vertexPositions[index++] = D3DXVECTOR4(vertices[surfelIndex*6 + i+2].pos , 0.0f);
-			}
-
-			hkStridedVertices stridedVerts;
-			stridedVerts.m_numVertices = index;
-			stridedVerts.m_striding = sizeof(D3DXVECTOR4);
-			stridedVerts.m_vertices = &(vertexPositions[0].x);
-
-			hkGeometry geom;
-			hkArray<hkVector4> planeEquations;
-
-			hkGeometryUtility::createConvexGeometry( stridedVerts, geom, planeEquations);
-
-			stridedVerts.m_numVertices = geom.m_vertices.getSize();
-			stridedVerts.m_striding = sizeof(hkVector4);
-			stridedVerts.m_vertices = &(geom.m_vertices[0](0));
-			hkReal convexRadius = 0.05f;
-			hkGeometryUtility::expandPlanes(planeEquations, convexRadius);
-			hkpConvexVerticesShape* shape = new hkpConvexVerticesShape(stridedVerts, planeEquations, convexRadius);
-
-			info.m_position = hkVector4(mo->Position().x, mo->Position().y, mo->Position().z);
-
-			info.m_motionType = hkpMotion::MOTION_FIXED;
-
-			info.m_shape = shape;
-
-			info.m_qualityType = HK_COLLIDABLE_QUALITY_FIXED;
-			info.m_collisionResponse = hkpMaterial::RESPONSE_SIMPLE_CONTACT;
-
-			hkpRigidBody* rigid = new hkpRigidBody( info );
-
-			physicsWorld->addEntity( rigid );
-			ContactListener *cl = new ContactListener(mo->GetVolume()->GetSurface(surfaceIndex), -1, surfelIndex);
-			rigid->addContactListener(cl);
-
-			//rigid->removeReference();
-
-			info.m_shape->removeReference();
-			mo->AddRigidBody(rigid);
-			mo->AddContactListener(cl);
-
-			//mo->SetRigidBody(rigid);
-			delete vertexPositions;
-		}
+		delete vertexPositions;
 	}
+	UnLockWorld();
 }
-
+*/
 void PhysicsWrapper::AddProjectile(ProjectStructs::PROJECTILE *projectile)
 {
-	physicsWorld->lock();
-	physicsWorld->markForWrite();
+	LockWorld();
 
-	hkpRigidBody* rb = SetupSphericalRigidBody(1.0f, 10.0f, projectile->position, projectile->velocity, false, projectile);	
+	hkpRigidBody* rb = SetupSphericalRigidBody(1.0f, 100.0f, projectile->position, projectile->velocity, false, projectile);	
 
-	physicsWorld->unmarkForWrite();
-	physicsWorld->unlock();
+	UnLockWorld();
 	projectile->rigidBody = rb;
 }
 
 void PhysicsWrapper::AddWreckingBall(WreckingBall *wreckingball)
 {
+	LockWorld();
+
 	hkpRigidBodyCinfo chainBodyInfo, wreckingBallBodyInfo;
 	chainBodyInfo.m_shape = new hkpSphereShape(wreckingball->GetChain()[0]->GetRadius());
-	hkpInertiaTensorComputer::setShapeVolumeMassProperties(chainBodyInfo.m_shape, 15000.0f, chainBodyInfo);
-	chainBodyInfo.m_mass = 15000.0f;
+	hkpInertiaTensorComputer::setShapeVolumeMassProperties(chainBodyInfo.m_shape, 13000.0f, chainBodyInfo);
+	chainBodyInfo.m_mass = 13000.0f;
 
 	wreckingBallBodyInfo.m_shape = new hkpSphereShape(wreckingball->GetRadius());
-	hkpInertiaTensorComputer::setShapeVolumeMassProperties(wreckingBallBodyInfo.m_shape, 50000.0f, wreckingBallBodyInfo);
-	wreckingBallBodyInfo.m_mass = 50000.0f;
+	hkpInertiaTensorComputer::setShapeVolumeMassProperties(wreckingBallBodyInfo.m_shape, 15500.0f, wreckingBallBodyInfo);
+	wreckingBallBodyInfo.m_mass = 15500.0f;
 	wreckingBallBodyInfo.m_position.set(wreckingball->GetPosition().x, wreckingball->GetPosition().y, wreckingball->GetPosition().z);
 	wreckingBallBodyInfo.m_motionType = hkpMotion::MOTION_DYNAMIC;
 
@@ -369,7 +404,6 @@ void PhysicsWrapper::AddWreckingBall(WreckingBall *wreckingball)
 
 	for (int b = 0; b < wreckingball->GetChain().GetCount(); b++)
 	{
-		//chainBodyInfo.m_position.set(0.0f, 50.0f - 4.0f * hkReal(b) , 0.0f);
 		chainBodyInfo.m_position.set(wreckingball->GetChain()[b]->GetPositionVector().x, wreckingball->GetChain()[b]->GetPositionVector().y, wreckingball->GetChain()[b]->GetPositionVector().z);
 		chainBodyInfo.m_motionType = b ? hkpMotion::MOTION_DYNAMIC : hkpMotion::MOTION_FIXED;
 
@@ -382,7 +416,7 @@ void PhysicsWrapper::AddWreckingBall(WreckingBall *wreckingball)
 
 		entities.pushBack(body);
 		// we know, a reference is kept by the world
-		//body->removeReference();
+		body->removeReference();
 	}
 
 	hkpRigidBody* body = new hkpRigidBody(wreckingBallBodyInfo);
@@ -390,7 +424,7 @@ void PhysicsWrapper::AddWreckingBall(WreckingBall *wreckingball)
 
 	wreckingball->SetRigidBody(body);
 	physicsWorld->addEntity(body);
-	//body->removeReference();	
+	body->removeReference();	
 	
 	hkpConstraintChainInstance* chainInstance = HK_NULL;
 
@@ -416,6 +450,8 @@ void PhysicsWrapper::AddWreckingBall(WreckingBall *wreckingball)
 	chainInstance->removeReference();
 
 	chainBodyInfo.m_shape->removeReference();
+
+	UnLockWorld();
 }
 
 hkpRigidBody* PhysicsWrapper::SetupSphericalRigidBody(float radius, float mass, D3DXVECTOR3 position, D3DXVECTOR3 velocity, bool isStatic, ProjectStructs::PROJECTILE *projectile){
@@ -448,13 +484,8 @@ hkpRigidBody* PhysicsWrapper::SetupSphericalRigidBody(float radius, float mass, 
 	
 	physicsWorld->addEntity( rb );
 	
-	//rb->removeReference();
+	rb->removeReference();
 	info.m_shape->removeReference();
 
 	return rb;
 }
-
-void PhysicsWrapper::LinkSphereToPlane(WreckingBall* wreckingball, hkpRigidBody* plane){
-	
-}
-

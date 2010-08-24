@@ -162,7 +162,7 @@ T& ThreeInOneArray<T>::operator () (int i, int j, int k)
 {
 	int index = GetIndex(i, j, k);
 	if(index == -1)
-		throw new std::exception("Invalid index");
+		throw std::exception("Invalid index");
 
 	return oneDimArray[index]; // return array element 
 }
@@ -172,7 +172,7 @@ T& ThreeInOneArray<T>::operator () (D3DXVECTOR3 index)
 {
 	int indx = GetIndex((int)index.x, (int)index.y, (int)index.z);
 	if(indx == -1)
-		throw new std::exception("Invalid index");
+		throw std::exception("Invalid index");
 
 	return oneDimArray[indx]; // return array element 
 }
@@ -183,10 +183,10 @@ INDEX ThreeInOneArray<T>::GetIndices(int index){
 
 	ret.z = index % depth;	
 	index -= ret.z;
-	index /= height;
+	index /= depth;
 	ret.y = index % height;
 	index -= ret.y;
-	index /= depth;
+	index /= height;
 	ret.x = index % width;		
 
 	return ret;

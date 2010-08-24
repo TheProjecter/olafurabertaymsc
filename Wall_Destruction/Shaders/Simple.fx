@@ -18,9 +18,18 @@ struct VS_OUTPUT{
 	float4 Pos : SV_POSITION;	
 };
 
+struct VS_WITH_COLOR_INPUT{
+	float4 Pos : POSITION;	
+	float4 Color : TEXCOORD0;
+};
+
+struct VS_WITH_COLOR_OUTPUT{
+	float4 Pos : SV_POSITION;	
+	float4 Color : TEXCOORD0;	
+};
+
 struct VS_INPUT_WITH_TEXTURE{
 	float4 Pos : POSITION;
-	float4 Normal : NORMAL;
 	float2 UV : TEXCOORD0;
 };
 
@@ -50,10 +59,38 @@ float4 PS( VS_OUTPUT input) : SV_Target
 //
 // Vertex Shader
 //
+VS_WITH_COLOR_OUTPUT VS_WITH_COLOR( VS_WITH_COLOR_INPUT input) 
+{
+	VS_WITH_COLOR_OUTPUT output = (VS_WITH_COLOR_OUTPUT) 0;
+	output.Pos = mul( mul( mul(input.Pos, World), View), Projection);
+	output.Color = input.Color;
+    return output;
+}
+
+//
+// Pixel Shader
+//
+float4 PS_WITH_COLOR( VS_WITH_COLOR_OUTPUT input) : SV_Target
+{
+	return input.Color;
+}
+
+//
+// Vertex Shader
+//
 VS_OUTPUT_WITH_TEXTURE VSWithTexture( VS_INPUT_WITH_TEXTURE input) 
 {
 	VS_OUTPUT_WITH_TEXTURE output = (VS_OUTPUT_WITH_TEXTURE) 0;
 	output.Pos = mul( mul( mul(input.Pos, World), View), Projection);
+	output.UV = input.UV;
+    return output;
+}
+
+
+VS_OUTPUT_WITH_TEXTURE VSConstantPosWithTexture( VS_INPUT_WITH_TEXTURE input) 
+{
+	VS_OUTPUT_WITH_TEXTURE output = (VS_OUTPUT_WITH_TEXTURE) 0;
+	output.Pos = input.Pos;
 	output.UV = input.UV;
     return output;
 }
@@ -80,6 +117,20 @@ technique10 SimpleTechnique
     }
 }
 
+technique10 SimpleTechniqueWithColor
+{
+    pass P0
+    {
+        SetVertexShader( CompileShader( vs_4_0, VS_WITH_COLOR() ) );
+	    SetGeometryShader( NULL);
+        SetPixelShader( CompileShader( ps_4_0, PS_WITH_COLOR() ) );
+		
+		SetDepthStencilState( EnableDepth, 0 );
+		SetRasterizerState(SOLID);
+ 	    SetBlendState( NoAlphaBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
+    }
+}
+
 technique10 SimpleTextureTechnique
 {
     pass P0
@@ -91,5 +142,19 @@ technique10 SimpleTextureTechnique
 		SetDepthStencilState( EnableDepth, 0 );
 		SetRasterizerState(SOLID);
  	    SetBlendState( NoAlphaBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
+    }
+}
+
+technique10 SimpleTextureConstantPosTechnique
+{
+    pass P0
+    {
+        SetVertexShader( CompileShader( vs_4_0, VSConstantPosWithTexture() ) );
+	    SetGeometryShader( NULL);
+        SetPixelShader( CompileShader( ps_4_0, PSWithTexture() ) );
+		
+		SetDepthStencilState( EnableDepth, 0 );
+		SetRasterizerState(SOLID);
+ 	    SetBlendState( CrosshairAlphaBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
     }
 }

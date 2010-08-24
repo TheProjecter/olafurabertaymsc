@@ -1,5 +1,6 @@
 #include "InfoText.h"
 #include "Globals.h"
+#include "DebugToFile.h"
 #include <iterator>
 
 using namespace Helpers;
@@ -24,7 +25,7 @@ namespace Drawables{
 
 		D3DX10CreateFont(Globals::Device, 16, 0, 0, 1, false, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Times New Roman", &font);
 		
-		deterioration = 0.05f;
+		deterioration = 0.3f;
 
 		deltaRect.left = 0;
 		deltaRect.right = 0;
@@ -139,6 +140,7 @@ namespace Drawables{
 		it.life = 1.0f;
 		it.type = type;
 		texts.push_back(it);
+		DebugToFile::Debug(text.c_str());
 	}
 
 	void  InfoText::CleanUp(){

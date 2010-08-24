@@ -2,7 +2,6 @@
 #include "PointCloudHandler.h"
 #include "Globals.h"
 #include "ObjectHelper.h"
-#include "PhysicsWrapper.h"
 
 namespace Drawables{
 	MeshlessObject::MeshlessObject(std::string pointCloudXmlFile)
@@ -27,16 +26,6 @@ namespace Drawables{
 			delete tree;
 			tree = NULL;
 		}
-		for(unsigned int i = 0; i< contactListeners.size();i++){
-			delete contactListeners[i];
-			contactListeners[i] = NULL;
-		}
-
-		contactListeners.clear();
-		contactListeners.swap( std::vector<ContactListener*>() );
-
-		rigidBodies.clear();
-		rigidBodies.swap( std::vector<hkpRigidBody*>() );
 	}
 
 
@@ -63,10 +52,5 @@ namespace Drawables{
 		this->name = meshlessObjectStruct.name;
 		this->world = meshlessObjectStruct.world;
 		this->position = meshlessObjectStruct.transform;
-
-		Helpers::Globals::DebugInformation.StartTimer();
-		PhysicsWrapper::AddMeshlessObject(this);
-		
-		Helpers::Globals::DebugInformation.EndTimer(DEBUG_TYPE, D3DXCOLOR(0.0f, 1.0f, 0.0f, 0.0f), "%s - Added the meshless object into Havok", meshlessObjectStruct.name.c_str(), meshlessObjectStruct.surfels.size());
 	}
 }

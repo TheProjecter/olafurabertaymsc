@@ -5,6 +5,8 @@
 #include "Projectiles.h"
 #include "WreckingBall.h"
 #include "HavokPhysicsInclude.h"
+#include "Surface.h"
+#include "Structs.h"
 
 class PhysicsWrapper
 {
@@ -14,7 +16,9 @@ public:
 	static void Update(float dt);
 	static void CleanUp();
 
-	static void AddMeshlessObject(MeshlessObject *mo);
+	static void AddSurface(Surface* surface);
+	static void AddSurfels(std::vector<D3DXVECTOR3> points, std::vector<ProjectStructs::SURFEL*> surfels, ProjectStructs::MATERIAL_PROPERTIES materialProperties, D3DXVECTOR3 pos);
+	static void AddSurfels(std::vector<D3DXVECTOR3> points, std::vector<ProjectStructs::SURFEL*> surfels, ProjectStructs::MATERIAL_PROPERTIES materialProperties, D3DXVECTOR3 pos, bool lockWorld);
 	static void AddProjectile(ProjectStructs::PROJECTILE *projectile);
 	static void AddWreckingBall(WreckingBall *wreckingball);
 
@@ -28,9 +32,35 @@ public:
 	}
 
 	static void RemoveRigidBody(hkpRigidBody *rb){
-		physicsWorld->lock();
+		if(!rb)
+			return;
+
+		LockWorld();
 		physicsWorld->removeEntity(rb);
-		physicsWorld->unlock();
+
+		UnLockWorld();
+	}
+
+	static void RemoveRigidBodyWithoutLockingWorld(hkpRigidBody *rb){
+		if(rb == NULL)
+			return;
+
+		physicsWorld->removeEntity(rb);
+		rb = NULL;
+	}
+
+	static void LockWorld(){
+		if(setupComplete && !physicsWorld->m_isLocked){
+			physicsWorld->lock();
+			physicsWorld->markForWrite();
+		}
+	}
+
+	static void UnLockWorld(){
+		if(setupComplete && physicsWorld->m_isLocked){
+			physicsWorld->unlock();
+			physicsWorld->unmarkForWrite();
+		}
 	}
 
 	static void SetPosition(hkpRigidBody *rb, D3DXVECTOR3 deltaPos, bool add){
@@ -90,8 +120,6 @@ public:
 private:
 
 	static hkpRigidBody* SetupSphericalRigidBody(float radius, float mass, D3DXVECTOR3 position, D3DXVECTOR3 velocity, bool isStatic, ProjectStructs::PROJECTILE *projectile);
-	static void LinkChain(WreckingBall *wreckingball);
-	static void LinkSphereToPlane(WreckingBall *wreckingball, hkpRigidBody* plane);
 
 	static void HK_CALL PhysicsWrapper::errorReport(const char* msg, void* userArgGivenToInit);	
 
@@ -110,6 +138,8 @@ private:
 	// temp variables
 	static D3DXMATRIX tempTranslationMatrix, tempRotationMatrix;
 	static D3DXVECTOR3 tempVector;
+
+	static float RigidBodyCount;
 
 };
 

@@ -4,8 +4,15 @@
 #include "Structs.h"
 #include "Drawable.h"
 #include "CustomEffect.h"
-#include "ChangedPhyxels.h"
+#include "ImpactList.h"
 #include <D3DX10.h>
+#include <algorithm>
+#include <vector>
+#include "HavokPhysicsInclude.h"
+
+// forward declarations
+class PhyxelGrid;
+class ContactListener;
 
 namespace Drawables{
 	class Surface : public Drawable
@@ -14,19 +21,28 @@ namespace Drawables{
 		Surface(void);
 		~Surface(void);
 
-		void SetChangedPhyxelsObject(ChangedPhyxels* changedPhyxels){
-			this->changedPhyxels = changedPhyxels;
+		void SetImpactList(ImpactList* impactlist){
+			this->impactList = impactlist;
 		}
 
 		void AddSurfel(ProjectStructs::SURFEL *s);
-		void AddEdgeSurfel(ProjectStructs::SURFEL_EDGE *s);
+
+		void AddRigidBody(hkpRigidBody* rigid){rigidBodies.push_back(rigid);}
+		std::vector<hkpRigidBody*> GetRigidBodies(){return rigidBodies;}
+		
+		void AddContactListener(ContactListener* contactListener){
+			contactListeners.push_back(contactListener);
+		}
 
 		void Draw();
 		void DrawSolid();
 		void DrawSurfel();
 		void DrawWireframe();
+		void DrawToReadableBuffer();
 		
-		void Init();
+		void Init(ProjectStructs::MATERIAL_PROPERTIES materialProperties);
+		void ResetBuffers();
+		void PushSurfelsIntoGrid();
 		void Update(float dt);
 		void CleanUp();
 
@@ -34,20 +50,14 @@ namespace Drawables{
 		D3DXMATRIX GetWorld(){return world;}
 
 		ID3D10Buffer* GetSurfelReadableBuffer(){return readableVertexBuffer;}
-		ID3D10Buffer* GetEdgeReadableBuffer(){return readableEdgeVertexBuffer;}
 
-		int GetSurfaceSurfelCount(){return surfelCount;};
-		int GetEdgeSurfelCount(){return edgeCount;};
+		int GetSurfaceSurfelCount(){return surfaceSurfels.size();};
 
-		void AddForce(D3DXVECTOR3 force, D3DXVECTOR3 pos, int surfelIndex, int edgeIndex);
-		void AddForceToPhyxels(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::PHYXEL_NODE *phyxel);
+		void AddForce(D3DXVECTOR3 force, D3DXVECTOR3 pos, ProjectStructs::SURFEL* surfel);
+		void AddForceToPhyxels(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::PHYXEL_NODE *phyxel, ProjectStructs::SURFEL *surfel);
 
 		ProjectStructs::SURFEL* GetSurfaceSurfel(int i){
 			return surfaceSurfels[i];
-		}
-
-		ProjectStructs::SURFEL_EDGE* GetEdgeSurfel(int i){
-			return edgeSurfels[i];
 		}
 
 		void SetPosition(D3DXVECTOR3 pos){
@@ -58,24 +68,27 @@ namespace Drawables{
 			return SurfacePos;
 		}
 
-		void SetDeltaSurfelUV(D3DXVECTOR2 delta){
-			DeltaSurfelUV = delta;
-		}
-
 		void SetTexture(std::string texture){
 			planeTexture = texture;
 		}
+
+		void ResampleSurfel(ProjectStructs::SURFEL* surfel, ProjectStructs::IMPACT* impact);
+		void SetPhyxelGrid(PhyxelGrid* grid){this->grid = grid;}
 
 		static float RadiusScale;
 		static bool isChanged;
 
 	private:
-		bool AddForceToPhyxel(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::PHYXEL_NODE *phyxel);
+		bool AddForceToPhyxel(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::PHYXEL_NODE *phyxel, ProjectStructs::SURFEL* surfel);
 		void InitSurfel();
 		void InitWireframe();
 		void InitSolid();
 		void InitGeometryPass();
 		void InitCommonSolidAndWireframe();
+		void SetUpNeighborEffect();
+
+		void SetUpNeighborDraw();
+		void DrawNeighbors();
 
 		// force stuff
 		D3DXVECTOR3 force;
@@ -85,23 +98,27 @@ namespace Drawables{
 		D3DXVECTOR2 DeltaSurfelUV;
 
 		std::vector<ProjectStructs::SURFEL*> surfaceSurfels;
-		std::vector<ProjectStructs::SURFEL_EDGE*> edgeSurfels;
+		std::vector<int> newSurfelsForPhyxelGrid;
 
-		std::vector<ProjectStructs::SURFEL_VERTEX> surfaceSurfelsVertices;
-		std::vector<ProjectStructs::SURFEL_EDGE_VERTEX> edgeSurfelsVertices;
-
-		int surfelCount, edgeCount, maxSurfaceCount, maxSurfaceEdgeCount;
 		D3DXMATRIX world;
 		std::string planeTexture;
 
-		ID3D10Buffer *surfelVertexBuffer, *surfelEdgeVertexBuffer, *solidVertexBuffer, *solidEdgeVertexBuffer, *readableVertexBuffer, *readableEdgeVertexBuffer;
+		ID3D10Buffer *surfelVertexBuffer, *solidVertexBuffer, *readableVertexBuffer, *neighborVertexBuffer;
 		
 		static ID3D10RasterizerState *SolidRenderState;
-		static Helpers::CustomEffect surfelEffect, surfelEdgeEffect, solidEffect, wireframeEffect, geometryEffect, geometryEdgeEffect;
+		static Helpers::CustomEffect surfelEffect, solidEffect, wireframeEffect, geometryEffect, simpleEffect;
 		static ID3D10ShaderResourceView *SurfelTexture, *SurfelWireframeTexture;
 		static bool TextureLoaded;
 
-		ChangedPhyxels* changedPhyxels;
+		bool neighborDrawSet;
+		int neighborCount;
+
+		ImpactList* impactList;
+
+		std::vector<hkpRigidBody*> rigidBodies;
+		std::vector<ContactListener*> contactListeners;
+		ProjectStructs::MATERIAL_PROPERTIES materialProperties;
+		PhyxelGrid* grid;
 	};
 }
 

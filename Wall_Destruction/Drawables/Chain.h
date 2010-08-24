@@ -25,7 +25,7 @@ public:
 	Sphere* operator [] (unsigned int index) {
 		return chainSpheres[index];
 	}	
-
+	void CleanUpAndReleaseRigidBody();
 private:
 	std::vector<Sphere*> chainSpheres;
 	Helpers::CustomEffect effect, depthEffect;

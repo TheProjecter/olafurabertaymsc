@@ -22,6 +22,7 @@
 #include "PhysicsWrapper.h"
 #define DIRECTINPUT_VERSION 0x0800
 
+#include "DebugToFile.h"
 #include "Globals.h"
 #include "Projectiles.h"
 #include "InfoText.h"
@@ -31,9 +32,12 @@
 #include "WreckingBall.h"
 #include "CSGTree.h"
 #include "SpriteViewPort.h"
+#include "Crosshair.h"
 #include <ctime>
 #include <map>
 #include "DrawableTex2D.h"
+#include "DeletedStructHolder.h"
+#include "Algorithms.h"
 
 using namespace Drawables;
 
@@ -59,6 +63,7 @@ private:
 
 	Drawables::WreckingBall wreckingBall;
 	Projectiles projectiles;
+	Crosshair crosshair;
 	bool resetLastFrame;
 };
 
@@ -88,25 +93,29 @@ WallDestructionApp::~WallDestructionApp()
 
 void WallDestructionApp::CleanApp(){
 
-	wreckingBall.CleanUp();
+	wreckingBall.CleanUp(false);
 	projectiles.CleanUp();
 
 	Helpers::MouseHandler::CleanUp();
 	Helpers::KeyboardHandler::CleanUp();
+	Algorithms::CleanUp();
 
 	Helpers::Globals::DebugInformation.CleanUp();
 
-	PhysicsWrapper::CleanUp();
+	crosshair.CleanUp();
 
 	ground->CleanUp();
 	wall->CleanUp();
 
 	delete wall;
 	delete ground;
+
+	PhysicsWrapper::CleanUp();
 }
 
 void WallDestructionApp::Reset(){
 
+	DebugToFile::DebugEnabled = false;
 	Helpers::Globals::DebugInformation.StartTimer();
 
 	wall->CleanUp();
@@ -115,7 +124,7 @@ void WallDestructionApp::Reset(){
 	delete wall;
 	delete ground;
 
-	wreckingBall.CleanUp();
+	wreckingBall.CleanUp(false);
 	projectiles.CleanUp();
 	PhysicsWrapper::CleanUp();
 
@@ -131,13 +140,19 @@ void WallDestructionApp::Reset(){
 	projectiles.Init();
 
 	PhysicsWrapper::FinishInit();
+	Algorithms::CleanUp();
+
+	ImpactList::Init();
 
 	Helpers::Globals::DebugInformation.EndTimer(INFO_TYPE, "Restart ");
+
 	resetLastFrame = true;
+	DebugToFile::DebugEnabled = true;
 }
 
 void WallDestructionApp::initApp()
 {
+	DebugToFile::DebugEnabled = false;
 	D3DApp::initApp();
 
 	Helpers::Globals::Device = md3dDevice;
@@ -161,18 +176,20 @@ void WallDestructionApp::initApp()
 	srand((unsigned)time(0));
 
 	// get all the meshless objects 
-	ground = new MeshlessObject("MeshlessObjects\\Ground.xml");
 	wall = new MeshlessObject("MeshlessObjects\\Wall.xml");
+	ground = new MeshlessObject("MeshlessObjects\\Ground.xml");
 
 	// create the wreckingball
 	wreckingBall = WreckingBall(5.0f);
 	wreckingBall.Init();
 
 	projectiles.Init();
+	crosshair.Init();
 
 	PhysicsWrapper::FinishInit();
 
 	resetLastFrame = false;
+	DebugToFile::DebugEnabled = true;
 }
 
 void WallDestructionApp::onResize()
@@ -191,10 +208,15 @@ void WallDestructionApp::onResize()
 	instructionRect.right = 0;
 	instructionRect.top = 5;
 	instructionRect.bottom = 0;	
+
+	crosshair.ResetVertexBuffer();
 }
 
 void WallDestructionApp::updateScene(float dt)
 {
+	if(this->mAppPaused)
+		return;
+
 	Surface::isChanged = false;
 	if(resetLastFrame){
 		resetLastFrame = false;
@@ -246,7 +268,7 @@ void WallDestructionApp::updateScene(float dt)
 		Helpers::Globals::DebugInformation.AddText(ALWAYS, LIGHT_YELLOW_GREEN, "F - Decrease surfel scale");	
 		Helpers::Globals::DebugInformation.AddText(ALWAYS, GREEN, "R - Increase surfel scale");	
 		
-		Helpers::Globals::DebugInformation.AddText(ALWAYS, LIGHT_YELLOW_GREEN, "Enter - Reset scene");	
+		Helpers::Globals::DebugInformation.AddText(ALWAYS, LIGHT_YELLOW_GREEN, "Home - Reset scene");	
 		Helpers::Globals::DebugInformation.AddText(ALWAYS, GREEN, "Left Mouse Button - Fire a projectile");	
 		Helpers::Globals::DebugInformation.AddText(ALWAYS, LIGHT_YELLOW_GREEN, "Caps Lock - Acquire / Unacquire mouse");	
 		
@@ -273,7 +295,7 @@ void WallDestructionApp::updateScene(float dt)
 			Helpers::Globals::DebugInformation.AddText(INFO_TYPE, GREEN, "Mouse acquired");
 		}
 	}
-	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_RETURN)){
+	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_HOME)){
 		Reset();
 	}
 	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_TAB)){
@@ -308,24 +330,52 @@ void WallDestructionApp::updateScene(float dt)
 			Helpers::Globals::DRAW_PHYXELS = false;
 		}
 	}
+	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_F4)){
+		Helpers::Globals::DebugInformation.AddText(INFO_TYPE, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f), "Wrecking Ball reset");
+		this->wreckingBall.CleanUp(true);
+
+		this->wreckingBall.Init();		
+	}
+	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_F8)){
+		if(!Helpers::Globals::DRAW_NEIGHBORS){
+			Helpers::Globals::DebugInformation.AddText(INFO_TYPE, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f), "Drawing Neighbors");
+			Helpers::Globals::DRAW_NEIGHBORS = true;
+		}
+		else{
+			Helpers::Globals::DebugInformation.AddText(INFO_TYPE, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f), "Not Drawing Neighbors");
+			Helpers::Globals::DRAW_NEIGHBORS = false;
+		}
+	}
 	else if(Helpers::KeyboardHandler::IsKeyDown(DIK_R)){
-		Surface::RadiusScale += 0.01f;
+		VertexBufferGrid::RadiusScale += 0.01f;
 		
-		if(Surface::RadiusScale > 2.0f)
-			Surface::RadiusScale = 2.0f;
+		if(VertexBufferGrid::RadiusScale > 2.0f)
+			VertexBufferGrid::RadiusScale = 2.0f;
 
-		Surface::isChanged = Surface::RadiusScale <= 2.0f;
+		VertexBufferGrid::LastRadiusScale = VertexBufferGrid::RadiusScale;
 
-		Helpers::Globals::DebugInformation.AddText(DEBUG_TYPE, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f), "Radius Scale = %f", Surface::RadiusScale );
+		VertexBufferGrid::isChanged = VertexBufferGrid::RadiusScale <= 2.0f;
+
+		Helpers::Globals::DebugInformation.AddText(DEBUG_TYPE, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f), "Radius Scale = %f", VertexBufferGrid::RadiusScale );
 	}
 	else if(Helpers::KeyboardHandler::IsKeyDown(DIK_F)){
-		Surface::RadiusScale -= 0.01f;
-		if(Surface::RadiusScale < 0.01f)
-			Surface::RadiusScale = 0.01f;
+		VertexBufferGrid::RadiusScale -= 0.01f;
+		if(VertexBufferGrid::RadiusScale < 0.01f)
+			VertexBufferGrid::RadiusScale = 0.01f;
 
-		Surface::isChanged = Surface::RadiusScale >= 0.01f;
+		VertexBufferGrid::LastRadiusScale = VertexBufferGrid::RadiusScale;
 
-		Helpers::Globals::DebugInformation.AddText(DEBUG_TYPE, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f), "Radius Scale = %f", Surface::RadiusScale );
+		VertexBufferGrid::isChanged = VertexBufferGrid::RadiusScale >= 0.01f;
+
+		Helpers::Globals::DebugInformation.AddText(DEBUG_TYPE, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f), "Radius Scale = %f", VertexBufferGrid::RadiusScale );
+	}
+	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_V)){
+
+		Helpers::Globals::DRAW_ONLY_ONE_CELL_AT_A_TIME = !Helpers::Globals::DRAW_ONLY_ONE_CELL_AT_A_TIME;
+
+		Helpers::Globals::DebugInformation.AddText(DEBUG_TYPE, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f), Helpers::Globals::DRAW_ONLY_ONE_CELL_AT_A_TIME ? 
+			"Drawing only one cell of the wall at a time": "Drawing the whole wall");
+		
 	}
 
 	if(Helpers::MouseHandler::IsButtonPressed(Helpers::MouseHandler::MOUSE_LEFTBUTTON)){
@@ -344,17 +394,27 @@ void WallDestructionApp::updateScene(float dt)
 
 	PhysicsWrapper::Update(dt);
 
+	DeletedStructHolder::DeleteObjects();
 	D3DApp::updateScene(dt);
+
+	VertexBufferGrid::isChanged = false;
 }
 
 void WallDestructionApp::drawScene()
 {
+	if(this->mAppPaused)
+		return;
+
 	D3DApp::drawScene();
 	projectiles.Draw();
 	wreckingBall.Draw();
 
-	ground->Draw();
 	wall->Draw();
+	ground->Draw();
+
+	crosshair.Draw();
+
+	Algorithms::Draw();
 
 	// draw text
 	RECT R = {5, 5, 0, 0};

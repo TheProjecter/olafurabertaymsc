@@ -5,6 +5,9 @@
 
 namespace Drawables{
 	void WreckingBall::Init(){
+		
+		chainMovementSpeed = 20.0f;
+
 		D3DXMatrixRotationYawPitchRoll(&rotationMatrix, 0.0f, 0.0f, 0.0f);
 		D3DXMatrixTranslation(&translationMatrix, 0.0f, 5.0f, 0.0f);
 
@@ -99,36 +102,42 @@ namespace Drawables{
 		if(Helpers::Globals::MOVE_WRECKINGBALL){
 			if(!Helpers::KeyboardHandler::IsKeyDown(DIK_RSHIFT)){
 				if(Helpers::KeyboardHandler::IsKeyDown(DIK_W)){
-					PhysicsWrapper::SetPosition(this->chain[0]->GetRigidBody(), D3DXVECTOR3(0.0f, 0.0f, 15.0f*dt), true);
+					PhysicsWrapper::SetPosition(this->chain[0]->GetRigidBody(), D3DXVECTOR3(0.0f, 0.0f, chainMovementSpeed * dt), true);
 				}
 				else if(Helpers::KeyboardHandler::IsKeyDown(DIK_S)){
-					PhysicsWrapper::SetPosition(this->chain[0]->GetRigidBody(), D3DXVECTOR3(0.0f, 0.0f, -15.0f*dt), true);
+					PhysicsWrapper::SetPosition(this->chain[0]->GetRigidBody(), D3DXVECTOR3(0.0f, 0.0f, -chainMovementSpeed * dt), true);
 				}
 			}
 			else {
 				if(Helpers::KeyboardHandler::IsKeyDown(DIK_W)){
-					PhysicsWrapper::SetPosition(this->chain[0]->GetRigidBody(), D3DXVECTOR3(0.0f, 15.0f*dt, 0.0f), true);
+					PhysicsWrapper::SetPosition(this->chain[0]->GetRigidBody(), D3DXVECTOR3(0.0f, chainMovementSpeed * dt, 0.0f), true);
 				}
 				else if(Helpers::KeyboardHandler::IsKeyDown(DIK_S)){
-					PhysicsWrapper::SetPosition(this->chain[0]->GetRigidBody(), D3DXVECTOR3(0.0f, -15.0f*dt, 0.0f), true);
+					PhysicsWrapper::SetPosition(this->chain[0]->GetRigidBody(), D3DXVECTOR3(0.0f, -chainMovementSpeed * dt, 0.0f), true);
 				}
 			}
 
 			if(Helpers::KeyboardHandler::IsKeyDown(DIK_A)){
-				PhysicsWrapper::SetPosition(this->chain[0]->GetRigidBody(), D3DXVECTOR3(-15.0f*dt, 0.0f, 0.0f), true);
+				PhysicsWrapper::SetPosition(this->chain[0]->GetRigidBody(), D3DXVECTOR3(-chainMovementSpeed * dt, 0.0f, 0.0f), true);
 			}
 			else if(Helpers::KeyboardHandler::IsKeyDown(DIK_D)){
-				PhysicsWrapper::SetPosition(this->chain[0]->GetRigidBody(), D3DXVECTOR3(15.0f*dt, 0.0f, 0.0f), true);			
+				PhysicsWrapper::SetPosition(this->chain[0]->GetRigidBody(), D3DXVECTOR3(chainMovementSpeed * dt, 0.0f, 0.0f), true);			
 			}
 		}
 	}
 
-	void WreckingBall::CleanUp(){
+	void WreckingBall::CleanUp(bool releaseRigid){
 		depthEffect.CleanUp();
 		wreckingBallEffect.CleanUp();
-		sphere.CleanUp();
+		if(releaseRigid)
+			sphere.CleanUpAndReleaseRigidBody();
+		else
+			sphere.CleanUp();	
 
-		this->chain.CleanUp();
+		if(releaseRigid)
+			this->chain.CleanUpAndReleaseRigidBody();
+		else
+			this->chain.CleanUp();
 	}
 
 	void WreckingBall::ResetBuffers()

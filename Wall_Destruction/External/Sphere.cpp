@@ -16,6 +16,12 @@ void Sphere::CleanUp(){
 	ReleaseCOM(mVB);
 	ReleaseCOM(mIB);
 }
+
+void Sphere::CleanUpAndReleaseRigidBody(){
+	CleanUp();
+	PhysicsWrapper::RemoveRigidBody(this->rigidBody);
+}
+
 /*
 void Sphere::UpdateWorld(){
 	this->World = PhysicsWrapper::GetWorld(this->rigidBody);

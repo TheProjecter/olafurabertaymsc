@@ -2,15 +2,37 @@
 
 <meshless_object>
   <name>Wall</name>
-  <deformable>true</deformable>
   <!--texture taken from http://www.cgtextures.com/texview.php?id=15478&PHPSESSID=9fa800c43268de8fbb65b3683bce884e Image 1 Small-->
   <texture>Textures\\Concrete.jpg</texture>
 
+  <!--
+  http://www.engineeringtoolbox.com/concrete-properties-d_1223.html
+  
+__    Density : 2240 - 2400 kg/m3 (140 - 150 lb/ft3) 
+    Compressive strength : 20 - 40 MPa (3000 - 6000 psi)
+    Flexural strength : 3 - 5 MPa (400 - 700 psi)
+    Tensile strength : 2 - 5 MPa (300 - 700 psi)
+__    Modulus of elasticity : 14000 - 41000 MPa (2 - 6 x 106 psi)  youngs Modulus 
+    Permeability : 1 x 10-10 cm/sec
+    Coefficient of thermal expansion : 10-5 oC-1 (5.5 x 10-6 oF-1)
+    Drying shrinkage : 4 - 8 x 10-4
+    Drying shrinkage of reinforced concrete : 2 - 3 x 10-4
+__    Poisson's ratio : 0.20 - 0.21
+__    Shear strain : 6000 - 17000 MPa (1 - 3 x 106 psi) toughness
+    Specific heat capacity :  0.75 kJ/kg K (0.18 Btu/lbm oF (kcal/kg oC))  
+  -->
+
+
+  <deformable>true</deformable>
   <!-- Fracture paramters -->
-  <density>2403</density>  <!-- kg / cu.m value taken from http://www.simetric.co.uk/si_materials.htm-->
-  <youngs_modulus> 30000000000 </youngs_modulus>  <!-- GN/m^2 (10^9 N/m^2)  value taken from http://en.wikipedia.org/wiki/Young's_modulus -->
-  <poisson_ratio>0.20</poisson_ratio>  <!-- Value taken from http://en.wikipedia.org/wiki/Poisson's_ratio -->
-  <toughness>6030</toughness> <!-- Value taken from Graphical modeling an animation of brittle fracture -->
+  <density>2400</density>  
+  <youngs_modulus> 41000000000 </youngs_modulus> 
+  <poisson_ratio>0.20</poisson_ratio>   
+  <toughness>17000</toughness>
+  <vertex_grid_size>2.5</vertex_grid_size>
+  <!--<phyxel_grid_size>0.75</phyxel_grid_size>-->
+  <phyxel_grid_size>0.8</phyxel_grid_size>
+  <minimum_surfel_size>0.1</minimum_surfel_size>
     
   <!-- parameters used for lighting calculations -->
   <material sigma="0.600672" rho="0.668533"/> 
@@ -20,8 +42,8 @@
   <worldyawpitchroll x="0.0" y="0.0" z="0.0"/>
 
   <volume>
-    <!--
-    <surfel>
+
+<!--    <surfel>
       <position x="" y="" z=""/> SURFACE CENTER
       <majorAxis x="0.0" y="5.0" z="0.0"/> SURFEL MAJOR AXIS
       <minorAxis x="0.0" y="0.0" z="2.5"/> SURFEL MINOR AXIS
@@ -29,89 +51,199 @@
       <count u="3" v="2"/> SURFEL COUNT / 2
     </surfel>
     -->
-
-    <!-- far left -->
-    <surfel>
+<!--    <surfel>
       <position x="-30.0" y="0.0" z="25.0"/>
-      <majorAxis x="0.0" y="0.0" z="2.5"/>
-      <minorAxis x="0.0" y="2.5" z="0.0"/>
+      <majorAxis x="0.0" y="0.0" z="1.0"/>
+      <minorAxis x="0.0" y="1.5" z="0.0"/>
       <normal x="-1.0" y="0.0" z="0.0"/>
-      <count u="2" v="6"/>
-    </surfel>
-
-    <surfel>
-      <position x="-5.0" y="0.0" z="20.0"/>
-      <majorAxis x="2.5" y="0.0" z="0.0"/>
-      <minorAxis x="0.0" y="2.5" z="0.0"/>
-      <normal x="0.0" y="0.0" z="-1.0"/>
-      <count u="10" v="6"/>
+      <count u="5" v="10"/>
     </surfel>
 
     <surfel>
       <position x="0.0" y="0.0" z="30.0"/>
-      <majorAxis x="3.0" y="0.0" z="0.0"/>
-      <minorAxis x="0.0" y="2.5" z="0.0"/>
+      <majorAxis x="1.5" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="1.5" z="0.0"/>
       <normal x="0.0" y="0.0" z="1.0"/>
-      <count u="10" v="6"/>
+      <count u="20" v="10"/>
+    </surfel>
+
+    <surfel>
+      <position x="0.0" y="0.0" z="20.0"/>
+      <majorAxis x="1.5" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="1.5" z="0.0"/>
+      <normal x="0.0" y="0.0" z="-1.0"/>
+      <count u="20" v="10"/>
+    </surfel>
+
+    <surfel>
+      <position x="30.0" y="0.0" z="25.0"/>
+      <majorAxis x="0.0" y="0.0" z="1.0"/>
+      <minorAxis x="0.0" y="1.5" z="0.0"/>
+      <normal x="1.0" y="0.0" z="0.0"/>
+      <count u="5" v="10"/>
     </surfel>
 
     <surfel>
       <position x="0.0" y="15.0" z="25.0"/>
-      <majorAxis x="3.0" y="0.0" z="0.0"/>
-      <minorAxis x="0.0" y="0.0" z="2.5"/>
+      <majorAxis x="1.5" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="0.0" z="1.0"/>
       <normal x="0.0" y="1.0" z="0.0"/>
-      <count u="10" v="2"/>
+      <count u="20" v="5"/>
     </surfel>
-    
+
     <surfel>
       <position x="0.0" y="-15.0" z="25.0"/>
-      <majorAxis x="3.0" y="0.0" z="0.0"/>
-      <minorAxis x="0.0" y="0.0" z="2.5"/>
+      <majorAxis x="1.5" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="0.0" z="1.0"/>
       <normal x="0.0" y="-1.0" z="0.0"/>
-      <count u="10" v="2"/>
+      <count u="20" v="5"/>
     </surfel>
-  <!--</volume>
-
-  <volume>
 -->
     <surfel>
-      <position x="20.0" y="0.0" z="-5.0"/>
+      <position x="-30.0" y="0.0" z="25.0"/>
+      <majorAxis x="0.0" y="0.0" z="1.0"/>
+      <minorAxis x="0.0" y="1.0" z="0.0"/>
+      <normal x="-1.0" y="0.0" z="0.0"/>
+      <count u="5" v="15"/>
+    </surfel>
+
+    <surfel>
+      <position x="0.0" y="0.0" z="30.0"/>
+      <majorAxis x="1.0" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="1.0" z="0.0"/>
+      <normal x="0.0" y="0.0" z="1.0"/>
+      <count u="30" v="15"/>
+    </surfel>
+
+    <surfel>
+      <position x="0.0" y="0.0" z="20.0"/>
+      <majorAxis x="1.0" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="1.0" z="0.0"/>
+      <normal x="0.0" y="0.0" z="-1.0"/>
+      <count u="30" v="15"/>
+    </surfel>
+
+    <surfel>
+      <position x="30.0" y="0.0" z="25.0"/>
+      <majorAxis x="0.0" y="0.0" z="1.0"/>
+      <minorAxis x="0.0" y="1.0" z="0.0"/>
+      <normal x="1.0" y="0.0" z="0.0"/>
+      <count u="5" v="15"/>
+    </surfel>
+
+    <surfel>
+      <position x="0.0" y="15.0" z="25.0"/>
+      <majorAxis x="1.0" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="0.0" z="1.0"/>
+      <normal x="0.0" y="1.0" z="0.0"/>
+      <count u="30" v="5"/>
+    </surfel>
+
+    <surfel>
+      <position x="0.0" y="-15.0" z="25.0"/>
+      <majorAxis x="1.0" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="0.0" z="1.0"/>
+      <normal x="0.0" y="-1.0" z="0.0"/>
+      <count u="30" v="5"/>
+    </surfel>
+
+    <!---
+     <surfel> 
+      <position x="-30.0" y="0.0" z="25.0"/>
       <majorAxis x="0.0" y="0.0" z="2.5"/>
       <minorAxis x="0.0" y="2.5" z="0.0"/>
       <normal x="-1.0" y="0.0" z="0.0"/>
-      <count u="10" v="6"/>
-    </surfel>  
- 
+      <count u="2" v="6"/> 
+    </surfel> 
+
+    <surfel> 
+      <position x="0.0" y="0.0" z="30.0"/>
+      <majorAxis x="3.0" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="2.5" z="0.0"/>
+      <normal x="0.0" y="0.0" z="1.0"/>
+      <count u="10" v="6"/>      
+    </surfel>
+
     <surfel>
-      <position x="25.0" y="0.0" z="-30.0"/>
-      <majorAxis x="2.5" y="0.0" z="0.0"/>
+      <position x="0.0" y="0.0" z="20.0"/> 
+      <majorAxis x="3.0" y="0.0" z="0.0"/>
       <minorAxis x="0.0" y="2.5" z="0.0"/>
       <normal x="0.0" y="0.0" z="-1.0"/>
-      <count u="2" v="6"/>
-    </surfel>
-   
-    <surfel>
-      <position x="30.0" y="0.0" z="0.0"/>
-      <majorAxis x="0.0" y="0.0" z="3.0"/>
-      <minorAxis x="0.0" y="2.5" z="0.0"/>
-      <normal x="1.0" y="0.0" z="0.0"/>
       <count u="10" v="6"/>
-    </surfel>
-    
+    </surfel> 
+
+    <surfel> 
+      <position x="30.0" y="0.0" z="25.0"/>
+      <majorAxis x="0.0" y="0.0" z="2.5"/> 
+      <minorAxis x="0.0" y="2.5" z="0.0"/> 
+      <normal x="1.0" y="0.0" z="0.0"/> 
+      <count u="2" v="6"/>
+    </surfel> 
+
     <surfel>
-      <position x="25.0" y="15.0" z="-5.0"/>
-      <majorAxis x="0.0" y="0.0" z="2.5"/>
-      <minorAxis x="2.5" y="0.0" z="0.0"/>
-      <normal x="0.0" y="1.0" z="0.0"/>
+      <position x="0.0" y="15.0" z="25.0"/>
+      <majorAxis x="3.0" y="0.0" z="0.0"/> 
+      <minorAxis x="0.0" y="0.0" z="2.5"/> 
+      <normal x="0.0" y="1.0" z="0.0"/> 
       <count u="10" v="2"/>
     </surfel>
 
     <surfel>
-      <position x="25.0" y="-15.0" z="-5.0"/>
-      <majorAxis x="0.0" y="0.0" z="2.5"/>
-      <minorAxis x="2.5" y="0.0" z="0.0"/>
-      <normal x="0.0" y="-1.0" z="0.0"/>
-      <count u="10" v="2"/>
+     <position x="0.0" y="-15.0" z="25.0"/>
+     <majorAxis x="3.0" y="0.0" z="0.0"/> 
+     <minorAxis x="0.0" y="0.0" z="2.5"/> 
+     <normal x="0.0" y="-1.0" z="0.0"/> 
+     <count u="10" v="2"/>
     </surfel>
+    -->
+    <!--
+    <surfel>
+      <position x="-30.0" y="0.0" z="25.0"/>
+      <majorAxis x="0.0" y="0.0" z="2.5"/>
+      <minorAxis x="0.0" y="5.0" z="0.0"/>
+      <normal x="-1.0" y="0.0" z="0.0"/>
+      <count u="2" v="3"/>
+    </surfel>
+
+    <surfel>
+      <position x="0.0" y="0.0" z="30.0"/>
+      <majorAxis x="10.0" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="5.0" z="0.0"/>
+      <normal x="0.0" y="0.0" z="1.0"/>
+      <count u="3" v="3"/>
+    </surfel>
+
+    <surfel>
+      <position x="0.0" y="0.0" z="20.0"/>
+      <majorAxis x="10.0" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="5.0" z="0.0"/>
+      <normal x="0.0" y="0.0" z="-1.0"/>
+      <count u="3" v="3"/>
+    </surfel>
+
+    <surfel>
+      <position x="30.0" y="0.0" z="25.0"/>
+      <majorAxis x="0.0" y="0.0" z="2.5"/>
+      <minorAxis x="0.0" y="5.0" z="0.0"/>
+      <normal x="1.0" y="0.0" z="0.0"/>
+      <count u="2" v="3"/>
+    </surfel>
+
+    <surfel>
+      <position x="0.0" y="15.0" z="25.0"/>
+      <majorAxis x="10.0" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="0.0" z="2.5"/>
+      <normal x="0.0" y="1.0" z="0.0"/>
+      <count u="3" v="2"/>
+    </surfel>
+
+    <surfel>
+      <position x="0.0" y="-15.0" z="25.0"/>
+      <majorAxis x="10.0" y="0.0" z="0.0"/>
+      <minorAxis x="0.0" y="0.0" z="2.5"/>
+      <normal x="0.0" y="-1.0" z="0.0"/>
+      <count u="3" v="2"/>
+    </surfel>
+-->
   </volume>
 </meshless_object>

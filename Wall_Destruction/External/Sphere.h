@@ -21,6 +21,7 @@ public:
 	void Draw(Helpers::CustomEffect *effect);
 	void DrawDepth(Helpers::CustomEffect *effect);
 	void CleanUp();
+	void CleanUpAndReleaseRigidBody();
 
 	void UpdateWorld();
 

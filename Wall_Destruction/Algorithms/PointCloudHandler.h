@@ -42,6 +42,9 @@ namespace PointCloud{
 		static const string XML_MESHLESS_DAMPING_CONSTANT_PSI;
 		static const string XML_MESHLESS_TOUGHNESS;
 		static const string XML_MESHLESS_MATERIAL;
+		static const string XML_MESHLESS_PHYXEL_GRID_SIZE;
+		static const string XML_MESHLESS_VERTEX_GRID_SIZE;
+		static const string XML_MESHLESS_MINIMUM_SURFEL_SIZE;
 
 		static const string XML_MESHLESS_VOLUME;
 		static const string XML_MESHLESS_POINTSET;

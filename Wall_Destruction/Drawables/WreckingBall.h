@@ -20,7 +20,7 @@ namespace Drawables{
 		void Draw();
 		void DrawDepth();
 		void Update(float dt);
-		void CleanUp();
+		void CleanUp(bool releaseRigid);
 		void ResetBuffers();
 
 		float GetRadius(){return radius;}
@@ -32,7 +32,7 @@ namespace Drawables{
 		D3DXVECTOR3 GetLastVelocity(){return lastVelocity;}
 		void SetLastVelocity(D3DXVECTOR3 vel){lastVelocity = vel;}
 	private:
-		float radius;
+		float radius, chainMovementSpeed;
 		D3DXVECTOR3 pos;
 		D3DXMATRIX scaleMatrix, rotationMatrix, translationMatrix, worldMatrix, invWorldView;;
 		Sphere sphere;

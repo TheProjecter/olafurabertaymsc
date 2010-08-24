@@ -93,6 +93,9 @@ namespace Helpers{
 		static bool SHOW_DEBUG;
 		static bool SHOW_INFO;
 		static bool SHOW_ERRORS;
+		static bool DRAW_NEIGHBORS;
+		static bool DRAW_ONLY_ONE_CELL_AT_A_TIME;
+
 		static ID3D10RenderTargetView* RenderTargetView;
 		static ID3D10DepthStencilView* DepthStencilView;
 	};

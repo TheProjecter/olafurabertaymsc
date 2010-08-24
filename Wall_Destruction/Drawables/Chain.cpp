@@ -13,7 +13,7 @@ void Chain::Init(D3DXVECTOR3 start, D3DXVECTOR3 end, int count){
 	for(int i = 0; i<count; i++){
 		chainSpheres.push_back(new Sphere());
 
-		chainSpheres[i]->init(0.5f, 10, 10);
+		chainSpheres[i]->init(0.5f, 5, 5);
 		chainSpheres[i]->SetPosition((end - (float)i*delta).x, (end - (float)i*delta).y, (end - (float)i*delta).z);
 	}
 
@@ -75,6 +75,18 @@ void Chain::Draw()
 void Chain::CleanUp(){
 	for(unsigned int i = 0; i<chainSpheres.size(); i++){
 		chainSpheres[i]->CleanUp();
+		delete chainSpheres[i];
+		chainSpheres[i] = 0;
+	}	
+
+	effect.CleanUp();
+}
+
+void Chain::CleanUpAndReleaseRigidBody()
+{
+	for(unsigned int i = 0; i<chainSpheres.size(); i++){
+		chainSpheres[i]->CleanUp();
+		PhysicsWrapper::RemoveRigidBody(chainSpheres[i]->GetRigidBody());
 		delete chainSpheres[i];
 		chainSpheres[i] = 0;
 	}	

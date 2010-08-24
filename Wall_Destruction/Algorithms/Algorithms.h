@@ -3,18 +3,25 @@
 #define RMLS_H
 
 #include "Structs.h"
+#include "PointGrid.h"
 #include <D3DX10.h>
 
 class Algorithms
 {
 public:
-	// Robust implicit Moving Least Squares
-	//static Structs::SURFEL_VERTEX* RIMLS(Structs::POINT_CLOUD_VERTEX *points);
+	static std::vector<ProjectStructs::SURFEL*> Splat(std::vector<ProjectStructs::SURFEL*> surfelsWithoutMinorMajorAndNormals, float maxRadiusLength, D3DXVECTOR3 generalNormal, D3DXVECTOR3 volumePos);
+	static std::vector<ProjectStructs::SURFEL*> ResampleSurfel( ProjectStructs::SURFEL* surfel, ProjectStructs::IMPACT* impact, D3DXMATRIX surfaceWorldMatrix);
+	static void Algorithms::RefineSurfel(ProjectStructs::SURFEL* surfel);
+	static void Algorithms::CalculateNeighbors(ProjectStructs::SURFEL* surfel);
 
-	//void Algorithms::SurfaceSplatting(Structs::POINT_CLOUD_VERTEX *points);
+	static void DecreaseNeighbors( ProjectStructs::SURFEL* surfel );
 
-	static ProjectStructs::SURFEL_VERTEX* APSS(ProjectStructs::POINT_CLOUD_VERTEX *points);
+	static void Draw();
+	static void CleanUp();
 
+private:
+	static std::vector<PointGrid*> grids;
+	const static float angleThreshold;
 };
 
 #endif

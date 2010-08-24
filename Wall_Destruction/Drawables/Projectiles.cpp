@@ -3,7 +3,7 @@
 #include "Globals.h"
 
 void Projectiles::Init(){
-	initialVelocity = 200.0f;
+	initialVelocity = 300.0f;
 
 	// have the deterioration slow so the projectiles can actually do something
 	deterioration = 0.3f;
@@ -69,7 +69,7 @@ void Projectiles::Draw()
 	projectileEffect.SetFloatVector("CameraPos", Helpers::Globals::AppCamera.Position());
 	projectileEffect.PreDraw();
 
-	for(int i = 0; i<projectiles.size(); i++){
+	for(unsigned int i = 0; i<projectiles.size(); i++){
 		projectileEffect.SetMatrix("World", projectiles[i]->world);
 		projectileSphere.Draw(&projectileEffect);
 	}	
@@ -90,7 +90,7 @@ void Projectiles::DrawDepth(){
 }
 
 void Projectiles::Update(float dt){
-	for(int i = 0; i< projectiles.size(); i++){
+	for(unsigned int i = 0; i< projectiles.size(); i++){
 		projectiles[i]->life -= dt*deterioration;
 		projectiles[i]->position = PhysicsWrapper::GetVector(&projectiles[i]->rigidBody->getPosition());
 		projectiles[i]->world = PhysicsWrapper::GetWorld(projectiles[i]->rigidBody);
@@ -105,6 +105,7 @@ void Projectiles::Update(float dt){
 		if(projectiles[0]->rigidBody->isActive())
 			PhysicsWrapper::RemoveRigidBody(projectiles[0]->rigidBody);
 
+		delete projectiles[0];
 		projectiles.erase(projectiles.begin());
 	}
 
@@ -116,14 +117,12 @@ void Projectiles::CleanUp(){
 	projectileEffect.CleanUp();
 	depthEffect.CleanUp();
 
-	while(!projectiles.empty()){
-		delete projectiles[0];
-		projectiles.erase(projectiles.begin());
+	for(unsigned int i = 0; i<projectiles.size(); i++){
+		delete projectiles[i];
 	}
 
 	projectiles.clear();
 	projectiles.swap( std::vector<ProjectStructs::PROJECTILE*>() );
-
 }
 
 void Projectiles::Add(){
@@ -133,6 +132,7 @@ void Projectiles::Add(){
 	ProjectStructs::PROJECTILE *projectile = new ProjectStructs::PROJECTILE;
 	projectile->life = 1.0f;
 	projectile->position = Helpers::Globals::AppCamera.Position() + 5*Helpers::Globals::AppCamera.Forward();
+	projectile->position.y -= this->projectileSphere.GetRadius();
 	projectile->velocity = initialVelocity * Helpers::Globals::AppCamera.Forward();
 	projectile->lastVelocity = projectile->velocity;
 

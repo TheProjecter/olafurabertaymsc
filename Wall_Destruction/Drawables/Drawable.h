@@ -8,11 +8,11 @@ namespace Drawables{
 	class Drawable
 	{
 	public :
-		void SetLightInfo(D3DXVECTOR3 DiffuseColor, D3DXVECTOR3 SpecularColor, float SpecularPower){
-			this->DiffuseColor = DiffuseColor;
-			this->SpecularColor = SpecularColor;
-			this->SpecularPower = SpecularPower;
-		}
+// 		void SetLightInfo(D3DXVECTOR3 DiffuseColor, D3DXVECTOR3 SpecularColor, float SpecularPower){
+// 			this->DiffuseColor = DiffuseColor;
+// 			this->SpecularColor = SpecularColor;
+// 			this->SpecularPower = SpecularPower;
+// 		}
 
 		void SetMaterialInfo(float sigma, float rho){
 			A = 1.0f - 0.5f * (sigma * sigma)/(sigma*sigma + 0.33f);
@@ -21,9 +21,9 @@ namespace Drawables{
 		}
 
 	protected:
-		D3DXVECTOR3 DiffuseColor;
-		D3DXVECTOR3 SpecularColor;
-		float SpecularPower;
+// 		D3DXVECTOR3 DiffuseColor;
+// 		D3DXVECTOR3 SpecularColor;
+// 		float SpecularPower;
 
 		float A, B, rhoOverPi;
 	};

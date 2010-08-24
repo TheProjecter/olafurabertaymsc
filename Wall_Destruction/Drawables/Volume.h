@@ -2,24 +2,29 @@
 #define VOLUME_H
 
 #include "Structs.h"
-#include "Surface.h"
+//#include "Surface.h"
+#include "VertexBufferGrid.h"
 #include "PhyxelGrid.h"
-#include "ChangedPhyxels.h"
+#include "ImpactList.h"
 
 class Volume
 {
 public:
-	Volume(void);
+	Volume::Volume(ProjectStructs::MATERIAL_PROPERTIES materialProperties);
 	~Volume(void){};
 
-	void AddSurface(Surface *surface);
+	//void AddSurface(Surface *surface);
+	void AddSurfel(ProjectStructs::SURFEL* surfel);
+	void AddCrack(ProjectStructs::CRACK_NODE* crack);
 
 	void SetWorld(D3DXMATRIX world){this->World = world;}
+	D3DXMATRIX GetWorld(){return this->World;}
 
 	void And(Volume *volume);
 	void Or(Volume *volume);
 
-	void CleanChangedPhyxels();
+	void ResetSurfaces();
+	void ClearImpacts();
 	void Draw();
 	void DrawFirstPass();
 
@@ -27,25 +32,37 @@ public:
 	void DrawAttributes(ID3D10ShaderResourceView* depthTexture);
 	void DrawNormalization();
 
-	int GetSurfaceCount(){return (int)surfaces.size();}
+/*	int GetSurfaceCount(){return (int)surfaces.size();}
 	Surface* GetSurface(int i){return surfaces[i];}
-
-	unsigned int GetChangedPhyxelsSize(){return changedPhyxels->GetPhyxelCount();}
-	ProjectStructs::PHYXEL_NODE* GetChangedPhyxel(int i){return changedPhyxels->GetPhyxel(i);}
+*/
+/*	unsigned int GetImpactSize(){return impactList->GetImpactCount();}
+	ProjectStructs::IMPACT* GetImpact(int i){return impactList->GetImpact(i);}
+	ImpactList* GetImpactList(){return impactList;}
+*/
 
 	void CleanUp();
 	void Update(float dt);
-	void Init(ProjectStructs::MATERIAL_PROPERTIES materialProperties);
+	void Init();
+	D3DXVECTOR3 GetPosition(){return pos;}
+	PhyxelGrid* GetPhyxelGrid(){return phyxelGrid;};
+	
+/*	int GetCrackedPhyxelSize(){return (int)crackedPhyxels.size();}
+	ProjectStructs::PHYXEL_NODE* GetCrackedPhyxel(int i){ return crackedPhyxels[i]; }
+*/
 	ProjectStructs::MATERIAL_PROPERTIES GetMaterialProperties(){return materialProperties;}
 
 private:
-	std::vector<Surface*> surfaces;
-	ChangedPhyxels *changedPhyxels;
+	//std::vector<Surface*> surfaces;
+	VertexBufferGrid* vertexBufferGrid;
+	std::vector<ProjectStructs::SURFEL*> newSurfels;
 	
+	/*std::vector<ProjectStructs::PHYXEL_NODE*> crackedPhyxels;
+	ImpactList* impactList;
+	
+	bool cracked;
+	*/
 	D3DXMATRIX World;
 	D3DXVECTOR3 pos;
-
-	D3DXMATRIX C;
 
 	PhyxelGrid* phyxelGrid;
 	//VertexBufferGrid* vertexBufferGrid;

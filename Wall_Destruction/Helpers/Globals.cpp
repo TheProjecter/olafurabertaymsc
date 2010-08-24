@@ -22,6 +22,8 @@ namespace Helpers{
 	bool Globals::SHOW_DEBUG = true;
 	bool Globals::SHOW_INFO = true;
 	bool Globals::SHOW_ERRORS = true;
+	bool Globals::DRAW_NEIGHBORS = false;
+	bool Globals::DRAW_ONLY_ONE_CELL_AT_A_TIME = false;
 
 	InfoText Globals::DebugInformation;
 	DrawMethod Globals::SurfelDrawMethod = SOLID;

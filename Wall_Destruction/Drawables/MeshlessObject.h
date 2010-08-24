@@ -3,10 +3,8 @@
 
 #include "Drawable.h"
 #include "Globals.h"
-#include "HavokPhysicsInclude.h"
 #include "Volume.h"
 #include "CSGTree.h"
-#include "ContactListener.h"
 
 namespace Drawables{
 
@@ -22,11 +20,7 @@ namespace Drawables{
 		void Update(float dt);
 		void Init();
 		void CleanUp();
-
-		void AddContactListener(ContactListener *cl){contactListeners.push_back(cl);}
-		void AddRigidBody(hkpRigidBody* rigid){rigidBodies.push_back(rigid);}
-		std::vector<hkpRigidBody*> GetRigidBodies(){return rigidBodies;}
-
+	
 		void SetDeformable(bool deformable){this->deformable = deformable;}
 		void SetWorld(D3DXMATRIX world){this->world = world;}
 
@@ -54,9 +48,6 @@ namespace Drawables{
 
 		D3DXMATRIX world;
 		D3DXVECTOR3 position;
-
-		std::vector<hkpRigidBody*> rigidBodies;
-		std::vector<ContactListener*> contactListeners;
 	};
 }
 

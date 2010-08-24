@@ -202,7 +202,7 @@ void D3DApp::updateScene(float dt)
 		frameCnt = 0;
 		t_base  += 1.0f;
 		minSec = FLT_MAX;
-		maxSec = FLT_MIN;
+		maxSec = -FLT_MAX;
 	}
 }
 
@@ -231,13 +231,13 @@ LRESULT D3DApp::msgProc(UINT msg, WPARAM wParam, LPARAM lParam)
 		{
 			mAppPaused = true;
 			mTimer.stop();
-			PhysicsWrapper::Pause();
+		//	PhysicsWrapper::Pause();
 		}
 		else
 		{
 			mAppPaused = false;
 			mTimer.start();
-			PhysicsWrapper::Resume();
+		//	PhysicsWrapper::Resume();
 		}
 		return 0;
 

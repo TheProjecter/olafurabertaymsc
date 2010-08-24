@@ -1,7 +1,13 @@
 #include "PhyxelGrid.h"
 #include "MathHelper.h"
 #include "FractureManager.h"
+#include "KeyboardHandler.h"
+#include "DebugToFile.h"
 #include <algorithm>
+
+
+// first phyxelfound
+int PhyxelGrid::phyxelIndex = 0;
 
 PhyxelGrid::PhyxelGrid(void)
 {
@@ -11,24 +17,23 @@ PhyxelGrid::~PhyxelGrid(void)
 {
 }
 
-PhyxelGrid::PhyxelGrid(int dimensions, D3DXVECTOR3 minCoords, D3DXVECTOR3 maxCoords, D3DXVECTOR3 Pos, ProjectStructs::MATERIAL_PROPERTIES materialProperties){
+PhyxelGrid::PhyxelGrid(D3DXVECTOR3 minCoords, D3DXVECTOR3 maxCoords, D3DXVECTOR3 Pos, ProjectStructs::MATERIAL_PROPERTIES materialProperties){
 
 	this->materialProperties = materialProperties;
 
-	this->dimensions = dimensions;
 	this->Min = minCoords;
 	this->Max = maxCoords;
 	this->Center = (this->Max - this->Min) * 0.5f;
 
-	this->SmallestHalfWidth = Center / (float)dimensions;
+	this->SmallestHalfWidth = materialProperties.phyxelGridSize * D3DXVECTOR3(1.0f, 1.0f, 1.0f);
 
 	this->Position = Pos;
 
 	this->cells = ThreeInOneArray<ProjectStructs::Phyxel_Grid_Cell*>(
-		(int)floor((Max - Min).x/(2.0f*SmallestHalfWidth.x) + 1), 
-		(int)floor((Max - Min).y/(2.0f*SmallestHalfWidth.y) + 1 ), 
-		(int)floor((Max - Min).z/(2.0f*SmallestHalfWidth.z) + 1));
-
+		(int)floor(Center.x / SmallestHalfWidth.x + 1), 
+		(int)floor(Center.y / SmallestHalfWidth.y + 1), 
+		(int)floor(Center.z / SmallestHalfWidth.z + 1));
+ 
 	for(unsigned int i = 0; i<cells.GetSize(); i++){
 		cells[i] = NULL;
 	}
@@ -37,7 +42,9 @@ PhyxelGrid::PhyxelGrid(int dimensions, D3DXVECTOR3 minCoords, D3DXVECTOR3 maxCoo
 		
 	D3DXMatrixTranslation(&World, Position.x, Position.y, Position.z);
 
-	D3DXMatrixTranslation(&this->invWorld, -Min.x - Center.x, -Min.y - Center.y, -Min.z- Center.z);
+	D3DXMatrixTranslation(&this->invWorld, -Min.x - Center.x, -Min.y - Center.y, -Min.z - Center.z);
+
+	Helpers::Globals::DebugInformation.AddText(DEBUG_TYPE, "Created phyxel grid (%d x %d x %d)", cells.GetWidth(), cells.GetHeight(), cells.GetDepth());
 
 	allocatedCells = 0;
 	deallocatedCells = 0;
@@ -47,15 +54,33 @@ PhyxelGrid::PhyxelGrid(int dimensions, D3DXVECTOR3 minCoords, D3DXVECTOR3 maxCoo
 
 void PhyxelGrid::InsertPoints(std::vector<D3DXVECTOR3> surfacePoints, std::vector<ProjectStructs::SURFEL*> surfels){
 	for(unsigned int i = 0; i<surfacePoints.size(); i++){
-		PopulateNode( surfacePoints[i], surfels[i], NULL);
+		PopulateNode( surfacePoints[i], surfels[i]);
+	}
+
+	for(unsigned int i = 0; i<surfels.size(); i+=4){
+		PopulateNode( surfels[i]->vertex->pos, surfels[i]);
 	}
 }
 
-void PhyxelGrid::InsertEdges(std::vector<D3DXVECTOR3> edgePoints, std::vector<ProjectStructs::SURFEL_EDGE*> edges){
-	for(unsigned int i = 0; i<edgePoints.size(); i++){
-		PopulateNode( edgePoints[i], NULL, edges[i]);
+void PhyxelGrid::InsertPoint(std::vector<D3DXVECTOR3> surfacePoints, ProjectStructs::SURFEL* surfel){
+	for(unsigned int i = 0; i<surfacePoints.size(); i++){
+		PopulateNode( surfacePoints[i], surfel);
 	}
+	PopulateNode( surfel->vertex->pos, surfel);
+
+	printf("...");
 }
+
+/*void PhyxelGrid::InsertCrack(ProjectStructs::CRACK_NODE* crack){
+	if(crack->s1)
+		PopulateNode(crack->s1->vertex->pos, crack->s1);
+	if(crack->s2)
+		PopulateNode(crack->s2->vertex->pos, crack->s2);
+	if(crack->e1)
+		PopulateNode(crack->e1->vertex->pos, NULL, crack->e1);
+	if(crack->e2)
+		PopulateNode(crack->e2->vertex->pos, NULL, crack->e2);
+}*/
 
 void PhyxelGrid::PopulateNeighbors( D3DXVECTOR3 index )
 {
@@ -65,14 +90,14 @@ void PhyxelGrid::PopulateNeighbors( D3DXVECTOR3 index )
 	for(int i = 0; i<3; i++){
 		for(int j = 0; j<3; j++){
 			for(int k = 0; k<3; k++){
-				tmp = index;
-				
-				if(i == 1 && j == 1 && k == 1)
+				if(i == 1 && j == 1 && k == 1){
+					count++;
 					continue;
+				}
 
-				tmp.x += (i-1);
-				tmp.y += (j-1);
-				tmp.z += (k-1);
+				tmp.x = index.x + (i-1);
+				tmp.y = index.y + (j-1);
+				tmp.z = index.z + (k-1);
 
 				PopulateNeighbor(index, tmp, (DIRECTIONS)count++);
 			}
@@ -90,11 +115,16 @@ void PhyxelGrid::PopulateNeighbor( D3DXVECTOR3 index, D3DXVECTOR3 neighbor, DIRE
 		if(cells(neighbor)->neighbours[(int)BACK_TOP_RIGHT - (int)indexToNeighborDir]  == NULL){
 			cells(index)->neighbours[(int)indexToNeighborDir] = cells(neighbor);
 			cells(index)->phyxel->neighbours[(int)indexToNeighborDir] = cells(neighbor)->phyxel;
-			cells(index)->phyxel->neighbourWeight[(int)indexToNeighborDir] = FractureManager::CalculateWeight(cells(index)->phyxel, cells(neighbor)->phyxel);
+
+			float weight = FractureManager::CalculateWeight(cells(neighbor)->phyxel->pos, cells(index)->phyxel->pos, cells(neighbor)->phyxel->supportRadius) * 2.5f;
+			ProjectStructs::PHYXEL_NODE* parent = cells(index)->phyxel;
+			ProjectStructs::PHYXEL_NODE* n = cells(neighbor)->phyxel;
+			cells(index)->phyxel->neighbourWeight[(int)indexToNeighborDir] = weight;
 
 			cells(neighbor)->neighbours[(int)BACK_TOP_RIGHT - (int)indexToNeighborDir] = cells(index);		
 			cells(neighbor)->phyxel->neighbours[(int)BACK_TOP_RIGHT - (int)indexToNeighborDir] = cells(index)->phyxel;		
-			cells(neighbor)->phyxel->neighbourWeight[(int)BACK_TOP_RIGHT - (int)indexToNeighborDir] = FractureManager::CalculateWeight(cells(neighbor)->phyxel, cells(index)->phyxel);
+			weight = FractureManager::CalculateWeight(cells(neighbor)->phyxel, cells(index)->phyxel);
+			cells(neighbor)->phyxel->neighbourWeight[(int)BACK_TOP_RIGHT - (int)indexToNeighborDir] = weight;
 		}
 	}
 }
@@ -102,9 +132,9 @@ void PhyxelGrid::PopulateNeighbor( D3DXVECTOR3 index, D3DXVECTOR3 neighbor, DIRE
 D3DXVECTOR3 PhyxelGrid::GetPositionOfIndex(int x, int y, int z, bool relative){
 	D3DXVECTOR3 pos = D3DXVECTOR3();
 
-	pos.x = (x - this->halfIndex.x) * 2.0f * SmallestHalfWidth.x + SmallestHalfWidth.x;//cells[i]->halfWidth;
-	pos.y = (y - this->halfIndex.y) * 2.0f * SmallestHalfWidth.y +  SmallestHalfWidth.y;//cells[i]->halfWidth;
-	pos.z = (z - this->halfIndex.z) * 2.0f * SmallestHalfWidth.z + SmallestHalfWidth.z;//cells[i]->halfWidth;
+	pos.x = (x - this->halfIndex.x) * 2.0f * SmallestHalfWidth.x + SmallestHalfWidth.x;
+	pos.y = (y - this->halfIndex.y) * 2.0f * SmallestHalfWidth.y + SmallestHalfWidth.y;
+	pos.z = (z - this->halfIndex.z) * 2.0f * SmallestHalfWidth.z + SmallestHalfWidth.z;
 
 	if(!relative)
 		pos += Position;
@@ -112,7 +142,7 @@ D3DXVECTOR3 PhyxelGrid::GetPositionOfIndex(int x, int y, int z, bool relative){
 	return pos;
 }
 
-void PhyxelGrid::Init( ChangedPhyxels *changedPhyxels )
+void PhyxelGrid::Init()
 {
 	std::vector<D3DXVECTOR3> indices;
 	std::vector<D3DXVECTOR3> populatedIndices;
@@ -122,7 +152,7 @@ void PhyxelGrid::Init( ChangedPhyxels *changedPhyxels )
 		for(unsigned int j = 0; j < this->cells.GetHeight(); j++){
 			for(unsigned int k = 0; k < this->cells.GetDepth(); k++){				
 				// if the cell is populated, we need to calculate the mass of the phyxel
-				if(cells(i, j, k) && (cells(i, j, k)->surfels.size() != 0 || cells(i, j, k)->edges.size() != 0)) {
+				if(cells(i, j, k) && cells(i, j, k)->surfels.size() != 0 ) {
 					populatedIndices.push_back(D3DXVECTOR3((float)i, (float)j, (float)k));
 					continue;
 				}
@@ -136,34 +166,34 @@ void PhyxelGrid::Init( ChangedPhyxels *changedPhyxels )
 				int negZCount = 0;
 				// positive X
 				for(int posX = (int)i; posX < (int)this->cells.GetWidth(); posX++){
-					if(cells(posX, j, k) && (cells(posX, j, k)->surfels.size() != 0 || cells(posX, j, k)->edges.size() != 0) )
+					if(cells(posX, j, k) && (cells(posX, j, k)->surfels.size() != 0 ) )
 						posXCount++;
 				}
 
 				for(int negX = (int)i; negX >= 0; negX--){
-					if(cells(negX, j, k)  && (cells(negX, j, k)->surfels.size() != 0 || cells(negX, j, k)->edges.size() != 0) )
+					if(cells(negX, j, k)  && (cells(negX, j, k)->surfels.size() != 0 ) )
 						negXCount++;
 				}
 
 				// positive Y
 				for(int posY = (int)j; posY < (int)this->cells.GetHeight(); posY++){
-					if(cells(i, posY, k)  && (cells(i, posY, k)->surfels.size() != 0 || cells(i, posY, k)->edges.size() != 0) )
+					if(cells(i, posY, k)  && (cells(i, posY, k)->surfels.size() != 0) )
 						posYCount++;
 				}
 
 				for(int negY = (int)j; negY >= 0; negY--){
-					if(cells(i, negY, k) && (cells(i, negY, k)->surfels.size() != 0 || cells(i, negY, k)->edges.size() != 0) )
+					if(cells(i, negY, k) && (cells(i, negY, k)->surfels.size() != 0) )
 						negYCount++;
 				}
 
 				// positive Z
 				for(int posZ = (int)k; posZ < (int)this->cells.GetDepth(); posZ++){
-					if(cells(i, j, posZ) && (cells(i, j, posZ)->surfels.size() != 0 || cells(i, j, posZ)->edges.size() != 0) )
+					if(cells(i, j, posZ) && (cells(i, j, posZ)->surfels.size() != 0) )
 						posZCount++;
 				}
 
 				for(int negZ = (int)k; negZ >= 0; negZ--){
-					if(cells(i, j, negZ) && (cells(i, j, negZ)->surfels.size() != 0 || cells(i, j, negZ)->edges.size() != 0) )
+					if(cells(i, j, negZ) && (cells(i, j, negZ)->surfels.size() != 0) )
 						negZCount++;
 				}
 
@@ -180,12 +210,10 @@ void PhyxelGrid::Init( ChangedPhyxels *changedPhyxels )
 
 		for(unsigned int i = 0; i< populatedIndices.size(); i++){
 			PopulateNeighbors(populatedIndices[i]);
-			changedPhyxels->AddDrawablePhyxel(cells(populatedIndices[i])->phyxel);
 		}
 
 		for(unsigned int i = 0; i < indices.size(); i++){
 			PopulateNeighbors(indices[i]);
-			changedPhyxels->AddDrawablePhyxel(cells(indices[i])->phyxel);
 		}
 
 		for(unsigned int i = 0; i< populatedIndices.size(); i++){
@@ -195,13 +223,18 @@ void PhyxelGrid::Init( ChangedPhyxels *changedPhyxels )
 			D3DXMATRIX momentMatrix;
 			float x, y, z, weight;
 
+			cells(populatedIndices[i])->phyxel->momentMatrix = MathHelper::Get3x3Identity();
+			cells(populatedIndices[i])->phyxel->momentMatrix(0, 0) = 0.0f;
+			cells(populatedIndices[i])->phyxel->momentMatrix(1, 1) = 0.0f;
+			cells(populatedIndices[i])->phyxel->momentMatrix(2, 2) = 0.0f;
+
 			for(unsigned int j = 0; j<cells(populatedIndices[i])->neighbours.GetSize(); j++){
 				if(!cells(populatedIndices[i])->neighbours[j])
 					continue;
 
-				x = cells(populatedIndices[i])->phyxel->pos.x;
-				y = cells(populatedIndices[i])->phyxel->pos.y;
-				z = cells(populatedIndices[i])->phyxel->pos.z;
+				x = cells(populatedIndices[i])->phyxel->pos.x - cells(populatedIndices[i])->phyxel->neighbours[j]->pos.x;
+				y = cells(populatedIndices[i])->phyxel->pos.y - cells(populatedIndices[i])->phyxel->neighbours[j]->pos.y;
+				z = cells(populatedIndices[i])->phyxel->pos.z - cells(populatedIndices[i])->phyxel->neighbours[j]->pos.z;
 				weight = cells(populatedIndices[i])->phyxel->neighbourWeight[j];
 				
 				momentMatrix._11 = weight * x*x;    momentMatrix._12 = weight * y*x;	momentMatrix._13 = weight * z*x;	momentMatrix._14 = 0.0f;
@@ -225,9 +258,10 @@ void PhyxelGrid::Init( ChangedPhyxels *changedPhyxels )
 				if(!cells(indices[i])->neighbours[j])
 					continue;
 
-				x = cells(indices[i])->phyxel->pos.x;
-				y = cells(indices[i])->phyxel->pos.y;
-				z = cells(indices[i])->phyxel->pos.z;
+				x = cells(indices[i])->phyxel->neighbours[j]->pos.x - cells(indices[i])->phyxel->pos.x;
+				y = cells(indices[i])->phyxel->neighbours[j]->pos.y - cells(indices[i])->phyxel->pos.y;
+				z = cells(indices[i])->phyxel->neighbours[j]->pos.z - cells(indices[i])->phyxel->pos.z;
+
 				weight = cells(indices[i])->phyxel->neighbourWeight[j];
 
 				momentMatrix._11 = weight * x*x;    momentMatrix._12 = weight * y*x;	momentMatrix._13 = weight * z*x;	momentMatrix._14 = 0.0f;
@@ -280,7 +314,7 @@ void PhyxelGrid::Init( ChangedPhyxels *changedPhyxels )
 
 	// Create indices
 	unsigned int firstIndices[] = { 
-		0, 1, 5, 6, 7, 3, 2, 6
+	0, 1, 5, 6, 7, 3, 2, 6
 	};
 
 	unsigned int secondIndices[] = { 
@@ -314,6 +348,34 @@ void PhyxelGrid::Init( ChangedPhyxels *changedPhyxels )
 	HR(Helpers::Globals::Device->CreateBuffer( &secondBufferDesc, &secondIndexInitData, &otherIndexBuffer));
 }
 
+
+void PhyxelGrid::DrawSingleCell(Phyxel_Grid_Cell* cell){
+	effect.SetMatrix("View", Helpers::Globals::AppCamera.View());
+
+	effect.PreDraw();
+
+	UINT stride = sizeof( ProjectStructs::SIMPLE_VERTEX);
+	UINT offset = 0;
+	int index = 0;
+
+	Helpers::Globals::Device->IASetPrimitiveTopology( D3D10_PRIMITIVE_TOPOLOGY_LINESTRIP);
+	Helpers::Globals::Device->IASetVertexBuffers( 0, 1, &vertexBuffer, &stride, &offset );
+
+	tmpWorld = World;
+
+	tmpWorld._41 += cell->phyxel->pos.x - Position.x;
+	tmpWorld._42 += cell->phyxel->pos.y - Position.y;
+	tmpWorld._43 += cell->phyxel->pos.z - Position.z;
+
+	effect.SetMatrix("World", tmpWorld);
+
+	Helpers::Globals::Device->IASetIndexBuffer( indexBuffer, DXGI_FORMAT_R32_UINT, 0 );
+	effect.DrawIndexed(8);
+
+	Helpers::Globals::Device->IASetIndexBuffer( otherIndexBuffer, DXGI_FORMAT_R32_UINT, 0 );
+	effect.DrawIndexed(8);
+}
+
 void PhyxelGrid::Draw(){
 
 	effect.SetMatrix("View", Helpers::Globals::AppCamera.View());
@@ -322,14 +384,14 @@ void PhyxelGrid::Draw(){
 
 	UINT stride = sizeof( ProjectStructs::SIMPLE_VERTEX);
 	UINT offset = 0;
+	int index = 0;
 
 	Helpers::Globals::Device->IASetPrimitiveTopology( D3D10_PRIMITIVE_TOPOLOGY_LINESTRIP);
 	Helpers::Globals::Device->IASetVertexBuffers( 0, 1, &vertexBuffer, &stride, &offset );
 
 	for(unsigned int i = 0; i < cells.GetSize(); i++){
 		
-		if(cells[i] != NULL){
-			
+		if(cells[i] != NULL && cells[i]->surfels.size() != 0){
 			INDEX indices = cells.GetIndices(i);
 			tmpWorld = World;
 			D3DXVECTOR3 pos = GetPositionOfIndex(indices.x, indices.y, indices.z, true);
@@ -345,7 +407,7 @@ void PhyxelGrid::Draw(){
 
 			Helpers::Globals::Device->IASetIndexBuffer( otherIndexBuffer, DXGI_FORMAT_R32_UINT, 0 );
 			effect.DrawIndexed(8);
-		}		
+		}	
 	}
 }
 
@@ -368,16 +430,13 @@ void PhyxelGrid::CleanCell( unsigned int index )
 {
 	if(this->cells[index] != NULL){
 		this->cells[index]->surfels.clear();
-		this->cells[index]->edges.clear();
-		//this->cells[index]->cracks.clear();
-
-		this->cells[index]->surfels.swap(std::vector<ProjectStructs::SURFEL*>());
-		this->cells[index]->edges.swap(std::vector<ProjectStructs::SURFEL_EDGE*>());
-		//this->cells[index]->cracks.swap(std::vector<ProjectStructs::CRACK_NODE*>());
+	this->cells[index]->cracks.clear();
 
 		this->cells[index]->phyxel->neighbours.Clear();
 		this->cells[index]->phyxel->neighbourWeight.Clear();
+
 		delete this->cells[index]->phyxel;
+		this->cells[index]->phyxel = NULL;
 
 		this->cells[index]->neighbours.Clear();
 
@@ -386,13 +445,14 @@ void PhyxelGrid::CleanCell( unsigned int index )
 	}
 
 	delete this->cells[index];
+	this->cells[index] = NULL;
 }
 
 
-void PhyxelGrid::PopulateNode( D3DXVECTOR3 surfelPos, ProjectStructs::SURFEL *surfel, ProjectStructs::SURFEL_EDGE *edge)
+void PhyxelGrid::PopulateNode( D3DXVECTOR3 surfelPos, ProjectStructs::SURFEL *surfel)
 {
 	D3DXVECTOR3 index = GetIndexOfPosition(surfelPos);
-	D3DXVECTOR3 centerIndex = GetIndexOfPosition(surfel == NULL ? edge->vertex.pos : surfel->vertex.pos);
+	D3DXVECTOR3 centerIndex = GetIndexOfPosition(surfel->vertex->pos);
 
 	// fill the nodes between
 	D3DXVECTOR3 tmpIndex = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
@@ -404,7 +464,7 @@ void PhyxelGrid::PopulateNode( D3DXVECTOR3 surfelPos, ProjectStructs::SURFEL *su
 				tmpIndex.y = j;
 				tmpIndex.z = k;
 
-				PopulateNodeAndCheckNormal(tmpIndex, surfelPos, surfel, edge);
+				PopulateNodeAndCheckNormal(tmpIndex, surfelPos, surfel);
 			}
 		}
 	}
@@ -418,17 +478,20 @@ void PhyxelGrid::InitCell( D3DXVECTOR3 &index )
 	cells(index) = ProjectStructs::StructHelper::CreatePhyxelGridCellPointer();
 	cells(index)->halfWidth = SmallestHalfWidth;
 	cells(index)->surfels = std::vector<ProjectStructs::SURFEL*>();
-	cells(index)->edges = std::vector<ProjectStructs::SURFEL_EDGE*>();
 
 	ProjectStructs::PHYXEL_NODE *phyxel = ProjectStructs::StructHelper::CreatePhyxelNodePointer();
 	phyxel->pos = GetPositionOfIndex((int)index.x, (int)index.y, (int)index.z, false);
-	//phyxel->displacement = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 
-	phyxel->supportRadius = max(this->SmallestHalfWidth.x, max(this->SmallestHalfWidth.y, this->SmallestHalfWidth.z)) * 3;
+	//phyxel->supportRadius = max(this->SmallestHalfWidth.x, max(this->SmallestHalfWidth.y, this->SmallestHalfWidth.z)) * 2.0f;
+	float maxValue = max(this->SmallestHalfWidth.x, max(this->SmallestHalfWidth.y, this->SmallestHalfWidth.z));
+	float oa = sqrt(maxValue * maxValue * 2.0f);
+	float oc = sqrt(oa * oa + maxValue * maxValue);
+	phyxel->supportRadius = oc;
 	phyxel->density = materialProperties.density;
 
 	phyxel->force = D3DXVECTOR3(0.0f, 0.0f, 0.0);
 	phyxel->isChanged = false;
+	phyxel->parent = cells(index);
 
 	cells(index)->phyxel = phyxel;
 
@@ -440,6 +503,7 @@ D3DXVECTOR3 PhyxelGrid::GetIndexOfPosition( D3DXVECTOR3 surfelPos )
 {
 	D3DXVec3TransformCoord(&tmp, &surfelPos, &invWorld);
 	D3DXVECTOR3 index = tmp + Center;
+
 	index.x = floor(index.x/(2.0f*SmallestHalfWidth.x));
 	index.y = floor(index.y/(2.0f*SmallestHalfWidth.y));
 	index.z = floor(index.z/(2.0f*SmallestHalfWidth.z));
@@ -447,48 +511,52 @@ D3DXVECTOR3 PhyxelGrid::GetIndexOfPosition( D3DXVECTOR3 surfelPos )
 	return index;
 }
 
-void PhyxelGrid::InitCellAndPushSurfels( D3DXVECTOR3 index, ProjectStructs::SURFEL * surfel, ProjectStructs::SURFEL_EDGE * edge )
+void PhyxelGrid::InitCellAndPushSurfels( D3DXVECTOR3 index, ProjectStructs::SURFEL * surfel)
 {
 	Phyxel_Grid_Cell *cell = cells(index);
 
 	InitCell(index);
 
-	if(surfel != NULL){
-		// check if the surfelPos is inside of the grid cell
+	// check if the surfelPos is inside of the grid cell
 
-		if(find(cells(index)->surfels.begin(), cells(index)->surfels.end(), surfel) == cells(index)->surfels.end())
-			cells(index)->surfels.push_back(surfel);
+	if(find(cells(index)->surfels.begin(), cells(index)->surfels.end(), surfel) == cells(index)->surfels.end())
+		cells(index)->surfels.push_back(surfel);
 
-		if(find(surfel->intersectingCells.begin(), surfel->intersectingCells.end(), cells(index)) == surfel->intersectingCells.end())
-			surfel->intersectingCells.push_back(cells(index));
-	}
-	else{
-		// check if the surfelPos is inside of the grid cell
-		if(find(cells(index)->edges.begin(), cells(index)->edges.end(), edge) == cells(index)->edges.end())
-			cells(index)->edges.push_back(edge);
-
-		if(find(edge->intersectingCells.begin(), edge->intersectingCells.end(), cells(index)) == edge->intersectingCells.end())
-			edge->intersectingCells.push_back(cells(index));
-	}	
+	if(find(surfel->intersectingCells.begin(), surfel->intersectingCells.end(), cells(index)) == surfel->intersectingCells.end())
+		surfel->intersectingCells.push_back(cells(index));
 }
 
-void PhyxelGrid::PopulateNodeAndCheckNormal( D3DXVECTOR3 &index, D3DXVECTOR3 surfelPos, ProjectStructs::SURFEL * surfel, ProjectStructs::SURFEL_EDGE * edge )
+void PhyxelGrid::PopulateNodeAndCheckNormal( D3DXVECTOR3 &index, D3DXVECTOR3 surfelPos, ProjectStructs::SURFEL * surfel)
 {
 	if(cells.ValidIndex(index)){
-		if(MathHelper::Facing(GetPositionOfIndex((int)index.x, (int)index.y, (int)index.z, false), surfelPos, surfel == NULL ? edge->vertex.normal: surfel->vertex.normal)){
-			InitCellAndPushSurfels(index, surfel, edge);
+		if(MathHelper::Facing(GetPositionOfIndex((int)index.x, (int)index.y, (int)index.z, false), surfelPos, surfel->vertex->normal)){
+			InitCellAndPushSurfels(index, surfel);
 		}		
 		else{
 			// go to the node behind this one and populate it
 
 			D3DXVECTOR3 normalizedNormal;
-			D3DXVec3Normalize(&normalizedNormal, surfel == NULL ? &edge->vertex.normal : &surfel->vertex.normal);
+			D3DXVec3Normalize(&normalizedNormal, &surfel->vertex->normal);
 
 			index -= D3DXVECTOR3(normalizedNormal.x, normalizedNormal.y, normalizedNormal.z );
 
 			if(cells.ValidIndex(index)){						
-				InitCellAndPushSurfels(index, surfel, edge);			
+				InitCellAndPushSurfels(index, surfel);			
 			}
 		}
 	}
+	else
+		printf("..");
+}
+
+
+void PhyxelGrid::CleanIntersectingCells(ProjectStructs::SURFEL* surfel){
+	for(unsigned int j = 0; j < surfel->intersectingCells.size(); j++){
+		std::vector<ProjectStructs::SURFEL*>::iterator index = find(surfel->intersectingCells[j]->surfels.begin(),
+			surfel->intersectingCells[j]->surfels.end(), surfel);		
+		if(index  != surfel->intersectingCells[j]->surfels.end()){
+			surfel->intersectingCells[j]->surfels.erase(index);
+		}
+	}
+	surfel->intersectingCells.clear();
 }
