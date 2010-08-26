@@ -2,8 +2,11 @@
 #include <algorithm>
 #include "Globals.h"
 #include "KeyboardHandler.h"
+#include "MathHelper.h"
+#include "FractureManager.h"
 
 std::vector<ProjectStructs::IMPACT*> ImpactList::impacts, ImpactList::drawableImpacts;
+std::map<ProjectStructs::SURFEL*, PreImpactStruct> ImpactList::preImpacts;
 Helpers::CustomEffect ImpactList::impactEffect;
 ID3D10Buffer *ImpactList::mVB;
 bool ImpactList::hasBeenSetup, ImpactList::hasBeenInitedOrSomething = false;
@@ -49,6 +52,102 @@ void ImpactList::CleanUp(){
 	drawableImpacts.clear();
 	drawableImpacts.swap(std::vector<ProjectStructs::IMPACT*>());
 }
+
+void ImpactList::AddPreImpact(ProjectStructs::SURFEL* surfel, D3DXVECTOR3 force, D3DXVECTOR3 pos){
+	if(preImpacts.find(surfel) == preImpacts.end())
+	{
+		PreImpactStruct preimpact;
+		preimpact.force = force;
+		preimpact.pos = pos;
+		preimpact.contactPoints = 1;
+
+		preImpacts[surfel] = preimpact;
+	}
+	else{
+		preImpacts[surfel].force += force;
+		preImpacts[surfel].pos += pos;
+		preImpacts[surfel].contactPoints++;
+	}
+}
+
+void ImpactList::CalculateImpacts(){
+	std::map<ProjectStructs::SURFEL*, PreImpactStruct>::iterator surfelForceIterator = preImpacts.begin();
+
+	for( ; surfelForceIterator != preImpacts.end(); surfelForceIterator++){
+		surfelForceIterator->second.force /= surfelForceIterator->second.contactPoints;
+		surfelForceIterator->second.pos /= surfelForceIterator->second.contactPoints;
+
+		AddForce(surfelForceIterator->second.force / (float)surfelForceIterator->second.contactPoints, surfelForceIterator->second.pos / (float)surfelForceIterator->second.contactPoints, surfelForceIterator->first);
+	}
+	preImpacts.clear();
+}
+
+
+void ImpactList::AddForce(D3DXVECTOR3 force, D3DXVECTOR3 pos, ProjectStructs::SURFEL* surfel){
+
+	if(surfel == NULL)
+		return;
+
+	D3DXVECTOR3 direction;
+	D3DXVec3Normalize(&direction, &force);
+	direction.x = ceil(direction.x);
+	direction.y = ceil(direction.y);
+	direction.z = ceil(direction.z);
+
+	for(unsigned int i = 0; i < surfel->intersectingCells.size(); i++){
+		AddForceToPhyxels(force, pos, direction, surfel->intersectingCells[i]->phyxel, surfel);			
+		surfel->intersectingCells[i]->phyxel->isChanged = true;
+	}
+}
+
+void ImpactList::AddForceToPhyxels(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::PHYXEL_NODE *phyxel, ProjectStructs::SURFEL* surfel){
+	if(phyxel != NULL || force == MathHelper::GetZeroVector()){
+
+		std::vector<ProjectStructs::PHYXEL_NODE*> goToNeighborPhyxels;
+		for(unsigned int i = 0; i < phyxel->neighbours.GetSize(); i++){
+			if(phyxel->neighbours[i] && !phyxel->neighbours[i]->isChanged && AddForceToPhyxel(force, pos, direction, phyxel->neighbours[i], surfel)){
+				phyxel->neighbours[i]->isChanged = true;
+				goToNeighborPhyxels.push_back(phyxel->neighbours[i]);
+			}
+		}
+
+		for(unsigned int i = 0; i < goToNeighborPhyxels.size(); i++){
+			AddForceToPhyxels(force, pos, direction, goToNeighborPhyxels[i], surfel);
+		}
+	}
+}
+
+bool ImpactList::AddForceToPhyxel(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::PHYXEL_NODE *phyxel, ProjectStructs::SURFEL* surfel){
+
+	D3DXVECTOR3 phyxelPos = phyxel->pos;
+
+	D3DXVECTOR3 f = force * FractureManager::CalculateWeight(/*surfel->vertex->*/pos, phyxelPos, 3.0f * phyxel->supportRadius);
+
+	if(D3DXVec3Length(&f) < 0.001f)
+		return false;	
+
+	if(phyxel->isChanged){
+		phyxel->force.x += f.x;					
+		phyxel->force.y += f.y;					
+		phyxel->force.z += f.z;	
+	}
+	else{
+		phyxel->force.x = f.x;					
+		phyxel->force.y = f.y;					
+		phyxel->force.z = f.z;	
+	}
+
+	ProjectStructs::IMPACT* impact = new ProjectStructs::IMPACT;
+	phyxel->isChanged = true;
+	impact->phyxel = phyxel;
+	impact->impactPos = pos;
+	impact->surfel = surfel;
+
+	AddImpact(impact);		
+
+	return true;
+}
+
 
 void ImpactList::AddImpact(ProjectStructs::IMPACT* node){
 	bool containsPhyxel = false;

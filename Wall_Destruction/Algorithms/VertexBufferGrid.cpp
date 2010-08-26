@@ -383,7 +383,6 @@ void VertexBufferGrid::Update(){
 			populatedCellList[CellToDraw]->changed = true;
 			changedCells.push_back(populatedCellList[CellToDraw]);
 		}
-
 	}
 
 	if(changedCells.size() != 0){

@@ -4,3 +4,8 @@ relre:Wall_Destruction/UpgradeLog
 relre:Wall_Destruction/_UpgradeReport_Files/
 glob:Wall_Destruction/ipch/wall_destruction-d2bf6c47/wall_destruction-10ad88ef.ipch
 glob:Wall_Destruction/memory_leak_report.txt
+glob:Dissertation.odt
+glob:Notes.odt
+glob:Wall_Destruction/debug.txt
+glob:~$ssertation - Olafur Thor Gunnarsson - 0900128.docx
+glob:~$ssertation.docx

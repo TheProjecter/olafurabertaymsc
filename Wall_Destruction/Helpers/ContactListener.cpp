@@ -53,72 +53,7 @@ void ContactListener::contactPointCallback( const hkpContactPointEvent& event ){
 
 	// the force is divided by delta time in the fracture manager
 
-	AddForce(D3DXVECTOR3(force(0), force(1), force(2)), D3DXVECTOR3(event.m_contactPoint->getPosition()(0), event.m_contactPoint->getPosition()(1), event.m_contactPoint->getPosition()(2)), surfel);
-}
-
-void ContactListener::AddForce(D3DXVECTOR3 force, D3DXVECTOR3 pos, ProjectStructs::SURFEL* surfel){
-
-	if(surfel == NULL)
-		return;
-
-	D3DXVECTOR3 direction;
-	D3DXVec3Normalize(&direction, &force);
-	direction.x = ceil(direction.x);
-	direction.y = ceil(direction.y);
-	direction.z = ceil(direction.z);
-
-	for(unsigned int i = 0; i < surfel->intersectingCells.size(); i++){
-		AddForceToPhyxels(force, pos, direction, surfel->intersectingCells[i]->phyxel, surfel);			
-		surfel->intersectingCells[i]->phyxel->isChanged = true;
-	}
-}
-
-void ContactListener::AddForceToPhyxels(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::PHYXEL_NODE *phyxel, ProjectStructs::SURFEL* surfel){
-	if(phyxel != NULL || force == MathHelper::GetZeroVector()){
-
-		std::vector<ProjectStructs::PHYXEL_NODE*> goToNeighborPhyxels;
-		for(unsigned int i = 0; i < phyxel->neighbours.GetSize(); i++){
-			if(phyxel->neighbours[i] && !phyxel->neighbours[i]->isChanged && AddForceToPhyxel(force, pos, direction, phyxel->neighbours[i], surfel)){
-				phyxel->neighbours[i]->isChanged = true;
-				goToNeighborPhyxels.push_back(phyxel->neighbours[i]);
-			}
-		}
-
-		for(unsigned int i = 0; i < goToNeighborPhyxels.size(); i++){
-			AddForceToPhyxels(force, pos, direction, goToNeighborPhyxels[i], surfel);
-		}
-	}
-}
-
-bool ContactListener::AddForceToPhyxel(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::PHYXEL_NODE *phyxel, ProjectStructs::SURFEL* surfel){
-
-	D3DXVECTOR3 phyxelPos = phyxel->pos;
-
-	D3DXVECTOR3 f = force * FractureManager::CalculateWeight(pos, phyxelPos, 3.0f * phyxel->supportRadius);
-
-	if(D3DXVec3Length(&f) < 0.001f)
-		return false;	
-
-	if(phyxel->isChanged){
-		phyxel->force.x += f.x;					
-		phyxel->force.y += f.y;					
-		phyxel->force.z += f.z;	
-	}
-	else{
-		phyxel->force.x = f.x;					
-		phyxel->force.y = f.y;					
-		phyxel->force.z = f.z;	
-	}
-
-	ProjectStructs::IMPACT* impact = new ProjectStructs::IMPACT;
-	phyxel->isChanged = true;
-	impact->phyxel = phyxel;
-	impact->impactPos = pos;
-	impact->surfel = surfel;
-
-	ImpactList::AddImpact(impact);		
-
-	return true;
+	ImpactList::AddPreImpact(surfel, D3DXVECTOR3(force(0), force(1), force(2)), D3DXVECTOR3(event.m_contactPoint->getPosition()(0), event.m_contactPoint->getPosition()(1), event.m_contactPoint->getPosition()(2)));
 }
 
 

@@ -46,7 +46,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories=".External\vld\;Havok\Source;.\Helpers;.\Framework;.\External;.\Drawables;.\Algorithms"
-				PreprocessorDefinitions="WIN32;_DEBUG;DEBUG;_WINDOWS;TIXML_USE_STL;HK_DEBUG;MEMORY_LEAK_CHECK;  DEBUG_TO_FILE"
+				PreprocessorDefinitions="WIN32;_DEBUG;DEBUG;_WINDOWS;TIXML_USE_STL;HK_DEBUG;MEMORY_LEAK_CHECK;  "
 				MinimalRebuild="false"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"

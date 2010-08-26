@@ -156,9 +156,10 @@ void Volume::Update(float dt){
 
 	// Check if the user wants to clear the impacts
 	ImpactList::Update(dt);
+	if(materialProperties.deformable)
+		ImpactList::CalculateImpacts();
 
 	if(materialProperties.deformable && ImpactList::GetImpactCount() != 0){
-
 
 		VertexBufferGrid::LastRadiusScale = 1.0f;
 		VertexBufferGrid::RadiusScale = 1.0f;
@@ -180,15 +181,47 @@ void Volume::Update(float dt){
 		// resample the affected surfels
 		for(unsigned int i = 0; i<ImpactList::GetImpactCount(); i++){			
 			ProjectStructs::PHYXEL_NODE* phyxel = ImpactList::GetImpact(i)->phyxel;
+			ProjectStructs::SURFEL* impactedSurfel = ImpactList::GetImpact(i)->surfel;
 			count = 0;
 
 //			if(phyxel->isChanged){
 				// take out the surfel and insert a crater
+			float w = FractureManager::CalculateWeight(impactedSurfel->vertex->pos + this->pos, phyxel->pos, phyxel->supportRadius);
 
-				for(unsigned int j = 0; j < phyxel->parent->surfels.size(); j++){
+			if(w != 0.0f)
+			{
+				D3DXVECTOR3 displacement = w * (phyxel->displacement- impactedSurfel->lastDisplacement);
+				SurfelsToResample::AddExistingSurfel(impactedSurfel);
+
+				impactedSurfel->displacement += displacement;
+				impactedSurfel->displacementCount++;
+			}
+
+			for(std::map<float, ProjectStructs::SURFEL*>::iterator surfelNeighborIterator = impactedSurfel->neighbors.begin(); 
+				surfelNeighborIterator != impactedSurfel->neighbors.end(); surfelNeighborIterator++){
+
+					ProjectStructs::SURFEL* surfel= surfelNeighborIterator->second;		
+
+					float w = FractureManager::CalculateWeight(surfel->vertex->pos + this->pos, phyxel->pos, phyxel->supportRadius);
+
+					if(w != 0.0f)
+					{
+						D3DXVECTOR3 displacement = w * (phyxel->displacement- surfel->lastDisplacement);
+						SurfelsToResample::AddExistingSurfel(surfel);
+
+						surfel->displacement += displacement;
+						surfel->displacementCount++;
+					}
+
+			}
+
+			/*	for(unsigned int j = 0; j < phyxel->parent->surfels.size(); j++){
 					ProjectStructs::SURFEL* surfel= phyxel->parent->surfels[j];		
 					
-					float w = FractureManager::CalculateWeight(surfel->vertex->pos + this->pos, phyxel->pos, /*5.0f * */ /*0.5f * */phyxel->supportRadius);
+					//float w = FractureManager::CalculateWeight(surfel->vertex->pos + this->pos, ImpactList::GetImpact(i)->impactPos, 2.25f * phyxel->supportRadius);
+					//float w = FractureManager::CalculateWeight(surfel->vertex->pos + this->pos, ImpactList::GetImpact(i)->impactPos, 3.0f* phyxel->supportRadius);
+					//float w = FractureManager::CalculateWeight(surfel->vertex->pos + this->pos, phyxel->pos, phyxel->supportRadius);
+					float w = FractureManager::CalculateWeight(surfel->vertex->pos + this->pos, phyxel->pos, phyxel->supportRadius);
 					
 					if(w != 0.0f)
 					{
@@ -198,7 +231,7 @@ void Volume::Update(float dt){
 						surfel->displacement += displacement;
 						surfel->displacementCount++;
 					}
-				}
+				}*/
 				phyxel->isChanged = false;
 //			}
 		}
@@ -260,12 +293,12 @@ void Volume::Update(float dt){
 
 				DebugToFile::StartTimer();
 				for(int i = 0; i < SurfelsToResample::GetSurfelCount(); i++){
-					DebugToFile::StartTimer();
+					//DebugToFile::StartTimer();
 					
 					if(D3DXVec3Length(&SurfelsToResample::GetSurfel(i)->vertex->majorAxis) * D3DXVec3Length(&SurfelsToResample::GetSurfel(i)->vertex->minorAxis) > materialProperties.minimunSurfelSize)
 						Algorithms::RefineSurfel(SurfelsToResample::GetSurfel(i));
 
-					DebugToFile::EndTimer("Refined one surfel");
+					//DebugToFile::EndTimer("Refined one surfel");
 				}
 				DebugToFile::EndTimer("Refined all surfels");
 

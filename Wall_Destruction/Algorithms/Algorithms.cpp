@@ -9,7 +9,7 @@
 #include "SurfelsToResample.h"
 
 std::vector<PointGrid*> Algorithms::grids;
-const float Algorithms::angleThreshold = Helpers::Globals::PI / 8.0f;
+const float Algorithms::angleThreshold = Helpers::Globals::PI / 10.0f;
 
 template<class T>
 struct map_data_compare : public std::binary_function<typename T::value_type, 
@@ -225,7 +225,7 @@ void Algorithms::CalculateNeighbors(ProjectStructs::SURFEL* surfel){
 
 	D3DXVECTOR3 firstPos;
 
-	DebugToFile::StartTimer();
+	//DebugToFile::StartTimer();
 	for(unsigned int i = 0; i<surfel->intersectingCells.size(); i++){
 		ProjectStructs::Phyxel_Grid_Cell* cell = surfel->intersectingCells[i];
 
@@ -234,7 +234,8 @@ void Algorithms::CalculateNeighbors(ProjectStructs::SURFEL* surfel){
 		// add all neighboring surfels into the map
 		for(unsigned int j = 0; j < cell->surfels.size(); j++){
 
-			if(surfel == cell->surfels[j] /*|| !MathHelper::Intersection(surfel, cell->surfels[j], 0.75f)*/ || !MathHelper::SameDirection(surfel->vertex->normal, cell->surfels[j]->vertex->normal))
+			//intersectionið er ekki alveg að gera sig
+			if(surfel == cell->surfels[j] /*|| !MathHelper::Intersection(surfel, cell->surfels[j], 0.75f) || !MathHelper::SameDirection(surfel->vertex->normal, cell->surfels[j]->vertex->normal)*/)
 				continue;
 
 			if(surfel->neighbors.size() == 0 ){
@@ -250,7 +251,7 @@ void Algorithms::CalculateNeighbors(ProjectStructs::SURFEL* surfel){
 				float angle = MathHelper::Get3DAngle(cell->surfels[j]->vertex->pos - surfel->vertex->pos, firstPos - surfel->vertex->pos, surfel->vertex->normal);
 				//float angle = MathHelper::Get3DAngle(surfel, cell->surfels[j]->vertex->pos, firstPos);
 			
-				if(surfel->neighbors.find(angle) != surfel->neighbors.end())
+				if(surfel->neighbors.count(angle) != 0)
 				{
 					float previousLength = D3DXVec3Length(&(surfel->neighbors[angle]->vertex->pos - surfel->vertex->pos));
 					float currentLength = D3DXVec3Length(&(cell->surfels[j]->vertex->pos - surfel->vertex->pos));
@@ -265,7 +266,7 @@ void Algorithms::CalculateNeighbors(ProjectStructs::SURFEL* surfel){
 					}
 				}
 				else{
-					if(surfel->inverseNeighbors.find(cell->surfels[j]) == surfel->inverseNeighbors.end()){
+					if(surfel->inverseNeighbors.count(cell->surfels[j]) == 0){
 						surfel->neighbors[angle] = cell->surfels[j];
 						surfel->inverseNeighbors[cell->surfels[j]] = angle;
 						cell->surfels[j]->isChecked= true;
@@ -275,11 +276,11 @@ void Algorithms::CalculateNeighbors(ProjectStructs::SURFEL* surfel){
 			}
 		}		
 	}
-	DebugToFile::EndTimer("Neighbors - First loop");
+	//DebugToFile::EndTimer("Neighbors - First loop");
 
-	DebugToFile::StartTimer();
+	//DebugToFile::StartTimer();
 	DecreaseNeighbors(surfel);
-	DebugToFile::EndTimer("Neighbors - Decrease neighbors");
+	//DebugToFile::EndTimer("Neighbors - Decrease neighbors");
 
 	std::map<unsigned int, std::vector<unsigned int>>::const_iterator checkedSurfelsIterator;
 	for(checkedSurfelsIterator = checkedSurfels.begin(); checkedSurfelsIterator != checkedSurfels.end(); checkedSurfelsIterator++){
@@ -289,8 +290,19 @@ void Algorithms::CalculateNeighbors(ProjectStructs::SURFEL* surfel){
 	}
 }
 
+struct comparatorObject{
+	bool operator() (ProjectStructs::SURFEL* i,ProjectStructs::SURFEL* j) { 
+		return surfel->inverseNeighbors[i] < surfel->inverseNeighbors[j];
+	}
+	ProjectStructs::SURFEL* surfel;
+} myComparatorObject;
+
 // algorithm taken from Dynamic surfel set refinement for high-quality rendering
-void Algorithms::RefineSurfel(ProjectStructs::SURFEL* surfel){	
+void Algorithms::RefineSurfel(ProjectStructs::SURFEL* surfel){
+
+	//spurning að senda bara þá surfela sem breytast og nágranna þeirra..., ekki alla sem eru í intersecting cells
+
+	myComparatorObject.surfel = surfel;
 	if(surfel->vertexGridCell->changed == false && surfel->vertexGridCell->neighborCount != 0 && surfel->vertexGridCell->surfels.size() == 0){	
 		ReleaseCOM(surfel->vertexGridCell->neighborVertexBuffer);	
 	}
@@ -312,58 +324,48 @@ void Algorithms::RefineSurfel(ProjectStructs::SURFEL* surfel){
 	int polygonCount = 0;
 
 	int count = 0;
+
+//	int tmpCount = 0;
+
+	std::map<ProjectStructs::SURFEL*, std::vector<ProjectStructs::SURFEL*>> polygonNeighbors;
+
 	// add the neighbours of the surfels into the surfelsInPolygon list
 	for(neighborIterator = surfel->neighbors.begin(); neighborIterator != surfel->neighbors.end(); neighborIterator++){
+//		DebugToFile::Debug("Surfel in polygon 0x%x at (%.3f, %.3f, %.3f)", neighborIterator->second, neighborIterator->second->vertex->pos.x, neighborIterator->second->vertex->pos.y, neighborIterator->second->vertex->pos.z);
 		surfelsInPolygon.push_back(neighborIterator->second);
-	}
 
-	// go through all the surfels that are a part of this polygon
+		for(neighborNeighborIterator = neighborIterator->second->neighbors.begin(); neighborNeighborIterator != neighborIterator->second->neighbors.end(); neighborNeighborIterator++){
+			if(surfel->inverseNeighbors.count(neighborNeighborIterator->second) != 0)
+			{
+				polygonNeighbors[neighborIterator->second].push_back(neighborNeighborIterator->second);
+			}
+	//		tmpCount++;
+		}
+	}
 	for(UINT i = 1; i < surfelsInPolygon.size(); i++){
 		ProjectStructs::SURFEL* polygonSurfel = surfelsInPolygon[i];
-		bool validSurfel = find(surfelsUsed.begin(), surfelsUsed.end(), polygonSurfel) == surfelsUsed.end();
+		bool validSurfel = polygonNeighbors[polygonSurfel].size() != 0 && (polygonCount == 0 || find(neighborhoodPolygons[polygonCount-1].begin(), neighborhoodPolygons[polygonCount-1].end(), polygonSurfel) == neighborhoodPolygons[polygonCount-1].end());
 
 		if(!validSurfel)
 			continue;
 
 		neighborhoodPolygons.push_back(std::vector<ProjectStructs::SURFEL*>());
+		
 		neighborhoodPolygons[polygonCount].push_back(surfel);
 		neighborhoodPolygons[polygonCount].push_back(polygonSurfel);
 		surfelsUsed.push_back(polygonSurfel);
 
-		ProjectStructs::SURFEL* lastSurfel = polygonSurfel;
-		while(lastSurfel != NULL){
-			lastSurfel = NULL;
-
-			for(UINT k = 0; k<surfelsInPolygon.size() && lastSurfel == NULL; k++){
-				bool connectedToAllPolygons = true;
-				if(surfelsInPolygon[k] == surfel || find(neighborhoodPolygons[polygonCount].begin(), neighborhoodPolygons[polygonCount].end(), surfelsInPolygon[k]) != neighborhoodPolygons[polygonCount].end())
-					continue;
-
-				for(UINT j = 0; j<neighborhoodPolygons[polygonCount].size() && connectedToAllPolygons; j++){
-					// get the first surfel that is connected to all the polygon and is not already a part of the polygon
-					connectedToAllPolygons = neighborhoodPolygons[polygonCount][j]->inverseNeighbors.find(surfelsInPolygon[k]) != neighborhoodPolygons[polygonCount][j]->inverseNeighbors.end();
-				}
-
-				if(connectedToAllPolygons){
-					lastSurfel = surfelsInPolygon[k];
-					neighborhoodPolygons[polygonCount].push_back(surfelsInPolygon[k]);
-				}
-			}		
+		for(UINT j = 0; j<polygonNeighbors[polygonSurfel].size(); j++){
+			neighborhoodPolygons[polygonCount].push_back(polygonNeighbors[polygonSurfel][j]);	
+//			tmpCount++;
 		}
+
+		sort(neighborhoodPolygons[polygonCount].begin(), neighborhoodPolygons[polygonCount].end(), myComparatorObject);
+
 		polygonCount++;
 	}
 
-	for(int i = 0; i<neighborhoodPolygons.size(); i++){
-		for(int j = 0; j<neighborhoodPolygons[i].size(); j++){
-			neighborIterator = neighborhoodPolygons[i][j]->neighbors.begin();
-
-			SurfelsToResample::AddSurfelToRecheckNeighbors(neighborhoodPolygons[i][j]);
-
-			for( ; neighborIterator != neighborhoodPolygons[i][j]->neighbors.end(); neighborIterator++){
-				SurfelsToResample::AddSurfelToRecheckNeighbors(neighborIterator->second);
-			}
-		}
-	}
+//	int tmpCount1 = 0;
 
 	// ok, now the polygons have been created and now surfels have to be inserted
 	for(UINT i = 0; i< neighborhoodPolygons.size(); i++){
@@ -381,6 +383,7 @@ void Algorithms::RefineSurfel(ProjectStructs::SURFEL* surfel){
 			s->lastDisplacement += neighborhoodPolygons[i][j]->lastDisplacement;
 			s->vertex->UV += neighborhoodPolygons[i][j]->vertex->UV ;//* 2.0f;
 			s->vertex->deltaUV += neighborhoodPolygons[i][j]->vertex->deltaUV;
+//			tmpCount++;
 		}
 		
 		s->vertex->pos /= level;
@@ -404,6 +407,11 @@ void Algorithms::RefineSurfel(ProjectStructs::SURFEL* surfel){
 
 		for(UINT j = 0; j<level-1; j++){
 
+			/*DebugToFile::Debug("inserting a new surfel between 0x%x and 0x%x at (%.3f, %.3f, %.3f) and (%.3f, %.3f, %.3f)", 
+				neighborhoodPolygons[i][j], neighborhoodPolygons[i][j+1],
+				neighborhoodPolygons[i][j]->vertex->pos.x, neighborhoodPolygons[i][j]->vertex->pos.y, neighborhoodPolygons[i][j]->vertex->pos.z,
+				neighborhoodPolygons[i][j+1]->vertex->pos.x, neighborhoodPolygons[i][j+1]->vertex->pos.y, neighborhoodPolygons[i][j+1]->vertex->pos.z);
+*/
 			ProjectStructs::SURFEL* newSurfel = ProjectStructs::StructHelper::CreateSurfelPointer(MathHelper::GetZeroVector(), MathHelper::GetZeroVector(), MathHelper::GetZeroVector(),
 				MathHelper::GetZeroVector(), D3DXVECTOR2(0.0f, 0.0f), D3DXVECTOR2(0.0f, 0.0f));
 
@@ -420,6 +428,7 @@ void Algorithms::RefineSurfel(ProjectStructs::SURFEL* surfel){
 			
 			newSurfel->vertex->frontFacing = surfel->vertex->frontFacing;
 			newSurfel->displacement = MathHelper::GetZeroVector();
+//			tmpCount1++;
 
 			if(SurfelsToResample::ContainsNewSurfel(newSurfel))
 			{
@@ -431,6 +440,8 @@ void Algorithms::RefineSurfel(ProjectStructs::SURFEL* surfel){
 			}
 		}		
 	}
+//	DebugToFile::Debug("went through loop 4 in refine surfels %d times", tmpCount);
+//	DebugToFile::Debug("went through loop 5 in refine surfels %d times", tmpCount1);
 }
 
 void Algorithms::Draw(){

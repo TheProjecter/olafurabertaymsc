@@ -6,9 +6,17 @@
 #include "CustomEffect.h"
 #include "Sphere.h"
 
+struct PreImpactStruct{
+	D3DXVECTOR3 pos;
+	D3DXVECTOR3 force;
+	int contactPoints;
+};
+
 class ImpactList
 {
 public:
+	static void AddPreImpact(ProjectStructs::SURFEL* surfel, D3DXVECTOR3 force, D3DXVECTOR3 pos);
+
 	static void AddImpact(ProjectStructs::IMPACT* impact);
 	static void AddImpactForNextIteration(ProjectStructs::IMPACT* impact);
 	
@@ -22,11 +30,17 @@ public:
 	static ProjectStructs::IMPACT* GetImpact(int i){
 		return impacts[i];
 	}
+	static void CalculateImpacts();
 
 private:
 	static bool SetupImpacts();
 
+	static bool AddForceToPhyxel(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::PHYXEL_NODE *phyxel, ProjectStructs::SURFEL* surfel);
+	static void AddForceToPhyxels(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::PHYXEL_NODE *phyxel, ProjectStructs::SURFEL* surfel);
+	static void AddForce(D3DXVECTOR3 force, D3DXVECTOR3 pos, ProjectStructs::SURFEL* surfel);
+	
 	static std::vector<ProjectStructs::IMPACT*> impacts, drawableImpacts;
+	static std::map<ProjectStructs::SURFEL*, PreImpactStruct> preImpacts;
 	static Helpers::CustomEffect impactEffect;
 	
 	static ID3D10Buffer *mVB;

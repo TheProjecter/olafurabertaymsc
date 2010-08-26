@@ -62,7 +62,8 @@ void PhyxelGrid::InsertPoints(std::vector<D3DXVECTOR3> surfacePoints, std::vecto
 	}
 }
 
-void PhyxelGrid::InsertPoint(std::vector<D3DXVECTOR3> surfacePoints, ProjectStructs::SURFEL* surfel){
+void PhyxelGrid::InsertPoint( std::vector<D3DXVECTOR3> surfacePoints, ProjectStructs::SURFEL* surfel)
+{
 	for(unsigned int i = 0; i<surfacePoints.size(); i++){
 		PopulateNode( surfacePoints[i], surfel);
 	}
@@ -484,9 +485,10 @@ void PhyxelGrid::InitCell( D3DXVECTOR3 &index )
 
 	//phyxel->supportRadius = max(this->SmallestHalfWidth.x, max(this->SmallestHalfWidth.y, this->SmallestHalfWidth.z)) * 2.0f;
 	float maxValue = max(this->SmallestHalfWidth.x, max(this->SmallestHalfWidth.y, this->SmallestHalfWidth.z));
-	float oa = sqrt(maxValue * maxValue * 2.0f);
-	float oc = sqrt(oa * oa + maxValue * maxValue);
-	phyxel->supportRadius = oc;
+// 	float oa = sqrt(maxValue * maxValue * 2.0f);
+// 	float oc = sqrt(oa * oa + maxValue * maxValue);
+	// the support radius is the space diagonal
+	phyxel->supportRadius = sqrt(3.0f) * maxValue;
 	phyxel->density = materialProperties.density;
 
 	phyxel->force = D3DXVECTOR3(0.0f, 0.0f, 0.0);
@@ -529,9 +531,9 @@ void PhyxelGrid::InitCellAndPushSurfels( D3DXVECTOR3 index, ProjectStructs::SURF
 void PhyxelGrid::PopulateNodeAndCheckNormal( D3DXVECTOR3 &index, D3DXVECTOR3 surfelPos, ProjectStructs::SURFEL * surfel)
 {
 	if(cells.ValidIndex(index)){
-		if(MathHelper::Facing(GetPositionOfIndex((int)index.x, (int)index.y, (int)index.z, false), surfelPos, surfel->vertex->normal)){
+	//	if(MathHelper::Facing(GetPositionOfIndex((int)index.x, (int)index.y, (int)index.z, false), surfelPos, surfel->vertex->normal)){
 			InitCellAndPushSurfels(index, surfel);
-		}		
+	/*	}		
 		else{
 			// go to the node behind this one and populate it
 
@@ -543,7 +545,7 @@ void PhyxelGrid::PopulateNodeAndCheckNormal( D3DXVECTOR3 &index, D3DXVECTOR3 sur
 			if(cells.ValidIndex(index)){						
 				InitCellAndPushSurfels(index, surfel);			
 			}
-		}
+		}*/
 	}
 	else
 		printf("..");

@@ -160,9 +160,9 @@ void PhysicsWrapper::FinishInit(){
 void PhysicsWrapper::Update( float dt )
 {
 	// Pause until the actual time has passed
-	if(stopWatch.getElapsedSeconds() < lastTime + timestep)
+/*	if(stopWatch.getElapsedSeconds() < lastTime + timestep)
 		return;
-
+*/
 	physicsWorld->stepMultithreaded( jobQueue, threadPool, timestep );
 
 	// Step the visual debugger. We first synchronize the timer data
@@ -173,7 +173,7 @@ void PhysicsWrapper::Update( float dt )
 	hkMonitorStream::getInstance().reset();
 	threadPool->clearTimerData();
 
-	lastTime += timestep;
+	//lastTime += timestep;
 }
 
 void PhysicsWrapper::CleanUp()
