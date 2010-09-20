@@ -197,7 +197,7 @@ namespace Drawables{
 
 		D3DXVECTOR3 phyxelPos = phyxel->pos;
 
-		D3DXVECTOR3 f = force * FractureManager::CalculateWeight(pos, phyxelPos, 2.0f * phyxel->supportRadius);
+		D3DXVECTOR3 f = force * FractureManager::CalculateWeight(pos, phyxelPos, phyxel->supportRadius);
 
 		if(D3DXVec3Length(&f) < 0.001f)
 			return false;	
@@ -220,7 +220,7 @@ namespace Drawables{
 		impact->impactPos = pos;
 		impact->surfel = surfel;
 
-		impactList->AddImpact(impact);		
+		//impactList->AddImpact(impact);		
 
 		return true;
 	}

@@ -50,6 +50,8 @@ public:
 	ProjectStructs::PHYXEL_NODE* GetCrackedPhyxel(int i){ return crackedPhyxels[i]; }
 */
 	ProjectStructs::MATERIAL_PROPERTIES GetMaterialProperties(){return materialProperties;}
+	void StepResampleAlgorithm();
+	static std::map<ProjectStructs::PHYXEL_NODE*, float> weights;
 
 private:
 	//std::vector<Surface*> surfaces;

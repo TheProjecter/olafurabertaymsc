@@ -55,7 +55,7 @@ private:
 	D3DXVECTOR3 Min;
 	D3DXVECTOR3 Max;
 	ThreeInOneArray<ProjectStructs::Phyxel_Grid_Cell*> cells;
-	D3DXVECTOR3 Center;
+	D3DXVECTOR3 HalfDimensions;
 	D3DXVECTOR3 Position;
 	D3DVECTOR halfIndex;
 	D3DXMATRIX invWorld, World, tmpWorld;

@@ -38,7 +38,7 @@ namespace ProjectStructs{
 	struct PHYXEL_NODE{
 		D3DXVECTOR3 pos;
 		D3DXVECTOR3 displacement;
-		D3DXVECTOR3 deltaDisplacement;
+		D3DXVECTOR3 totalDisplacement;
 		D3DXVECTOR3 dotDisplacement;
 		float supportRadius;
 		float mass;
@@ -113,8 +113,14 @@ namespace ProjectStructs{
 
 		std::map<float, SURFEL*> neighbors;
 		std::map<SURFEL*, float> inverseNeighbors;
+
+		std::map<float, SURFEL*> oldNeighbors;
+		std::map<SURFEL*, float> oldInverseNeighbors;
 		
+		std::vector<PHYXEL_NODE*> displacedPhyxels;
+
 		D3DXVECTOR3 displacement;
+		D3DXVECTOR3 initialPosition;
 		int displacementCount;
 		D3DXVECTOR3 lastDisplacement;
 	
@@ -177,6 +183,7 @@ namespace ProjectStructs{
 		float rho;
 		float sigma;
 		float vertexGridSize;
+		float mass;
 	};
 
 	struct MESHLESS_OBJECT_STRUCT{
@@ -258,6 +265,7 @@ namespace ProjectStructs{
 			surfelEdge->vertex->clipPlane = clipPlane;
 			surfelEdge->displacement = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 			surfelEdge->lastDisplacement = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
+			surfelEdge->initialPosition = pos;
 			surfelEdge->displacementCount = 0;
 			surfelEdge->rigidBody = NULL;
 			surfelEdge->hasRigidBody = false;
@@ -275,6 +283,7 @@ namespace ProjectStructs{
 			surfel->vertex = CreateSurfelVertex(pos, normal, majorAxis, minorAxis, UV, deltaUV);
 			surfel->displacement = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 			surfel->lastDisplacement = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
+			surfel->initialPosition = pos;
 			surfel->displacementCount = 0;
 			surfel->rigidBody = NULL;
 			surfel->hasRigidBody = false;
@@ -324,10 +333,12 @@ namespace ProjectStructs{
 			phyxelNode->dotDisplacement = phyxelNode->force;
 			phyxelNode->bodyForce = phyxelNode->force;
 			phyxelNode->displacement = phyxelNode->force;
+			phyxelNode->totalDisplacement= phyxelNode->force;
 		
 			D3DXMatrixScaling(&phyxelNode->displacementGradient, 0.0f, 0.0f, 0.0f);
 			phyxelNode->displacementGradient._44 = 0.0f;
 			
+
 			phyxelNode->strain = phyxelNode->displacementGradient;
 			phyxelNode->stress = phyxelNode->strain;
 			phyxelNode->momentMatrix = phyxelNode->stress;

@@ -8,7 +8,7 @@
 #include "MathHelper.h"
 
 Helpers::CustomEffect VertexBufferGrid::surfelEffect, VertexBufferGrid::solidEffect, 
-	VertexBufferGrid::wireframeEffect, VertexBufferGrid::geometryEffect, VertexBufferGrid::simpleEffect;
+	VertexBufferGrid::wireframeEffect, VertexBufferGrid::geometryEffect, VertexBufferGrid::simpleEffect, VertexBufferGrid::overdrawEffect;
 
 ID3D10ShaderResourceView *VertexBufferGrid::SurfelTexture;
 ID3D10RasterizerState *VertexBufferGrid::SolidRenderState;
@@ -88,6 +88,7 @@ void VertexBufferGrid::InitCell(Vertex_Grid_Cell* cell){
 		InitSurfel();
 		InitGeometryPass();
 		InitWireframe();
+		InitOverdraw();
 		SetUpNeighborEffect();
 
 		vertexBufferGridInitialized = true;
@@ -136,8 +137,6 @@ void VertexBufferGrid::ProcessChangedSurfels(Vertex_Grid_Cell* cell){
 	std::vector<D3DXVECTOR3> surfelVertexList;
 	std::vector<ProjectStructs::SURFEL*> surfelList;
 
-	DrawToReadableBuffer(cell);
-
 	// read from the surfel vertex buffer
 	ProjectStructs::SOLID_VERTEX* vertices = 0;
 	HR(cell->readableVertexBuffer->Map(D3D10_MAP_READ, 0, reinterpret_cast< void** >(&vertices)));
@@ -162,7 +161,7 @@ void VertexBufferGrid::ProcessChangedSurfels(Vertex_Grid_Cell* cell){
 				PhyxelGrid::CleanIntersectingCells(cell->surfels[i]);
 
 			if(cell->surfels[i]->hasRigidBody){
-				PhysicsWrapper::RemoveRigidBodyWithoutLockingWorld(cell->surfels[i]->rigidBody);
+				PhysicsWrapper::RemoveRigidBodyWithoutLockingWorld(cell->surfels[i]->rigidBody, cell->surfels[i]->contactListener);
 				cell->surfels[i]->hasRigidBody = false;
 			}
 
@@ -173,14 +172,9 @@ void VertexBufferGrid::ProcessChangedSurfels(Vertex_Grid_Cell* cell){
 
 			surfelVertexList.clear();
 			surfelList.clear();
+			cell->surfels[i]->isChanged = false;
 		}
-	}
-/*
-	if(phyxelGrid) 
-		phyxelGrid->InsertPoints(surfelVertexList, surfelList);
-*/
-	
-
+	}	
 }
 
 void VertexBufferGrid::InitGeometryPass(){
@@ -316,6 +310,27 @@ void VertexBufferGrid::InitWireframe(){
 	Helpers::Globals::Device->CreateRasterizerState(&solidRasterizer, &SolidRenderState);
 }
 
+
+void VertexBufferGrid::InitOverdraw(){
+	// Define the input layout
+	D3D10_INPUT_ELEMENT_DESC layout[] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D10_INPUT_PER_VERTEX_DATA, 0 }, // pos
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // normal
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 2*sizeof(D3DXVECTOR3), D3D10_INPUT_PER_VERTEX_DATA, 0 }, // UV
+		{ "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, 2*sizeof(D3DXVECTOR3) + sizeof(D3DXVECTOR2), D3D10_INPUT_PER_VERTEX_DATA, 0 }, //EWAUV;
+	};
+
+	// create the effect
+	overdrawEffect = Helpers::CustomEffect("Overdraw.fx", "SolidTechnique", CUSTOM_EFFECT_TYPE_PIXEL | CUSTOM_EFFECT_TYPE_VERTEX , layout, 4);
+	overdrawEffect.AddVariable("World");
+	overdrawEffect.AddVariable("View");
+	overdrawEffect.AddVariable("Projection");
+	overdrawEffect.AddVariable("EWATexture");
+	overdrawEffect.SetTexture("EWATexture", SurfelTexture);
+}
+
+
 void VertexBufferGrid::InitSolid(){
 
 	// Define the input layout
@@ -386,14 +401,14 @@ void VertexBufferGrid::Update(){
 	}
 
 	if(changedCells.size() != 0){
-		PhysicsWrapper::LockWorld();
+		//PhysicsWrapper::LockWorld();
 		for(int i = 0; i<changedCells.size(); i++){
 			if(changedCells[i]->changed){
 				ResetCell(changedCells[i]);
 				changedCells[i]->changed = false;
 			}
 		}
-		PhysicsWrapper::UnLockWorld();
+		//PhysicsWrapper::UnLockWorld();
 
 		changedCells.clear();
 	}
@@ -439,12 +454,25 @@ void VertexBufferGrid::CleanUp(){
 	std::map<int, ProjectStructs::Vertex_Grid_Cell*>::const_iterator populatedCellsIterator;
 
 	for(int i = 0; i < cells.GetSize(); i++){
-		if(cells[i] && populatedCells[i] != NULL)
+		if(cells[i] && populatedCells.find(i) != populatedCells.end()){
 			CleanUpCell(populatedCells[i]);
+			delete populatedCells[i];
+		}
 	}
 
 	this->populatedCells.clear();
 	this->inversePopulatedCells.clear();
+	if(vertexBufferGridInitialized){
+		surfelEffect.CleanUp();
+		wireframeEffect.CleanUp();
+		solidEffect.CleanUp();
+		overdrawEffect.CleanUp();
+		simpleEffect.CleanUp();
+	
+		ReleaseCOM(SurfelTexture);
+		
+		vertexBufferGridInitialized = false;
+	}
 }
 
 bool VertexBufferGrid::PopulateNode(ProjectStructs::SURFEL *surfel)
@@ -477,10 +505,8 @@ bool VertexBufferGrid::PopulateNode(ProjectStructs::SURFEL *surfel)
 	}
 
 	bool listContainsSurfel = false;
-	for(int j = 0; j<populatedCells[i]->surfels.size() && !listContainsSurfel; j++){
+	for(int j = 0; j<populatedCells[i]->surfels.size() && !listContainsSurfel && materialProperties.deformable; j++){
 		listContainsSurfel = MathHelper::Intersection(populatedCells[i]->surfels[j], surfel);
-		/*D3DXVec3Length(&(populatedCells[i]->surfels[j]->vertex->pos - surfel->vertex->pos)) < 0.001f) && (surfel->vertex->clipPlane == populatedCells[i]->surfels[j]->vertex->clipPlane) && 
-			(surfel->vertex->normal == populatedCells[i]->surfels[j]->vertex->normal);*/
 	}
 
 	if(!listContainsSurfel){
@@ -489,8 +515,6 @@ bool VertexBufferGrid::PopulateNode(ProjectStructs::SURFEL *surfel)
 		surfel->vertexGridCell->changed = true;
 		
 		changedCells.push_back(surfel->vertexGridCell);
-
-	//	DebugToFile::Debug("inserted surfel 0x%x at (%.3f, %.3f, %.3f) into vertexbuffergrid 0x%x (%f, %f, %f) [%d]", surfel, surfel->vertex->pos.x, surfel->vertex->pos.y, surfel->vertex->pos.z, surfel->vertexGridCell, index.x, index.y, index.z, i);
 
 		return true;
 	}
@@ -511,8 +535,8 @@ D3DXVECTOR3 VertexBufferGrid::GetIndexOfPosition( D3DXVECTOR3 surfelPos )
 }
 
 void VertexBufferGrid::SetupPopulatedCellList(){
-	if(populatedCellList != NULL)
-		delete [] populatedCellList;
+// 	if(populatedCellList != NULL)
+// 		delete [] populatedCellList;
 
 	populatedCellList = new ProjectStructs::Vertex_Grid_Cell*[populatedCells.size()];
 	this->populatedCellCount = 0; 
@@ -576,7 +600,12 @@ void VertexBufferGrid::Draw(D3DXMATRIX world){
 
 	this->World = world;
 
-	if(Helpers::Globals::SurfelRenderMethod == Helpers::SOLID){
+	if(Helpers::Globals::SHOW_OVERDRAW){
+		overdrawEffect.SetMatrix("View", Helpers::Globals::AppCamera.View());
+		overdrawEffect.SetMatrix("Projection", Helpers::Globals::AppCamera.Projection());
+		overdrawEffect.SetMatrix("World", World);
+	}
+	else if(Helpers::Globals::SurfelRenderMethod == Helpers::SOLID){
 		solidEffect.SetFloatVector("CameraPos", Helpers::Globals::AppCamera.Position());
 		solidEffect.SetMatrix("View", Helpers::Globals::AppCamera.View());
 		solidEffect.SetMatrix("Projection", Helpers::Globals::AppCamera.Projection());
@@ -617,33 +646,15 @@ void VertexBufferGrid::Draw(D3DXMATRIX world){
 
 		if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_P) && CellToDraw < populatedCellCount){
 			CellToDraw++;
-			
-			Helpers::Globals::DebugInformation.AddText(DEBUG_TYPE, "Showing cell 0x%x", populatedCellList[CellToDraw]);
-			for(int i = 0; i<populatedCellList[CellToDraw]->surfels.size(); i++){
-				DebugToFile::Debug("Contains surfels: 0x%x", populatedCellList[CellToDraw]->surfels[i]);
-			}
 		}
 		else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_O) && CellToDraw > 0)
 		{
 			CellToDraw--;
-
-			Helpers::Globals::DebugInformation.AddText(DEBUG_TYPE, "Showing cell 0x%x", populatedCellList[CellToDraw]);
-			for(int i = 0; i<populatedCellList[CellToDraw]->surfels.size(); i++){
-				DebugToFile::Debug("Contains surfels: 0x%x", populatedCellList[CellToDraw]->surfels[i]);
-			}
-
 		}
 
 		DrawCell(populatedCellList[CellToDraw]);
-		for(int i = 0; i<populatedCellList[CellToDraw]->surfels.size(); i++){
-			for(int j = 0; j < populatedCellList[CellToDraw]->surfels[i]->intersectingCells.size(); j++){
-				phyxelGrid->DrawSingleCell(populatedCellList[CellToDraw]->surfels[i]->intersectingCells[j]);
-			}
-		}
 	}
 	else{
-	//for(std::map<int, Vertex_Grid_Cell*>::iterator cellIterator = populatedCells.begin(); 
-	//	cellIterator != populatedCells.end(); cellIterator++){
 		for(int i = 0; i<populatedCellCount; i+=10){
 			DrawCell(populatedCellList[i]);
 			
@@ -729,12 +740,24 @@ void VertexBufferGrid::DrawCell(ProjectStructs::Vertex_Grid_Cell* cell){
 		DrawNeighbors(cell);
 	}
 
-	if(Helpers::Globals::SurfelRenderMethod == Helpers::WIREFRAME)
+	if(Helpers::Globals::SHOW_OVERDRAW){
+		DrawOverdraw(cell);
+	}
+	else if(Helpers::Globals::SurfelRenderMethod == Helpers::WIREFRAME)
 		DrawWireframe(cell);
 	else if(Helpers::Globals::SurfelRenderMethod == Helpers::SOLID)
 		DrawSolid(cell);
 	else if(Helpers::Globals::SurfelRenderMethod == Helpers::SURFEL)
 		DrawSurfel(cell);
+}
+
+void VertexBufferGrid::DrawOverdraw( ProjectStructs::Vertex_Grid_Cell* cell )
+{
+	Helpers::Globals::Device->IASetPrimitiveTopology( D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	Helpers::Globals::Device->IASetVertexBuffers( 0, 1, &cell->solidVertexBuffer, &VertexBufferGrid::solidStride, &VertexBufferGrid::offset );
+
+	overdrawEffect.PreDraw();
+	overdrawEffect.DrawAuto();
 }
 
 void VertexBufferGrid::DrawWireframe(Vertex_Grid_Cell* cell){
@@ -782,13 +805,94 @@ void VertexBufferGrid::DrawNeighbors(Vertex_Grid_Cell* cell){
 
 void VertexBufferGrid::ResetSurfel( ProjectStructs::SURFEL *surfel )
 {
-	surfel->vertexGridCell->surfels.erase(find(surfel->vertexGridCell->surfels.begin(), surfel->vertexGridCell->surfels.end(), surfel));
-	if(surfel->vertexGridCell->surfels.size() == 0){
-		CleanUpCell(surfel->vertexGridCell);
+	if(surfel->vertexGridCell){
+		surfel->vertexGridCell->surfels.erase(find(surfel->vertexGridCell->surfels.begin(), surfel->vertexGridCell->surfels.end(), surfel));
 	}
+	ProjectStructs::Vertex_Grid_Cell* oldCell = surfel->vertexGridCell;
+
+	surfel->vertexGridCell = NULL;
+
 	if(PopulateNode(surfel))
 		changedCells.push_back(surfel->vertexGridCell);
+	
+	if(oldCell && oldCell->surfels.size() == 0){
+		CleanUpCell(oldCell);
+	}
 }
+
+void VertexBufferGrid::ResetSurfels( std::vector<ProjectStructs::SURFEL*> surfels )
+{
+	std::map<ProjectStructs::Vertex_Grid_Cell*, std::vector<ProjectStructs::SURFEL*>> cellToSurfels;
+
+	for(int i = 0; i<surfels.size(); i++){
+		ResetSurfel(surfels[i]);
+		cellToSurfels[surfels[i]->vertexGridCell].push_back(surfels[i]);
+	}
+
+	std::map<ProjectStructs::Vertex_Grid_Cell*, std::vector<ProjectStructs::SURFEL*>>::iterator cellToSurfelsIterator = cellToSurfels.begin();
+
+	for(; cellToSurfelsIterator != cellToSurfels.end(); cellToSurfelsIterator++){
+		ResetCell(cellToSurfelsIterator->first, cellToSurfelsIterator->second);
+	}
+}
+
+void VertexBufferGrid::ResetCell(Vertex_Grid_Cell* cell, std::vector<ProjectStructs::SURFEL*> surfelsToResample){
+	if(!cell)
+		return;
+
+	SetupSurfelVertexBuffer(cell);
+
+	ReleaseCOM(cell->readableVertexBuffer);
+	ReleaseCOM(cell->solidVertexBuffer);
+
+	InitCommonSolidAndWireframe(cell);
+
+	DrawToReadableBuffer(cell);
+
+	ProcessChangedSurfels(cell, surfelsToResample);
+}
+
+void VertexBufferGrid::ProcessChangedSurfels(Vertex_Grid_Cell* cell, std::vector<ProjectStructs::SURFEL*> surfelsToResample){
+	std::vector<D3DXVECTOR3> surfelVertexList;
+	std::vector<ProjectStructs::SURFEL*> surfelList;
+
+	// read from the surfel vertex buffer
+	ProjectStructs::SOLID_VERTEX* vertices = 0;
+	HR(cell->readableVertexBuffer->Map(D3D10_MAP_READ, 0, reinterpret_cast< void** >(&vertices)));
+	cell->readableVertexBuffer->Unmap();
+
+	for(unsigned int i = 0; i < surfelsToResample.size(); i++){
+		int d = distance(cell->surfels.begin(), find(cell->surfels.begin(), cell->surfels.end(), surfelsToResample[i]));
+
+		surfelVertexList.push_back(vertices[d*6].pos);
+		surfelList.push_back(surfelsToResample[i]);
+		surfelVertexList.push_back(vertices[d*6+1].pos);
+		surfelList.push_back(surfelsToResample[i]);
+		surfelVertexList.push_back(vertices[d*6+2].pos);
+		surfelList.push_back(surfelsToResample[i]);
+		surfelVertexList.push_back(vertices[d*6+4].pos);
+		surfelList.push_back(surfelsToResample[i]);
+
+		if(phyxelGrid) 
+			PhyxelGrid::CleanIntersectingCells(surfelsToResample[i]);
+
+		if(cell->surfels[i]->hasRigidBody){
+			PhysicsWrapper::RemoveRigidBodyWithoutLockingWorld(surfelsToResample[i]->rigidBody, surfelsToResample[i]->contactListener);
+			surfelsToResample[i]->hasRigidBody = false;
+		}
+
+		if(phyxelGrid) 
+			phyxelGrid->InsertPoint(surfelVertexList, surfelsToResample[i]);
+
+		PhysicsWrapper::AddSurfels(surfelVertexList, surfelList, materialProperties, Position, false);
+
+		surfelVertexList.clear();
+		surfelList.clear();
+		surfelsToResample[i]->isChanged = false;
+	}	
+}
+
+
 
 void VertexBufferGrid::CleanUpCell( ProjectStructs::Vertex_Grid_Cell* cell)
 {
@@ -801,15 +905,16 @@ void VertexBufferGrid::CleanUpCell( ProjectStructs::Vertex_Grid_Cell* cell)
 		delete cell->surfels[i]->contactListener;
 		delete cell->surfels[i]->vertex;
 		delete cell->surfels[i];
+		cell->surfels[i] = NULL;
 	}
+
+	cell->surfels.clear();
+	cell->cracks.clear();
 
 	populatedCellList = NULL;
 
 	populatedCells.erase(inversePopulatedCells[cell]);
 	inversePopulatedCells.erase(cell);
-
-	delete cell;
-	cell = NULL;
 }
 
 void VertexBufferGrid::SetupSurfelVertexBuffer( Vertex_Grid_Cell* cell )

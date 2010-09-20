@@ -1,7 +1,10 @@
 #include "SurfelsToResample.h"
 #include "Algorithms.h"
+#include "PhysicsWrapper.h"
 #include "MathHelper.h"
+#include "DebugToFile.h"
 #include <algorithm>
+#include <set>
 
 std::vector<ProjectStructs::SURFEL*> SurfelsToResample::existingSurfels;
 
@@ -10,161 +13,364 @@ std::vector<ProjectStructs::SURFEL*> SurfelsToResample::surfelsToRecheckNeighbor
 std::vector<ProjectStructs::SURFEL*> SurfelsToResample::newSurfels;
 
 std::vector<ProjectStructs::SURFEL*> SurfelsToResample::surfelsToResetGrid;
+std::vector<ProjectStructs::SURFEL*> SurfelsToResample::deletedSurfels;
+
+std::map<ProjectStructs::SURFEL*, std::vector<ProjectStructs::SURFEL*>> SurfelsToResample::newNeighbors;
+std::map<ProjectStructs::SURFEL*, std::vector<ProjectStructs::SURFEL*>> SurfelsToResample::inverseNewNeighbors;
+
+std::map<ProjectStructs::SURFEL*, std::map<ProjectStructs::SURFEL*, bool>> SurfelsToResample::neigbourCheck;
+
+std::map<float, std::vector<ProjectStructs::SURFEL*>> SurfelsToResample::surfelsLeft;
+std::vector<ProjectStructs::SURFEL*> SurfelsToResample::surfelBatch;
+
+ProjectStructs::SURFEL* SurfelsToResample::lastExistingSurfel;
+
+struct refinedSurfelsComparator{
+	bool operator() (ProjectStructs::SURFEL* i,ProjectStructs::SURFEL* j) { 
+		return i->displacement < j->displacement;
+	}
+} myRefinedSurfelsComparator;
+
+//const int SurfelsToResample::batchSize = 10;
+
+void SurfelsToResample::AddNeighbourCheck(ProjectStructs::SURFEL* checker, ProjectStructs::SURFEL* checkee){
+	return;
+	//std::vector<ProjectStructs::SURFEL*> v = ;
+	//if(find(v.begin(), v.end(), checkee) == v.end())
+	neigbourCheck[checker][checkee] = true;
+	neigbourCheck[checkee][checker] = true;
+
+	// insert the neighbours
+	std::map<float, ProjectStructs::SURFEL*>::iterator neighbours = checker->neighbors.begin();
+	for( ; neighbours != checker->neighbors.end(); neighbours++){
+		neigbourCheck[checker][neighbours->second];
+		neigbourCheck[neighbours->second][checker];
+	}
+}
+
+void SurfelsToResample::AddNeighbourCheck(ProjectStructs::SURFEL* checker, std::vector<ProjectStructs::SURFEL*> checkees){
+	return;	
+	for(int i = 0; i<checkees.size(); i++){
+		if(checker == checkees[i])
+			continue;
+
+		AddNeighbourCheck(checker, checkees[i]);
+	}	
+}
+
+std::map<ProjectStructs::SURFEL*, bool> SurfelsToResample::GetNeighbourCheckers(ProjectStructs::SURFEL* surfel){
+	
+	if(neigbourCheck.find(surfel) != neigbourCheck.end())
+		return neigbourCheck[surfel];
+
+	return std::map<ProjectStructs::SURFEL*, bool>();
+}
 
 void SurfelsToResample::AddExistingSurfel(ProjectStructs::SURFEL* surfel){
-	if(find(existingSurfels.begin(), existingSurfels.end(), surfel) == existingSurfels.end()){
+	AddExistingSurfel(surfel, true);
+}	
+
+void SurfelsToResample::AddExistingSurfel(ProjectStructs::SURFEL* surfel, bool addNeighbours){
+	if(find(surfelsToRecheckNeighbors.begin(), surfelsToRecheckNeighbors.end(), surfel) == surfelsToRecheckNeighbors.end()){
+	
 		existingSurfels.push_back(surfel);
-		AddSurfelToRecheckNeighbors(surfel);
+
+		surfelsToRecheckNeighbors.push_back(surfel);
 		surfelsToResetGrid.push_back(surfel);
+		/*newNeighbors[surfel].push_back(surfel);
+		inverseNewNeighbors[surfel].push_back(surfel);	
+*/
+		std::map<float, ProjectStructs::SURFEL*>::iterator neighbourIterator;
+
+		if(addNeighbours){
+			for(neighbourIterator = surfel->neighbors.begin(); neighbourIterator != surfel->neighbors.end(); neighbourIterator++){
+				AddExistingSurfel(neighbourIterator->second, false);
+			}
+		}
 	}
 }	
 
+
+void SurfelsToResample::AddExistingSurfels(std::vector<ProjectStructs::SURFEL*> surfel){
+	for(int i = 0; i< surfel.size(); i++){
+		AddExistingSurfel(surfel[i]);
+	}
+}
+
+void SurfelsToResample::AddNewSurfel(ProjectStructs::SURFEL* surfel, ProjectStructs::SURFEL* parent){
+	
+	if(find(surfelsToRecheckNeighbors.begin(), surfelsToRecheckNeighbors.end(), surfel) != surfelsToRecheckNeighbors.end()){
+		delete surfel;
+		surfel = NULL;
+		return;
+	}
+
+	newSurfels.push_back(surfel);
+	surfelsToResetGrid.push_back(surfel);
+	ImpactList::AddAffectedSurfel(surfel);
+	
+}
+
 void SurfelsToResample::AddNewSurfel(ProjectStructs::SURFEL* surfel){
 	//return;
-	newSurfels.push_back(surfel);
-	AddSurfelToRecheckNeighbors(surfel);	
+// 	newSurfels.push_back(surfel);
+// 	AddSurfelToRecheckNeighbors(surfel);	
 }	
 
-void SurfelsToResample::AddSurfelToRecheckNeighbors(ProjectStructs::SURFEL* surfel){
-	if(find(surfelsToRecheckNeighbors.begin(), surfelsToRecheckNeighbors.end(), surfel) == surfelsToRecheckNeighbors.end())
+void SurfelsToResample::AddSurfelToRecheckNeighbors(ProjectStructs::SURFEL* surfel, ProjectStructs::SURFEL* parent){
+	if(find(surfelsToRecheckNeighbors.begin(), surfelsToRecheckNeighbors.end(), surfel) == surfelsToRecheckNeighbors.end()){
 		surfelsToRecheckNeighbors.push_back(surfel);
+		//newNeighbors[parent].push_back(surfel);
+		//inverseNewNeighbors[surfel].push_back(parent);
+	}
 }
 
 void SurfelsToResample::Resample(){
 	for(int i = 0; i<existingSurfels.size(); i++){
 		ProjectStructs::SURFEL* surfel = existingSurfels[i];
-		surfel->vertex->deltaUV *= 0.5f;
-		surfel->vertex->minorAxis *= 0.5f;
-		surfel->vertex->majorAxis *= 0.5f;
+		
+		Algorithms::RefineSurfel(existingSurfels[i]);
+
+		surfel->vertex->deltaUV *= Algorithms::Scale;
+		surfel->vertex->minorAxis *= Algorithms::Scale;
+		surfel->vertex->majorAxis *= Algorithms::Scale;
 	}
 }
 
-void SurfelsToResample::ResetGrid(){
-	for(int i = 0; i < surfelsToResetGrid.size(); i++){
-		if(surfelsToResetGrid[i] == NULL)
-			continue;
+void SurfelsToResample::ResetGrid(ProjectStructs::SURFEL* surfel){
+	
+	if(surfel == NULL)
+		return;
 
-		for(unsigned int j = 0; j < surfelsToResetGrid[i]->intersectingCells.size(); j++){
-			std::vector<ProjectStructs::SURFEL*>::iterator index = find(surfelsToResetGrid[i]->intersectingCells[j]->surfels.begin(),
-				surfelsToResetGrid[i]->intersectingCells[j]->surfels.end(), surfelsToResetGrid[i]);		
-			if(index  != surfelsToResetGrid[i]->intersectingCells[j]->surfels.end()){
-				surfelsToResetGrid[i]->intersectingCells[j]->surfels.erase(index);
+	if(surfel->hasRigidBody){
+		PhysicsWrapper::RemoveRigidBodyWithoutLockingWorld(surfel->rigidBody, surfel->contactListener);
+		surfel->hasRigidBody = false;
+
+		for(unsigned int j = 0; j < surfel->intersectingCells.size(); j++){
+			std::vector<ProjectStructs::SURFEL*>::iterator index = find(surfel->intersectingCells[j]->surfels.begin(),
+				surfel->intersectingCells[j]->surfels.end(), surfel);		
+			if(index  != surfel->intersectingCells[j]->surfels.end()){
+				surfel->intersectingCells[j]->surfels.erase(index);
 			}
 		}
 	}
-	surfelsToResetGrid.clear();
+	
+}
+
+void SurfelsToResample::ResetGrid(){
+	//PhysicsWrapper::LockWorld();
+
+	for(int i = 0; i<existingSurfels.size(); i++){
+		ResetGrid(existingSurfels[i]);
+	}
+	
+
+	//PhysicsWrapper::UnLockWorld();
+}
+
+void SurfelsToResample::CalculateNeighborsForExistingSurfels(){
+	for(unsigned int i = 0; i< existingSurfels.size(); i++){
+
+		//	Algorithms::CalculateNeighbors(existingSurfels[i]);
+		//DebugToFile::StartTimer();
+		//int lastWholeList = Algorithms::WentThroughWholeListCount;
+		Algorithms::CalculateNeighbors(existingSurfels[i], ImpactList::GetAffectedSurfelVector());
+		//DebugToFile::EndTimer("Calculated neighbour for existing surfel, neighbour count %d, whole list = %d ", existingSurfels[i]->neighbors.size(), Algorithms::WentThroughWholeListCount - lastWholeList);
+
+		if(existingSurfels[i]->vertexGridCell)
+			existingSurfels[i]->vertexGridCell->neighborCount = 0;
+	}
+}
+
+void SurfelsToResample::CalculateNeighborsForNewSurfels(){
+	for(unsigned int i = 0; i< newSurfels.size(); i++){
+		//Algorithms::CalculateNeighbors(newSurfels[i]);
+		//DebugToFile::StartTimer();
+		//int lastWholeList = Algorithms::WentThroughWholeListCount;
+		Algorithms::CalculateNeighbors(newSurfels[i], ImpactList::GetAffectedSurfelVector());
+		//DebugToFile::EndTimer("Calculated neighbour for new surfel, neighbour count %d, whole list = %d ", newSurfels[i]->neighbors.size(), Algorithms::WentThroughWholeListCount - lastWholeList);
+
+		if(newSurfels[i]->vertexGridCell)
+			newSurfels[i]->vertexGridCell->neighborCount = 0;
+	}
 }
 
 void SurfelsToResample::CalculateNeighbors(){
 
-	std::vector<ProjectStructs::SURFEL*> newSurfelsToRecheckNeighbors;
+	std::vector<ProjectStructs::SURFEL*> newSurfelsToRecheckNeighbors, tmpSurfelsToRecheckNeighbors = surfelsToRecheckNeighbors;
 	std::map<float, ProjectStructs::SURFEL*>::iterator surfelIterator;
-	for(unsigned int i = 0; i<surfelsToRecheckNeighbors.size(); i++){
-		for(surfelIterator = surfelsToRecheckNeighbors[i]->neighbors.begin(); surfelIterator != surfelsToRecheckNeighbors[i]->neighbors.end(); surfelIterator++){
-			newSurfelsToRecheckNeighbors.push_back(surfelIterator->second);
+	
+	for(unsigned int i = 0; i<tmpSurfelsToRecheckNeighbors.size(); i++){
+
+		surfelsToRecheckNeighbors[i]->oldNeighbors = surfelsToRecheckNeighbors[i]->neighbors ;
+		surfelsToRecheckNeighbors[i]->oldInverseNeighbors = surfelsToRecheckNeighbors[i]->inverseNeighbors;
+
+		// erase the neighbours awareness of this surfel
+		std::map<float, ProjectStructs::SURFEL*>::iterator neighbourIterator;
+
+		for(neighbourIterator = surfelsToRecheckNeighbors[i]->neighbors.begin(); neighbourIterator != surfelsToRecheckNeighbors[i]->neighbors.end(); neighbourIterator++){
+			neighbourIterator->second->neighbors.erase(neighbourIterator->second->inverseNeighbors[surfelsToRecheckNeighbors[i]]);
+			neighbourIterator->second->inverseNeighbors.erase(surfelsToRecheckNeighbors[i]);
 		}
-	}
 
-	for(unsigned int i = 0; i<newSurfelsToRecheckNeighbors.size(); i++){
-		AddSurfelToRecheckNeighbors(newSurfelsToRecheckNeighbors[i]);
-	}
-
-	for(unsigned int i = 0; i<surfelsToRecheckNeighbors.size(); i++){
 		surfelsToRecheckNeighbors[i]->neighbors.clear();
 		surfelsToRecheckNeighbors[i]->inverseNeighbors.clear();
 
-		Algorithms::CalculateNeighbors(surfelsToRecheckNeighbors[i]);
-		surfelsToRecheckNeighbors[i]->vertexGridCell->neighborCount = 0;
+		for(surfelIterator = tmpSurfelsToRecheckNeighbors[i]->neighbors.begin(); surfelIterator != tmpSurfelsToRecheckNeighbors[i]->neighbors.end(); surfelIterator++){
+			AddSurfelToRecheckNeighbors(tmpSurfelsToRecheckNeighbors[i], NULL);
+		}
 	}
 
-	// reset the normal vector and major and minor axis
-/*
-	for(unsigned int i = 0; i<surfelsToRecheckNeighbors.size(); i++){
-		std::map<float, ProjectStructs::SURFEL*>::iterator neighborIterator;
-		D3DXVECTOR3 newMajor = D3DXVECTOR3(0.0f, 0.0f, 0.0f), newMinor= D3DXVECTOR3(0.0f, 0.0f, 0.0f), newNormal= D3DXVECTOR3(0.0f, 0.0f, 0.0f);
-		float closestAngle = FLT_MAX;
-		float closestLength = FLT_MAX, nextClosestLength = FLT_MAX, tmp = FLT_MAX;
-		D3DXPLANE surfelPlane;
-		D3DXPlaneFromPointNormal(&surfelPlane, &surfelsToRecheckNeighbors[i]->vertex->pos, &surfelsToRecheckNeighbors[i]->vertex->normal);
-
-		for(neighborIterator = surfelsToRecheckNeighbors[i]->neighbors.begin(); neighborIterator != surfelsToRecheckNeighbors[i]->neighbors.end(); neighborIterator++){
-			
-			bool isPointOnPlane = (surfelPlane.a * neighborIterator->second->vertex->pos.x + surfelPlane.b * neighborIterator->second->vertex->pos.y + surfelPlane.c * neighborIterator->second->vertex->pos.z - surfelPlane.d == 0.0f);
-
-			// only want to rotate the surfel if the neighbors are not in the plane
-			if(!isPointOnPlane){
-				tmp = D3DXVec3Length(&(surfelsToRecheckNeighbors[i]->vertex->pos - neighborIterator->second->vertex->pos));
-
-				if(tmp <= closestLength && (closestAngle == FLT_MAX || (neighborIterator->first - closestAngle) >= Helpers::Globals::HALF_PI && (neighborIterator->first - closestAngle) <= Helpers::Globals::PI ))	{
-					closestLength = tmp;
-					newMinor = newMajor;
-					newMajor = surfelsToRecheckNeighbors[i]->vertex->pos - neighborIterator->second->vertex->pos;
-					closestAngle = neighborIterator->first;
-				}
-				else if(tmp <= nextClosestLength && (closestAngle == FLT_MAX || (neighborIterator->first - closestAngle) >= Helpers::Globals::HALF_PI && (neighborIterator->first - closestAngle) <= Helpers::Globals::PI )){
-					nextClosestLength = tmp;
-					newMinor = surfelsToRecheckNeighbors[i]->vertex->pos - neighborIterator->second->vertex->pos;
-				}
-			}
-		}	
-
-		if(closestAngle != FLT_MAX){
-			// make the axis be positive
-			newMajor.x = abs(newMajor.x);
-			newMajor.y = abs(newMajor.y);
-			newMajor.z = abs(newMajor.z);
-
-			newMinor.x = abs(newMinor.x);
-			newMinor.y = abs(newMinor.y);
-			newMinor.z = abs(newMinor.z);
-			
-			surfelsToRecheckNeighbors[i]->vertex->majorAxis = newMinor;
-			surfelsToRecheckNeighbors[i]->vertex->minorAxis = newMajor;
-
-			D3DXVec3Cross(&newNormal, &newMajor, &newMinor);
-			if(surfelsToRecheckNeighbors[i]->vertex->frontFacing){
-				D3DXVec3Normalize(&surfelsToRecheckNeighbors[i]->vertex->normal, &newNormal);
-			}
-			else{
-				D3DXVec3Normalize(&surfelsToRecheckNeighbors[i]->vertex->normal, &(-newNormal));
-			}
-		}
-	}*/
+	for(unsigned int i = 0; i< surfelsToRecheckNeighbors.size(); i++){
+		
+		//DebugToFile::Debug("calculating neighbour for 0x%x", surfelsToRecheckNeighbors[i]);
+		
+		Algorithms::CalculateNeighbors(surfelsToRecheckNeighbors[i]);
+		
+		if(surfelsToRecheckNeighbors[i]->vertexGridCell)
+			surfelsToRecheckNeighbors[i]->vertexGridCell->neighborCount = 0;
+	}
 }
 
 bool SurfelsToResample::ContainsNewSurfel(ProjectStructs::SURFEL* surfel){
 	bool contains = false;
 
-	for(int i = 0; i<surfelsToRecheckNeighbors.size() && !contains; i++){
-		contains = MathHelper::Intersection(surfelsToRecheckNeighbors[i], surfel, 0.1f);
+	for(int i = 0; i<newSurfels.size() && !contains; i++){
+		contains = MathHelper::Intersection(newSurfels[i], surfel, 0.3f);
+
+		if(contains){
+			lastExistingSurfel = newSurfels[i];
+		}
 	}
 
 	return contains;
 }
 
-void SurfelsToResample::Clear(){
-	existingSurfels.clear();
-	surfelsToRecheckNeighbors.clear();
-	surfelsToResetGrid.clear();
+ProjectStructs::SURFEL* SurfelsToResample::GetLastIntersectingSurfel(){
+	return lastExistingSurfel;
+}
 
-	newSurfels.clear();
+void SurfelsToResample::Clear(){
+
+	SurfelsToResample::deletedSurfels.clear();
+	SurfelsToResample::existingSurfels.clear();
+	SurfelsToResample::inverseNewNeighbors.clear();
+	SurfelsToResample::newNeighbors.clear();
+	SurfelsToResample::newSurfels.clear();
+	SurfelsToResample::surfelsToRecheckNeighbors.clear();
+	SurfelsToResample::surfelsToResetGrid.clear();
+	SurfelsToResample::surfelsLeft.clear();
+	SurfelsToResample::surfelBatch.clear();
+
 }
 
 void SurfelsToResample::IsNewSurfelNULL( int i )
 {
 	if(newSurfels[i] == NULL)
 	{
-		newSurfels.erase(newSurfels.begin() + i);
+		DeleteNewSurfel(i);
 	}
 }
 
 void SurfelsToResample::DeleteNewSurfel(int i){
 
+	std::map<ProjectStructs::SURFEL*, std::vector<ProjectStructs::SURFEL*>>::iterator newNeighborsIterator;
+
+	std::vector<ProjectStructs::SURFEL*> deletedNeighbors, deletedInverseNeighbors;
+
+	for(int j = 0; j< newNeighbors[newSurfels[i]].size(); j++){
+		inverseNewNeighbors.erase(newNeighbors[newSurfels[i]][j]);
+	}
+
+	for(int j = 0; j< newNeighbors[NULL].size(); j++){
+		inverseNewNeighbors.erase(newNeighbors[NULL][j]);
+	}
+
+	newNeighbors.erase(newSurfels[i]);
+	inverseNewNeighbors.erase(newSurfels[i]);
+	
 	surfelsToRecheckNeighbors.erase(find(surfelsToRecheckNeighbors.begin(), surfelsToRecheckNeighbors.end(), newSurfels[i]));
 
-	delete newSurfels[i];
+	deletedSurfels.push_back(newSurfels[i]);
+
+//	delete newSurfels[i];
 	newSurfels[i] = NULL;
 	newSurfels.erase(newSurfels.begin() + i);
 
+	newNeighbors.erase(NULL);
+	inverseNewNeighbors.erase(NULL);
 }
 
+void SurfelsToResample::ResetBatch()
+{
+	surfelBatch.clear();
+	
+	std::map<float, std::vector<ProjectStructs::SURFEL*>>::iterator surfelsLeftIterator = surfelsLeft.begin();
+	
+	int newBatchSize = 0;
+	std::vector<float> mapElementsToErase;
+	for( ; surfelsLeftIterator != surfelsLeft.end() && newBatchSize < batchSize; surfelsLeftIterator++){
+		int surfelsToErase = 0;
+
+		for(int i = 0; i < surfelsLeftIterator->second.size() && newBatchSize < batchSize; i++ ){
+			surfelBatch.push_back(surfelsLeftIterator->second[i]);
+			newBatchSize++;
+			surfelsToErase++;
+		}
+
+		surfelsLeftIterator->second.erase(surfelsLeftIterator->second.begin(), surfelsLeftIterator->second.begin() + surfelsToErase);
+
+		if(surfelsLeftIterator->second.size() == 0)
+			mapElementsToErase.push_back(surfelsLeftIterator->first);
+	}
+	
+	for(int i = 0; i< mapElementsToErase.size(); i++){
+		surfelsLeft.erase(mapElementsToErase[i]);
+	}
+}
+
+void SurfelsToResample::ResampleBatch()
+{
+	for(int i = 0; i<surfelBatch.size(); i++){
+		ProjectStructs::SURFEL* surfel = surfelBatch[i];
+
+		Algorithms::RefineSurfel(surfelBatch[i]);
+
+		surfel->vertex->deltaUV *= Algorithms::Scale;
+		surfel->vertex->minorAxis *= Algorithms::Scale;
+		surfel->vertex->majorAxis *= Algorithms::Scale;
+	}
+}
+
+void SurfelsToResample::CalculateBatchNeighbors(){
+	for(int i = 0; i<surfelBatch.size(); i++){
+		ProjectStructs::SURFEL* surfel = surfelBatch[i];
+		
+		surfelBatch[i]->neighbors.clear();
+		surfelBatch[i]->inverseNeighbors.clear();
+
+		Algorithms::CalculateNeighbors(surfelBatch[i]);
+	}
+}
+
+void SurfelsToResample::ResetGridBatch()
+{
+	for(int i = 0; i < surfelBatch.size(); i++){
+		if(existingSurfels[i] == NULL)
+			continue;
+
+		//if(existingSurfels[i]->hasRigidBody){
+		PhysicsWrapper::RemoveRigidBodyWithoutLockingWorld(surfelBatch[i]->rigidBody, surfelBatch[i]->contactListener);
+		existingSurfels[i]->hasRigidBody = false;
+
+		for(unsigned int j = 0; j < surfelBatch[i]->intersectingCells.size(); j++){
+			std::vector<ProjectStructs::SURFEL*>::iterator index = find(surfelBatch[i]->intersectingCells[j]->surfels.begin(),
+				surfelBatch[i]->intersectingCells[j]->surfels.end(), surfelBatch[i]);		
+			if(index  != surfelBatch[i]->intersectingCells[j]->surfels.end()){
+				surfelBatch[i]->intersectingCells[j]->surfels.erase(index);
+			}
+		}
+		//}
+	}
+
+}

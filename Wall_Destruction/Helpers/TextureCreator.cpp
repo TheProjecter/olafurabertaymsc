@@ -4,8 +4,8 @@
 ID3D10ShaderResourceView* TextureCreator::CreateSurfelTexture(){
 	// texture creation technique taken from http://msdn.microsoft.com/en-us/library/bb205131(v=VS.85).aspx
 	D3D10_TEXTURE2D_DESC desc;
-	desc.Width = 64;
-	desc.Height = 64;
+	desc.Width = 129;
+	desc.Height = 129;
 	desc.MipLevels = 1;
 	desc.ArraySize = 1;
 	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -41,11 +41,11 @@ ID3D10ShaderResourceView* TextureCreator::CreateSurfelTexture(){
 
 			UINT colStart = col * 4;
 			
-			if (dist > radius+1)
+			if (dist > radius)
 			{
-				pTexels[rowStart + colStart + 0] = 0; // Red
-				pTexels[rowStart + colStart + 1] = 0; // Green
-				pTexels[rowStart + colStart + 2] = 0;  // Blue
+				pTexels[rowStart + colStart + 0] = 255; // Red
+				pTexels[rowStart + colStart + 1] = 255; // Green
+				pTexels[rowStart + colStart + 2] = 255;  // Blue
 				pTexels[rowStart + colStart + 3] = 0;  // Alpha
 			}
 			else 
@@ -56,7 +56,7 @@ ID3D10ShaderResourceView* TextureCreator::CreateSurfelTexture(){
 				pTexels[rowStart + colStart + 0] = 255; // Red
 				pTexels[rowStart + colStart + 1] = 255; // Green
 				pTexels[rowStart + colStart + 2] = 255; // Blue
-				pTexels[rowStart + colStart + 3] = (UCHAR)((double)exp(-((x*x + y*y)/(0.9f*radius*radius))) * (double)255.0f);
+				pTexels[rowStart + colStart + 3] = (UCHAR)((double)exp(-((x * x) + (y * y )) / (radius*radius)) * (double)255.0f);
 			}
 		}
 	}
@@ -114,7 +114,7 @@ ID3D10ShaderResourceView* TextureCreator::CreateSurfelWireframeTexture(){
 
 			UINT colStart = col * 4;
 
-			if (dist < radius && dist > radius - 1.0f )
+			if (dist < radius )
 			{
 				pTexels[rowStart + colStart + 0] = 255; // Red
 				pTexels[rowStart + colStart + 1] = 255; // Green

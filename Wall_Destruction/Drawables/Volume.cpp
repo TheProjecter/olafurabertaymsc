@@ -12,6 +12,7 @@
 #include <map>
 #include <algorithm>
 
+std::map<ProjectStructs::PHYXEL_NODE*, float> Volume::weights;
 
 Volume::Volume(ProjectStructs::MATERIAL_PROPERTIES materialProperties){
 	
@@ -45,13 +46,12 @@ void Volume::Init()
 			Max.z = newSurfels[i]->vertex->pos.z + sizeOfSurfel;
 	}
 
-	if(materialProperties.deformable){
-		D3DXVECTOR3 halfWidth = (Max - Min) * 0.5f;
-		Min -= 3.0f * halfWidth;
-		Max += 3.0f * halfWidth;
-	}
 	
-	vertexBufferGrid = new VertexBufferGrid(Min, Max, pos, materialProperties);
+	D3DXVECTOR3 dimensions = (Max - Min) * 0.5f;
+// 	Min -= 3.0f * dimensions;
+// 	Max += 3.0f * dimensions;
+	
+	vertexBufferGrid = new VertexBufferGrid(Min - 3.0f * dimensions, Max + 3.0f * dimensions, pos, materialProperties);
 
 	vertexBufferGrid->InsertPoints(newSurfels);
 
@@ -92,10 +92,10 @@ void Volume::Init()
 		}
 
 		phyxelGrid->InsertPoints(surfelVertexList, surfelList);
-		
+	
 		phyxelGrid->Init();
 
-		for(UINT i = 0; i<surfelList.size(); i++){
+		for(UINT i = 0; i<surfelList.size(); i+=4){
 			Algorithms::CalculateNeighbors(surfelList[i]);
 		}
 
@@ -108,7 +108,10 @@ void Volume::Init()
 	else{
 		vertexBufferGrid->InitCells();
 	}
+
+	DebugToFile::Debug("Created %d surfels", newSurfels.size());
 }
+
 /*
 void Volume::ResetSurfaces(){
 	for(unsigned int i = 0; i < surfaces.size(); i++){
@@ -131,11 +134,6 @@ void Volume::AddSurfel(ProjectStructs::SURFEL* surfel){
 
 void Volume::Draw(){
 
-/*	for(unsigned int i = 0; i<surfaces.size(); i++){
-		surfaces[i]->Draw();
-	}
-	*/
-
 	vertexBufferGrid->Draw(this->World);
 	
 	if(materialProperties.deformable){
@@ -147,13 +145,154 @@ void Volume::Draw(){
 	}
 }
 
+struct phyxelComparator{
+	bool operator() (ProjectStructs::PHYXEL_NODE* i,ProjectStructs::PHYXEL_NODE* j) { 
+		/*float w1, w2;
+		if(weights.find(i) != weights.end())
+			w1 = weights[i];
+		else {
+			w1 = FractureManager::CalculateWeight(surfel->initialPosition+ pos, i->pos, i->supportRadius);
+			weights[i] = w1;
+		}
+		if(weights.find(j) != weights.end())
+			w2 = weights[j];
+		else {
+			w2 = FractureManager::CalculateWeight(surfel->initialPosition+ pos, j->pos, j->supportRadius);
+			weights[j] = w2;
+		}
+
+		return  w1 > w2;*/
+		Volume::weights[i] = FractureManager::CalculateWeight(surfel->vertex->pos + pos, i->pos + i->displacement, i->supportRadius);
+		Volume::weights[j] = FractureManager::CalculateWeight(surfel->vertex->pos + pos, j->pos + j->displacement, j->supportRadius);
+		return Volume::weights[i] > Volume::weights[j];
+	
+		//return FractureManager::CalculateWeight(surfel->initialPosition+ pos, i->pos, i->supportRadius) > FractureManager::CalculateWeight(surfel->initialPosition+ pos, j->pos, j->supportRadius);
+
+	}
+	ProjectStructs::SURFEL* surfel;
+	D3DXVECTOR3 pos;
+} myPhyxelComparator;
+
 void Volume::Update(float dt){
 
-	/*if(cracked){
-		ResetSurfaces();
-		cracked = false;
-	}*/
 
+	/*
+		Calculate stress and strain
+
+		reset the vertex buffers that are the neighbours of the impacted vertex buffer
+			
+		calculate displacement for the surfels in those vertex buffers
+
+		refine the surfels
+
+		calculate neighbours
+	*/
+	
+	//ImpactList::Update(dt);
+
+	if(!materialProperties.deformable){
+		vertexBufferGrid->Update();
+		return;
+	}
+	
+	ImpactList::CalculateImpacts();
+
+	/*if(ImpactList::GetAffectedPhyxels().size() == 0)
+	{
+		vertexBufferGrid->Update();
+		return;
+	}*/
+	if(ImpactList::GetAffectedPhyxels().size() == 0/* && SurfelsToResample::GetSurfelsLeftCount() == 0*/)
+	{
+		vertexBufferGrid->Update();
+		return;
+	}
+
+	std::vector<ProjectStructs::PHYXEL_NODE*> phyxels = ImpactList::GetAffectedPhyxelVector();
+
+	PhysicsWrapper::LW();
+
+	VertexBufferGrid::RadiusScale = 1.0f;
+	VertexBufferGrid::isChanged = true;
+
+	//SurfelsToResample::Clear();
+
+	DebugToFile::StartTimer();
+	if(ImpactList::GetAffectedPhyxels().size() != 0){
+		FractureManager::CalculateAndInitiateFractures(this, dt);
+
+		std::vector<ProjectStructs::Vertex_Grid_Cell*> changedCells;
+
+//		DebugToFile::StartTimer();
+/*		std::map<ProjectStructs::SURFEL*, std::vector<ProjectStructs::PHYXEL_NODE*>>::iterator surfelToPhyxelIterator;
+
+		for(surfelToPhyxelIterator = ImpactList::surfelsToPhyxel.begin(); surfelToPhyxelIterator != ImpactList::surfelsToPhyxel.end(); surfelToPhyxelIterator++){*/
+		std::map<ProjectStructs::SURFEL*, bool> affectedSurfels = ImpactList::GetAffectedSurfels();
+		std::map<ProjectStructs::SURFEL*, bool>::iterator surfelIterator = affectedSurfels.begin();
+		for( ; surfelIterator != affectedSurfels.end(); surfelIterator++){
+
+			ProjectStructs::SURFEL* impactedSurfel = surfelIterator->first;
+		/*	myPhyxelComparator.surfel = impactedSurfel;
+			myPhyxelComparator.pos = this->pos;
+			Volume::weights.clear();
+
+			sort(phyxels.begin(), phyxels.end(), myPhyxelComparator);
+*/
+			//ProjectStructs::SURFEL* impactedSurfel = affectedSurfels[i];
+			impactedSurfel->displacement *= 0;
+			bool surfelDisplaced = false;
+
+			//for(int i = 0; i< surfelToPhyxelIterator->second.size(); i++){		
+
+				//ProjectStructs::PHYXEL_NODE* phyxel = surfelToPhyxelIterator->second[i];
+		/*	for(int i = 0; i<ImpactList::GetAffectedPhyxels().size(); i++){
+				ProjectStructs::PHYXEL_NODE* phyxel = ImpactList::GetAffectedPhyxels()[i];
+*/
+			std::map<ProjectStructs::PHYXEL_NODE*, bool> affectedPhyxels = ImpactList::GetAffectedPhyxels();
+
+			std::map<ProjectStructs::PHYXEL_NODE*, bool>::iterator phyxelIterator = affectedPhyxels.begin();
+			for( ; phyxelIterator!= affectedPhyxels.end(); phyxelIterator++){
+
+				ProjectStructs::PHYXEL_NODE* phyxel = phyxelIterator->first;
+				float w = FractureManager::CalculateWeight(impactedSurfel->initialPosition + pos, phyxel->pos, phyxel->supportRadius);
+		/*	for(int i = 0; i<phyxels.size(); i++){
+				ProjectStructs::PHYXEL_NODE* phyxel = phyxels[i];
+				float w = Volume::weights[phyxel];//FractureManager::CalculateWeight(impactedSurfel->initialPosition+ pos, phyxel->pos, phyxel->supportRadius);
+*/
+
+				if(w != 0.0f && phyxel->totalDisplacement != MathHelper::GetZeroVector())
+				{
+					D3DXVECTOR3 displacement = w * (phyxel->displacement + phyxel->totalDisplacement);
+					if(D3DXVec3Length(&displacement) >= 0.1f){
+						impactedSurfel->displacement += displacement;
+						impactedSurfel->displacementCount++;
+						surfelDisplaced = true;
+					}
+				}
+			}
+
+			if(surfelDisplaced){
+				SurfelsToResample::AddExistingSurfel(impactedSurfel);
+
+				impactedSurfel->vertex->pos = impactedSurfel->initialPosition + impactedSurfel->displacement;
+			}
+		}
+
+//		DebugToFile::EndTimer("Add phyxel displacement to surfels");
+	}
+
+	StepResampleAlgorithm();
+	ImpactList::Emptylist();
+	
+	DebugToFile::EndTimer("CRASH!!!");
+
+	PhysicsWrapper::ULW();
+
+
+	DebugToFile::CloseFile();
+
+
+/*
 	// Check if the user wants to clear the impacts
 	ImpactList::Update(dt);
 	if(materialProperties.deformable)
@@ -192,6 +331,7 @@ void Volume::Update(float dt){
 			{
 				D3DXVECTOR3 displacement = w * (phyxel->displacement- impactedSurfel->lastDisplacement);
 				SurfelsToResample::AddExistingSurfel(impactedSurfel);
+				impactedSurfel->displacedPhyxels.push_back(phyxel);
 
 				impactedSurfel->displacement += displacement;
 				impactedSurfel->displacementCount++;
@@ -200,107 +340,52 @@ void Volume::Update(float dt){
 			for(std::map<float, ProjectStructs::SURFEL*>::iterator surfelNeighborIterator = impactedSurfel->neighbors.begin(); 
 				surfelNeighborIterator != impactedSurfel->neighbors.end(); surfelNeighborIterator++){
 
-					ProjectStructs::SURFEL* surfel= surfelNeighborIterator->second;		
+				ProjectStructs::SURFEL* surfel= surfelNeighborIterator->second;		
 
-					float w = FractureManager::CalculateWeight(surfel->vertex->pos + this->pos, phyxel->pos, phyxel->supportRadius);
+				float w = FractureManager::CalculateWeight(surfel->vertex->pos + this->pos, phyxel->pos, phyxel->supportRadius);
 
-					if(w != 0.0f)
-					{
-						D3DXVECTOR3 displacement = w * (phyxel->displacement- surfel->lastDisplacement);
-						SurfelsToResample::AddExistingSurfel(surfel);
+				if(w != 0.0f)
+				{
+					D3DXVECTOR3 displacement = w * (phyxel->displacement- surfel->lastDisplacement);
+					surfel->displacedPhyxels.push_back(phyxel);
+					SurfelsToResample::AddExistingSurfel(surfel);
 
-						surfel->displacement += displacement;
-						surfel->displacementCount++;
-					}
-
+					surfel->displacement += displacement;
+					surfel->displacementCount++;
+				}
 			}
 
-			/*	for(unsigned int j = 0; j < phyxel->parent->surfels.size(); j++){
-					ProjectStructs::SURFEL* surfel= phyxel->parent->surfels[j];		
-					
-					//float w = FractureManager::CalculateWeight(surfel->vertex->pos + this->pos, ImpactList::GetImpact(i)->impactPos, 2.25f * phyxel->supportRadius);
-					//float w = FractureManager::CalculateWeight(surfel->vertex->pos + this->pos, ImpactList::GetImpact(i)->impactPos, 3.0f* phyxel->supportRadius);
-					//float w = FractureManager::CalculateWeight(surfel->vertex->pos + this->pos, phyxel->pos, phyxel->supportRadius);
-					float w = FractureManager::CalculateWeight(surfel->vertex->pos + this->pos, phyxel->pos, phyxel->supportRadius);
-					
-					if(w != 0.0f)
-					{
-						D3DXVECTOR3 displacement = w * (phyxel->displacement- surfel->lastDisplacement);
-						SurfelsToResample::AddExistingSurfel(surfel);
-
-						surfel->displacement += displacement;
-						surfel->displacementCount++;
-					}
-				}*/
-				phyxel->isChanged = false;
-//			}
+			phyxel->isChanged = false;
 		}
 		DebugToFile::EndTimer("Moved the surfels");
 
-		if(SurfelsToResample::GetSurfelCount() != 0){
+		if(SurfelsToResample::GetExistingSurfelCount() != 0){
 
 			DebugToFile::StartTimer();
-			for( int i = 0; i < SurfelsToResample::GetSurfelCount(); i++){
-
-				ProjectStructs::SURFEL* surfel = SurfelsToResample::GetSurfel(i);
-				if(surfel->displacementCount == 0)
-					continue;
-
-				D3DXVECTOR3 minor = SurfelsToResample::GetSurfel(i)->vertex->minorAxis;
-				D3DXVECTOR3 major = SurfelsToResample::GetSurfel(i)->vertex->majorAxis;
-				D3DXVECTOR3 normal = SurfelsToResample::GetSurfel(i)->vertex->normal;
-				D3DXVECTOR3 displacement = surfel->displacement;
-
-				D3DXMATRIX majorRotation, minorRotation, normalRotation;
-
-				D3DXVec3Normalize(&normal, &(normal-displacement));
-
-				float majorAngle = MathHelper::Get3DAngle(displacement + major, major, normal); 
-				float minorAngle = MathHelper::Get3DAngle(displacement + minor, minor, normal);
-
-				D3DXMatrixRotationAxis(&majorRotation, &(displacement), majorAngle);
-				D3DXMatrixRotationAxis(&minorRotation, &(displacement), minorAngle);
-
-				D3DXVec3TransformCoord(&major, &major, &majorRotation);
-				D3DXVec3TransformCoord(&minor, &minor, &minorRotation);
-
-				surfel->vertex->minorAxis = minor;
-				surfel->vertex->majorAxis = major;
-				surfel->vertex->normal = normal;
-
-				surfel->vertex->pos += displacement;///(float)surfel->displacementCount;
-				surfel->lastDisplacement += displacement;///(float)surfel->displacementCount;
-				surfel->displacementCount = 0;
-				surfel->displacement *= 0;
-				vertexBufferGrid->ResetSurfel(surfel);
-			}
 			DebugToFile::EndTimer("Reset surfels");
 
 			std::vector<ProjectStructs::SURFEL*> surfels;
 
 		//	PhysicsWrapper::LockWorld();
 
-//			for(int j = 0; j<2; j++){
-/*
-				for(int i = 0; i<surfels.size(); i++){
-					SurfelsToResample::AddExistingSurfel(surfels[i]);
-				}			
-				surfels.clear();
-*/
 				DebugToFile::StartTimer();
 				SurfelsToResample::ResetGrid();
 				DebugToFile::EndTimer("Reset grid");
 
 				DebugToFile::StartTimer();
-				for(int i = 0; i < SurfelsToResample::GetSurfelCount(); i++){
+				for(int i = 0; i < SurfelsToResample::GetExistingSurfelCount(); i++){
 					//DebugToFile::StartTimer();
 					
-					if(D3DXVec3Length(&SurfelsToResample::GetSurfel(i)->vertex->majorAxis) * D3DXVec3Length(&SurfelsToResample::GetSurfel(i)->vertex->minorAxis) > materialProperties.minimunSurfelSize)
-						Algorithms::RefineSurfel(SurfelsToResample::GetSurfel(i));
+					if(D3DXVec3Length(&SurfelsToResample::GetExistingSurfel(i)->vertex->majorAxis) * D3DXVec3Length(&SurfelsToResample::GetExistingSurfel(i)->vertex->minorAxis) > materialProperties.minimunSurfelSize)
+						Algorithms::RefineSurfel(SurfelsToResample::GetExistingSurfel(i));
 
 					//DebugToFile::EndTimer("Refined one surfel");
 				}
 				DebugToFile::EndTimer("Refined all surfels");
+
+				DebugToFile::StartTimer();
+				SurfelsToResample::CalculateNeighbors();
+				DebugToFile::EndTimer("Calculated neighbors");
 
 				DebugToFile::StartTimer();
 				SurfelsToResample::Resample();	
@@ -312,12 +397,30 @@ void Volume::Update(float dt){
 						SurfelsToResample::DeleteNewSurfel(i);
 						i--;
 					}
+					else{
+						
+						vertexBufferGrid->ResetSurfel(SurfelsToResample::GetNewSurfel(i));
+					}
 				}
+
+				for(int i = 0; i < SurfelsToResample::GetExistingSurfelCount(); i++){				
+					vertexBufferGrid->ResetSurfel(SurfelsToResample::GetExistingSurfel(i));
+				}
+
 				DebugToFile::EndTimer("populated node of vertexbuffergrid");
 
 				DebugToFile::StartTimer();
 				vertexBufferGrid->Update();
 				DebugToFile::EndTimer("Updated vertexbuffergrid");
+
+
+				for(int i = 0; i < SurfelsToResample::GetNewSurfelSize(); i++){
+					MathHelper::DisplaceSurfel(SurfelsToResample::GetNewSurfel(i), this->pos);
+				}
+
+				for(int i = 0; i < SurfelsToResample::GetExistingSurfelCount(); i++){				
+					MathHelper::DisplaceSurfel(SurfelsToResample::GetExistingSurfel(i), this->pos);
+				}
 
 				// insert new surfels into the grid
 				DebugToFile::StartTimer();
@@ -348,10 +451,6 @@ void Volume::Update(float dt){
 						printf("....");
 				}
 				DebugToFile::EndTimer("put surfels into the phyxelgrid");
-
-				DebugToFile::StartTimer();
-				SurfelsToResample::CalculateNeighbors();
-				DebugToFile::EndTimer("Calculated neighbors");
 				
 				VertexBufferGrid::isChanged = true;
 
@@ -369,16 +468,12 @@ void Volume::Update(float dt){
 	}
 	
 	vertexBufferGrid->Update();
-
-/*
-	for(unsigned int i = 0; i<surfaces.size(); i++){
-		surfaces[i]->Update(dt);
-	}*/
+	*/
 }
 
 /*
 void Volume::AddSurface(Surface *surface){
-	surface->SetWorld(World);
+	surface->SetWorld(World);X
 	surface->Init(GetMaterialProperties());
 	surfaces.push_back(surface);
 }
@@ -406,6 +501,8 @@ void Volume::CleanUp(){
 		delete surfaces[i];
 	}
 */
+	DebugToFile::Debug("Surfel size %d", newSurfels.size());
+
 	vertexBufferGrid->CleanUp();
 	delete vertexBufferGrid;
 
@@ -417,5 +514,109 @@ void Volume::CleanUp(){
 	}
 }
 
+void Volume::StepResampleAlgorithm()
+{
+//	SurfelsToResample::SortSurfels();
+
+	// get batch to update 
+/*	SurfelsToResample::ResetBatch();
+
+	DebugToFile::StartTimer();
+	SurfelsToResample::ResampleBatch();
+	DebugToFile::EndTimer("Resample surfels");
+
+	DebugToFile::StartTimer();
+	for(int i = 0; i<SurfelsToResample::GetSurfelBatch().size(); i++){
+		vertexBufferGrid->PopulateNode(SurfelsToResample::GetSurfelBatch()[i]);
+	}
+	DebugToFile::EndTimer("Populate vertex buffer grid nodes");
+
+	DebugToFile::StartTimer();
+	vertexBufferGrid->ResetSurfels(SurfelsToResample::GetSurfelBatch());
+	DebugToFile::EndTimer("Reset existing surfels in vertex bugger grid");
+
+	DebugToFile::StartTimer();
+	SurfelsToResample::CalculateBatchNeighbors();
+	DebugToFile::EndTimer("Calculate neighbors for existing surfels");
+
+	DebugToFile::StartTimer();
+	for(int i = 0; i < SurfelsToResample::GetSurfelBatch().size(); i++){
+		MathHelper::DisplaceSurfel(SurfelsToResample::GetSurfelBatch()[i], this->pos);
+	}
+	DebugToFile::EndTimer("Displaced surfels");
+
+	DebugToFile::StartTimer();
+	SurfelsToResample::ResetGridBatch();
+	DebugToFile::EndTimer("Reset grid");
+
+	DebugToFile::StartTimer();
+	vertexBufferGrid->ResetSurfels(SurfelsToResample::GetSurfelBatch());
+	DebugToFile::EndTimer("Reset surfels");
+*/
+
+	SurfelsToResample::Resample();
+
+	std::map<ProjectStructs::Vertex_Grid_Cell*, std::vector<ProjectStructs::SURFEL*>> cellToSurfel;
+
+	for(int i = 0; i<SurfelsToResample::GetExistingSurfelCount(); i++){
+	
+		ProjectStructs::SURFEL* surfel = SurfelsToResample::GetExistingSurfel(i);
+		Algorithms::CalculateNeighbors(surfel, ImpactList::GetAffectedSurfelVector());
+		MathHelper::DisplaceSurfel(surfel, this->pos);
+
+		//SurfelsToResample::ResetGrid(surfel);
+		vertexBufferGrid->ResetSurfel(surfel);
+		cellToSurfel[surfel->vertexGridCell].push_back(surfel);
+	}
+	
+	for(int i = 0; i<SurfelsToResample::GetNewSurfelSize(); i++){
+		ProjectStructs::SURFEL* surfel = SurfelsToResample::GetNewSurfel(i);
+		vertexBufferGrid->PopulateNode(surfel);
+		Algorithms::CalculateNeighbors(surfel, ImpactList::GetAffectedSurfelVector());
+		MathHelper::DisplaceSurfel(surfel, this->pos);
+
+		vertexBufferGrid->ResetSurfel(surfel);
+		cellToSurfel[surfel->vertexGridCell].push_back(surfel);
+	}
+
+	std::map<ProjectStructs::Vertex_Grid_Cell*, std::vector<ProjectStructs::SURFEL*>>::iterator cellToSurfelIterator;
+
+	for(cellToSurfelIterator = cellToSurfel.begin(); cellToSurfelIterator != cellToSurfel.end(); cellToSurfelIterator++){
+		vertexBufferGrid->ResetCell(cellToSurfelIterator->first, cellToSurfelIterator->second);
+	}
+	
+	SurfelsToResample::Clear();
+
+	//////////////////////////////////////////////////////////
+/*
+
+	
+	SurfelsToResample::Resample();
+	
+	for(int i = 0; i<SurfelsToResample::GetNewSurfelSize(); i++){
+		vertexBufferGrid->PopulateNode(SurfelsToResample::GetNewSurfel(i));
+	}
+
+	vertexBufferGrid->ResetSurfels(SurfelsToResample::GetExistingSurfels());
+
+	SurfelsToResample::CalculateNeighborsForExistingSurfels();
+
+	vertexBufferGrid->ResetSurfels(SurfelsToResample::GetNewSurfels());
+
+	SurfelsToResample::CalculateNeighborsForNewSurfels();
+
+	for(int i = 0; i < SurfelsToResample::GetNewSurfelSize(); i++){
+		MathHelper::DisplaceSurfel(SurfelsToResample::GetNewSurfel(i), this->pos);
+	}
+
+	for(int i = 0; i < SurfelsToResample::GetExistingSurfelCount(); i++){
+		MathHelper::DisplaceSurfel(SurfelsToResample::GetExistingSurfel(i), this->pos);
+	}
+
+	SurfelsToResample::ResetGrid();
+
+	SurfelsToResample::Clear();*/
+
+}
 
 

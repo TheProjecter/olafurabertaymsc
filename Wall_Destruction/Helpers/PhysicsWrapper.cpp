@@ -230,20 +230,20 @@ void PhysicsWrapper::AddSurfels(std::vector<D3DXVECTOR3> points, std::vector<Pro
 	for(int i = 0; i<surfels.size(); i+=4){
 		int index = 0;
 		
-		if(!MathHelper::IsFiniteNumber(points[i].x) || !MathHelper::IsFiniteNumber(points[i].y) || !MathHelper::IsFiniteNumber(points[i].y) ||
+	/*	if(!MathHelper::IsFiniteNumber(points[i].x) || !MathHelper::IsFiniteNumber(points[i].y) || !MathHelper::IsFiniteNumber(points[i].y) ||
 			!MathHelper::IsFiniteNumber(points[i+1].x) || !MathHelper::IsFiniteNumber(points[i+1].y) || !MathHelper::IsFiniteNumber(points[i+1].y) ||
 			!MathHelper::IsFiniteNumber(points[i+2].x) || !MathHelper::IsFiniteNumber(points[i+2].y) || !MathHelper::IsFiniteNumber(points[i+2].y) ||
 			!MathHelper::IsFiniteNumber(points[i+3].x) || !MathHelper::IsFiniteNumber(points[i+3].y) || !MathHelper::IsFiniteNumber(points[i+3].y)){
 				continue;
 		}
-
-		vertexPositions[index++] = D3DXVECTOR3(points[i + 0] + pos);
-		vertexPositions[index++] = D3DXVECTOR3(points[i + 1] + pos);
-		vertexPositions[index++] = D3DXVECTOR3(points[i + 2] + pos);
+*/
+		vertexPositions[index++] = D3DXVECTOR3(points[i + 0] + pos - (points[i + 0] - surfels[i]->vertex->pos) * 0.5f);
+		vertexPositions[index++] = D3DXVECTOR3(points[i + 1] + pos - (points[i + 1] - surfels[i]->vertex->pos) * 0.5f);
+		vertexPositions[index++] = D3DXVECTOR3(points[i + 2] + pos - (points[i + 2] - surfels[i]->vertex->pos) * 0.5f);
 		
-		vertexPositions[index++] = D3DXVECTOR3(points[i + 1] + pos);
-		vertexPositions[index++] = D3DXVECTOR3(points[i + 3] + pos);
-		vertexPositions[index++] = D3DXVECTOR3(points[i + 2] + pos);
+		vertexPositions[index++] = D3DXVECTOR3(points[i + 1] + pos - (points[i + 1] - surfels[i]->vertex->pos) * 0.5f);
+		vertexPositions[index++] = D3DXVECTOR3(points[i + 3] + pos - (points[i + 3] - surfels[i]->vertex->pos) * 0.5f);
+		vertexPositions[index++] = D3DXVECTOR3(points[i + 2] + pos - (points[i + 2] - surfels[i]->vertex->pos) * 0.5f);
 
 		hkStridedVertices stridedVerts;
 		stridedVerts.m_numVertices = index;
@@ -285,7 +285,7 @@ void PhysicsWrapper::AddSurfels(std::vector<D3DXVECTOR3> points, std::vector<Pro
 		rigid->removeReference();
 		shape->removeReference();
 			
-		surfels[i]->rigidBody = rigid;
+		//surfels[i]->rigidBody = rigid;
 		RigidBodyCount++;
 	}
 
@@ -371,7 +371,7 @@ void PhysicsWrapper::AddProjectile(ProjectStructs::PROJECTILE *projectile)
 {
 	LockWorld();
 
-	hkpRigidBody* rb = SetupSphericalRigidBody(1.0f, 100.0f, projectile->position, projectile->velocity, false, projectile);	
+	hkpRigidBody* rb = SetupSphericalRigidBody(1.0f, 100.0f * 5.0f, projectile->position, projectile->velocity, false, projectile);	
 
 	UnLockWorld();
 	projectile->rigidBody = rb;
@@ -383,12 +383,12 @@ void PhysicsWrapper::AddWreckingBall(WreckingBall *wreckingball)
 
 	hkpRigidBodyCinfo chainBodyInfo, wreckingBallBodyInfo;
 	chainBodyInfo.m_shape = new hkpSphereShape(wreckingball->GetChain()[0]->GetRadius());
-	hkpInertiaTensorComputer::setShapeVolumeMassProperties(chainBodyInfo.m_shape, 13000.0f, chainBodyInfo);
-	chainBodyInfo.m_mass = 13000.0f;
+	hkpInertiaTensorComputer::setShapeVolumeMassProperties(chainBodyInfo.m_shape, 3000.0f* 7.5f, chainBodyInfo);
+	chainBodyInfo.m_mass = 3000.0f* 7.5f;
 
 	wreckingBallBodyInfo.m_shape = new hkpSphereShape(wreckingball->GetRadius());
-	hkpInertiaTensorComputer::setShapeVolumeMassProperties(wreckingBallBodyInfo.m_shape, 15500.0f, wreckingBallBodyInfo);
-	wreckingBallBodyInfo.m_mass = 15500.0f;
+	hkpInertiaTensorComputer::setShapeVolumeMassProperties(wreckingBallBodyInfo.m_shape, 5500.0f* 7.5f, wreckingBallBodyInfo);
+	wreckingBallBodyInfo.m_mass = 5500.0f* 7.5f;
 	wreckingBallBodyInfo.m_position.set(wreckingball->GetPosition().x, wreckingball->GetPosition().y, wreckingball->GetPosition().z);
 	wreckingBallBodyInfo.m_motionType = hkpMotion::MOTION_DYNAMIC;
 

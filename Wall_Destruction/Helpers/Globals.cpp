@@ -24,6 +24,7 @@ namespace Helpers{
 	bool Globals::SHOW_ERRORS = true;
 	bool Globals::DRAW_NEIGHBORS = false;
 	bool Globals::DRAW_ONLY_ONE_CELL_AT_A_TIME = false;
+	bool Globals::SHOW_OVERDRAW = false;
 
 	InfoText Globals::DebugInformation;
 	DrawMethod Globals::SurfelDrawMethod = SOLID;

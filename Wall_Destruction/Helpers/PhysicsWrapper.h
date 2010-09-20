@@ -7,6 +7,7 @@
 #include "HavokPhysicsInclude.h"
 #include "Surface.h"
 #include "Structs.h"
+#include <exception>
 
 class PhysicsWrapper
 {
@@ -41,12 +42,32 @@ public:
 		UnLockWorld();
 	}
 
-	static void RemoveRigidBodyWithoutLockingWorld(hkpRigidBody *rb){
+	static void RemoveRigidBodyWithoutLockingWorld(hkpRigidBody *rb, ContactListener* cl){
 		if(rb == NULL)
 			return;
+		
+		physicsWorld->lock();
 
+		//rb->removeReference();
+		rb->removeContactListener((hkpContactListener*)cl);
 		physicsWorld->removeEntity(rb);
+		//rb
+		//delete rb;
 		rb = NULL;
+		delete cl;
+
+		physicsWorld->unlock();
+		/*
+		delete rb;
+		rb = NULL;*/
+	}
+
+	static void LW(){
+		physicsWorld->lock();
+	}
+
+	static void ULW(){
+		physicsWorld->unlock();
 	}
 
 	static void LockWorld(){

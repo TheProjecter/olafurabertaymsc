@@ -23,6 +23,27 @@ public:
 	void InsertPoints(std::vector<ProjectStructs::SURFEL*> surfels);
 	bool PopulateNode(ProjectStructs::SURFEL *surfel);
 	void ResetSurfel(ProjectStructs::SURFEL *surfel);
+	void ResetSurfels( std::vector<ProjectStructs::SURFEL*> surfels );
+	
+	std::vector<ProjectStructs::Vertex_Grid_Cell*> GetNeighbours(ProjectStructs::Vertex_Grid_Cell *cell){
+		int index = inversePopulatedCells[cell];
+
+		INDEX indices = cells.GetIndices(index);
+
+		std::vector<ProjectStructs::Vertex_Grid_Cell*> neighbours;
+
+		for(int i = -1; i <= 1; i++){
+			for(int j = -1; j <= 1; j++){
+				for(int k = -1; k <= 1; k++){
+					if(cells.ValidIndex(indices.x + i, indices.y + j, indices.z + k) && populatedCells.find(cells.GetIndex(indices.x + i, indices.y + j, indices.z + k)) != populatedCells.end()){
+						neighbours.push_back(populatedCells[cells.GetIndex(indices.x + i, indices.y + j, indices.z + k)]);
+					}
+				}
+			}
+		}
+
+		return neighbours;
+	}
 
 	std::map<int, ProjectStructs::Vertex_Grid_Cell*>::const_iterator GetFrontOfPopulatedCells(){
 		return populatedCells.begin();
@@ -41,27 +62,30 @@ public:
 	void Update();
 	void CleanUp();		
 	void ResetCell(Vertex_Grid_Cell* cell);
+	void ResetCell(Vertex_Grid_Cell* cell, std::vector<ProjectStructs::SURFEL*> surfelsToResample);
+	void CleanUpCell( ProjectStructs::Vertex_Grid_Cell* cell);
 
 	static float RadiusScale, LastRadiusScale;
 	static bool isChanged;
 
 private:
 
-	void CleanUpCell( ProjectStructs::Vertex_Grid_Cell* cell);
 
 	void DrawSurfel(Vertex_Grid_Cell* cell);
 	void DrawSolid(Vertex_Grid_Cell* cell);
 	void DrawWireframe(Vertex_Grid_Cell* cell);
 	void DrawNeighbors(Vertex_Grid_Cell* cell);
+	void DrawOverdraw( ProjectStructs::Vertex_Grid_Cell* cell );
 
 	void InitSurfel();
 	void InitWireframe();
+	void InitOverdraw();
 	void InitSolid();
 	void InitGeometryPass();
 	void InitCommonSolidAndWireframe(Vertex_Grid_Cell* cell);
 	
 	void ProcessChangedSurfels(Vertex_Grid_Cell* cell);
-
+	void ProcessChangedSurfels(Vertex_Grid_Cell* cell, std::vector<ProjectStructs::SURFEL*> surfelsToResample);
 	void DrawToReadableBuffer(Vertex_Grid_Cell* cell);
 
 	void SetUpNeighborEffect();
@@ -97,7 +121,7 @@ private:
 
 	ProjectStructs::MATERIAL_PROPERTIES materialProperties;
 	static ID3D10RasterizerState *SolidRenderState;
-	static Helpers::CustomEffect surfelEffect, solidEffect, wireframeEffect, geometryEffect, simpleEffect;
+	static Helpers::CustomEffect surfelEffect, solidEffect, wireframeEffect, geometryEffect, simpleEffect, overdrawEffect;
 	static ID3D10ShaderResourceView *SurfelTexture, *SurfelWireframeTexture;
 	static bool vertexBufferGridInitialized;
 

@@ -65,6 +65,8 @@ private:
 	Projectiles projectiles;
 	Crosshair crosshair;
 	bool resetLastFrame;
+
+	
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -108,9 +110,38 @@ void WallDestructionApp::CleanApp(){
 	wall->CleanUp();
 
 	delete wall;
-	delete ground;
+//	delete ground;
+
+	DebugToFile::Debug("Average MPF %f, fps %f", D3DApp::totalMillisecondsPerFrame / D3DApp::frameCount, D3DApp::totalFramesPerSecond / D3DApp::frameCount);
+
+	std::map<float, int>::iterator fpsMode;
+	std::map<float, int>::iterator mpfMode;
+
+	int maxFPS = -INT_MAX, maxMPF = -INT_MAX;
+	for(fpsMode = D3DApp::modeFPS.begin(); fpsMode != D3DApp::modeFPS.end(); fpsMode++){
+		if(maxFPS < fpsMode->second)
+			maxFPS = fpsMode->second;
+	}
+
+	for(mpfMode = D3DApp::modeMPF.begin(); mpfMode != D3DApp::modeMPF.end(); mpfMode ++){
+		if(maxMPF < mpfMode->second)
+			maxMPF= mpfMode->second;
+	}
+
+	for(fpsMode = D3DApp::modeFPS.begin(); fpsMode != D3DApp::modeFPS.end(); fpsMode++){
+		if(fpsMode->second == maxFPS)
+			DebugToFile::Debug("Mode fps %f", fpsMode->first);
+	}
+
+	for(mpfMode = D3DApp::modeMPF.begin(); mpfMode != D3DApp::modeMPF.end(); mpfMode ++){
+		if(mpfMode->second == maxMPF)
+			DebugToFile::Debug("Mode MPF %f", mpfMode->first);
+	}	
 
 	PhysicsWrapper::CleanUp();
+	ImpactList::CleanUp();
+
+	DebugToFile::CloseFile();
 }
 
 void WallDestructionApp::Reset(){
@@ -214,10 +245,10 @@ void WallDestructionApp::onResize()
 
 void WallDestructionApp::updateScene(float dt)
 {
-	if(this->mAppPaused)
+	if(this->mAppPaused || dt > 0.5f)
+	//if(dt > 0.5f)
 		return;
 
-	Surface::isChanged = false;
 	if(resetLastFrame){
 		resetLastFrame = false;
 		return;
@@ -375,7 +406,15 @@ void WallDestructionApp::updateScene(float dt)
 
 		Helpers::Globals::DebugInformation.AddText(DEBUG_TYPE, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f), Helpers::Globals::DRAW_ONLY_ONE_CELL_AT_A_TIME ? 
 			"Drawing only one cell of the wall at a time": "Drawing the whole wall");
-		
+	}
+	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_RETURN)){
+		if(mClearColor == D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f))
+			mClearColor = D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f);
+		else
+			mClearColor = D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f);
+	}
+	else if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_F9)){
+		Helpers::Globals::SHOW_OVERDRAW = !Helpers::Globals::SHOW_OVERDRAW;		
 	}
 
 	if(Helpers::MouseHandler::IsButtonPressed(Helpers::MouseHandler::MOUSE_LEFTBUTTON)){
@@ -398,6 +437,7 @@ void WallDestructionApp::updateScene(float dt)
 	D3DApp::updateScene(dt);
 
 	VertexBufferGrid::isChanged = false;
+
 }
 
 void WallDestructionApp::drawScene()
@@ -423,5 +463,7 @@ void WallDestructionApp::drawScene()
 	mFont->DrawTextA(0, instructions.c_str(), -1, &instructionRect, DT_NOCLIP, GREEN);
 
 	Helpers::Globals::DebugInformation.Draw();
-	mSwapChain->Present(0, 0);
+
+	
+	mSwapChain->Present(1, 0);
 }

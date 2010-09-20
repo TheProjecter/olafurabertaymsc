@@ -63,6 +63,12 @@ RasterizerState SURFEL
 	FrontCounterClockwise = false;
 };
 
+RasterizerState OVERDRAW
+{
+	FillMode = Solid;
+	CullMode = BACK;
+};
+
 RasterizerState SURFEL_DEPTH
 {
 	FillMode = Solid;
@@ -107,25 +113,42 @@ BlendState AlphaBlending
 	SrcBlendAlpha = SRC_ALPHA;
 	DestBlendAlpha = ZERO;
 	BlendEnable[0] = FALSE;
-	BlendOp = MAX;
+	BlendOp = ADD;
 	SrcBlend = SRC_ALPHA;
 	DestBlend = ZERO;
-	BlendOpAlpha = MAX;
+	BlendOpAlpha = ADD;
 	RenderTargetWriteMask[0] = 0x0F;	
 };
+
+BlendState OverDrawBlending
+{   	
+	AlphaToCoverageEnable = TRUE;
+
+	BlendEnable[0] = TRUE;
+	SrcBlend = SRC_ALPHA;
+    DestBlend = INV_SRC_ALPHA;
+    BlendOp = ADD;
+    
+    SrcBlendAlpha = SRC_ALPHA;
+    DestBlendAlpha = INV_SRC_ALPHA;
+	BlendOpAlpha = ADD;
+	
+    RenderTargetWriteMask[0] = 0x0F;
+
+};
+
 
 BlendState CrosshairAlphaBlending
 {
     AlphaToCoverageEnable = FALSE;
     BlendEnable[0] = TRUE;
 	SrcBlend = SRC_ALPHA;
-	DestBlend = ONE;
-	BlendOp = MAX;
+	DestBlend = INV_SRC_ALPHA;
+	//BlendOp = MAX;
 	SrcBlendAlpha = SRC_ALPHA;
 	DestBlendAlpha = INV_SRC_ALPHA;
-	BlendOpAlpha = MAX;
+	//BlendOpAlpha = MAX;
 	RenderTargetWriteMask[0] = 0x0F;
 };
 
 #endif
-

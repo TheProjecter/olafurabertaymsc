@@ -5,8 +5,18 @@
 #include "MathHelper.h"
 #include "FractureManager.h"
 
-std::vector<ProjectStructs::IMPACT*> ImpactList::impacts, ImpactList::drawableImpacts;
 std::map<ProjectStructs::SURFEL*, PreImpactStruct> ImpactList::preImpacts;
+
+std::vector<ProjectStructs::PHYXEL_NODE*> ImpactList::drawablePhyxels;
+std::map<ProjectStructs::PHYXEL_NODE*, bool> ImpactList::affectedPhyxels, ImpactList::newlyAffectedPhyxels;
+std::map<ProjectStructs::SURFEL*, bool> ImpactList::affectedSurfels;
+
+std::vector<ProjectStructs::PHYXEL_NODE*> ImpactList::affectedPhyxelsVector;
+std::vector<ProjectStructs::SURFEL*> ImpactList::affectedSurfelsVector;
+
+std::map<ProjectStructs::PHYXEL_NODE*, std::vector<ProjectStructs::SURFEL*>> ImpactList::phyxelToSurfels;
+std::map<ProjectStructs::SURFEL*, std::vector<ProjectStructs::PHYXEL_NODE*>> ImpactList::surfelsToPhyxel;
+
 Helpers::CustomEffect ImpactList::impactEffect;
 ID3D10Buffer *ImpactList::mVB;
 bool ImpactList::hasBeenSetup, ImpactList::hasBeenInitedOrSomething = false;
@@ -30,8 +40,6 @@ void ImpactList::Init(){
 	D3DXMatrixIdentity(&world);
 	mVB = NULL;
 
-	impacts = std::vector<ProjectStructs::IMPACT*>();
-	drawableImpacts = std::vector<ProjectStructs::IMPACT*>();
 }
 
 void ImpactList::CleanUp(){
@@ -41,16 +49,12 @@ void ImpactList::CleanUp(){
 	}
 
 	impactEffect.CleanUp();
-
-	for(unsigned int i = 0; i<drawableImpacts.size(); i++){
-		delete drawableImpacts[i];
-	}
 	
-	impacts.clear();
-	impacts.swap(std::vector<ProjectStructs::IMPACT*>());
-
-	drawableImpacts.clear();
-	drawableImpacts.swap(std::vector<ProjectStructs::IMPACT*>());
+	affectedPhyxels.clear();
+	affectedSurfels.clear();
+	
+	drawablePhyxels.clear();
+	drawablePhyxels.swap(std::vector<ProjectStructs::PHYXEL_NODE*>());
 }
 
 void ImpactList::AddPreImpact(ProjectStructs::SURFEL* surfel, D3DXVECTOR3 force, D3DXVECTOR3 pos){
@@ -77,8 +81,9 @@ void ImpactList::CalculateImpacts(){
 		surfelForceIterator->second.force /= surfelForceIterator->second.contactPoints;
 		surfelForceIterator->second.pos /= surfelForceIterator->second.contactPoints;
 
-		AddForce(surfelForceIterator->second.force / (float)surfelForceIterator->second.contactPoints, surfelForceIterator->second.pos / (float)surfelForceIterator->second.contactPoints, surfelForceIterator->first);
+		AddForce(surfelForceIterator->second.force, surfelForceIterator->second.pos, surfelForceIterator->first);
 	}
+
 	preImpacts.clear();
 }
 
@@ -101,29 +106,32 @@ void ImpactList::AddForce(D3DXVECTOR3 force, D3DXVECTOR3 pos, ProjectStructs::SU
 }
 
 void ImpactList::AddForceToPhyxels(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::PHYXEL_NODE *phyxel, ProjectStructs::SURFEL* surfel){
-	if(phyxel != NULL || force == MathHelper::GetZeroVector()){
-
+	if(phyxel != NULL && force != MathHelper::GetZeroVector()){
+	//	AddForceToPhyxel(force, pos, direction, phyxel, surfel);
 		std::vector<ProjectStructs::PHYXEL_NODE*> goToNeighborPhyxels;
 		for(unsigned int i = 0; i < phyxel->neighbours.GetSize(); i++){
 			if(phyxel->neighbours[i] && !phyxel->neighbours[i]->isChanged && AddForceToPhyxel(force, pos, direction, phyxel->neighbours[i], surfel)){
 				phyxel->neighbours[i]->isChanged = true;
-				goToNeighborPhyxels.push_back(phyxel->neighbours[i]);
+				goToNeighborPhyxels.push_back(phyxel->neighbours[i]);	
 			}
 		}
 
 		for(unsigned int i = 0; i < goToNeighborPhyxels.size(); i++){
-			AddForceToPhyxels(force, pos, direction, goToNeighborPhyxels[i], surfel);
+			AddForceToPhyxels(force, pos , direction, goToNeighborPhyxels[i], surfel);
 		}
 	}
 }
 
 bool ImpactList::AddForceToPhyxel(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR3 direction, ProjectStructs::PHYXEL_NODE *phyxel, ProjectStructs::SURFEL* surfel){
 
-	D3DXVECTOR3 phyxelPos = phyxel->pos;
+// 
+// 	phyxel->displacement *= 0.0f;
 
-	D3DXVECTOR3 f = force * FractureManager::CalculateWeight(/*surfel->vertex->*/pos, phyxelPos, 3.0f * phyxel->supportRadius);
+	D3DXVECTOR3 phyxelPos = phyxel->pos + phyxel->totalDisplacement + phyxel->displacement;
 
-	if(D3DXVec3Length(&f) < 0.001f)
+	D3DXVECTOR3 f = force * FractureManager::CalculateWeight(pos, phyxelPos, phyxel->supportRadius);
+
+	if(D3DXVec3Length(&f) <= 1.0f)
 		return false;	
 
 	if(phyxel->isChanged){
@@ -137,66 +145,20 @@ bool ImpactList::AddForceToPhyxel(D3DXVECTOR3 force, D3DXVECTOR3 pos, D3DXVECTOR
 		phyxel->force.z = f.z;	
 	}
 
-	ProjectStructs::IMPACT* impact = new ProjectStructs::IMPACT;
-	phyxel->isChanged = true;
-	impact->phyxel = phyxel;
-	impact->impactPos = pos;
-	impact->surfel = surfel;
-
-	AddImpact(impact);		
-
+	AddAffectedPhyxel(phyxel);
+	
 	return true;
 }
 
-
-void ImpactList::AddImpact(ProjectStructs::IMPACT* node){
-	bool containsPhyxel = false;
-	for(int i = 0; i<impacts.size() && !containsPhyxel; i++){
-		if(impacts[i]->phyxel == node->phyxel)
-		{
-			containsPhyxel = true;
-		}
-	}
-	if(!containsPhyxel){
-		node->phyxel->isChanged = true;
-		impacts.push_back(node);
-		drawableImpacts.push_back(node);
-		hasBeenSetup = false;
-	}
-	else{
-		delete node;
-	}
-}
-
-void ImpactList::Update(float dt){
-	if(Helpers::KeyboardHandler::IsSingleKeyDown(DIK_BACKSPACE)){
-		for(unsigned int i = 0; i<drawableImpacts.size(); i++){
-			drawableImpacts[i]->phyxel->bodyForce = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
-			drawableImpacts[i]->phyxel->displacement = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
-			drawableImpacts[i]->phyxel->displacementGradient = D3DXMATRIX(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-			drawableImpacts[i]->phyxel->dotDisplacement = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
-			drawableImpacts[i]->phyxel->jacobian = drawableImpacts[i]->phyxel->displacementGradient;
-			drawableImpacts[i]->phyxel->strain = drawableImpacts[i]->phyxel->displacementGradient;
-			drawableImpacts[i]->phyxel->stress = drawableImpacts[i]->phyxel->displacementGradient;
-
-			drawableImpacts[i]->phyxel->addedNodes.clear();
-			delete drawableImpacts[i];
-		}
-		drawableImpacts.clear();
-		hasBeenSetup = false;
-	}
-}
-
 void ImpactList::Emptylist(){
-	bool phyxelsHaveChanged = false;
-	for(unsigned int i = 0; i<impacts.size(); i++){
-		impacts[i]->phyxel->force.x = 0.0f;
-		impacts[i]->phyxel->force.y = 0.0f;
-		impacts[i]->phyxel->force.z = 0.0f;
-		impacts[i]->phyxel->isChanged = false;
-	}
+	affectedPhyxels.clear();
+	affectedSurfels.clear();
 
-	impacts.clear();
+	affectedPhyxelsVector.clear();
+	affectedSurfelsVector.clear();
+
+	phyxelToSurfels.clear();
+	surfelsToPhyxel.clear();
 }
 
 struct IMPACT_VERTEX{
@@ -205,18 +167,17 @@ struct IMPACT_VERTEX{
 
 bool ImpactList::SetupImpacts(){
 
-	if(drawableImpacts.size() == 0)
+	if(drawablePhyxels.size() == 0)
 		return false;;
 
 	std::vector<IMPACT_VERTEX> vertexList;
 
-	int drawableImpactIndex = 0;
-	for(unsigned int i = 0; i<drawableImpacts.size(); i++){
-		ProjectStructs::IMPACT* impact = drawableImpacts[i];
+	for(unsigned int i = 0; i<drawablePhyxels.size(); i++){
+		ProjectStructs::PHYXEL_NODE* phyxel = drawablePhyxels[i];
 		IMPACT_VERTEX iv;
-		iv.pos = impact->phyxel->pos;
+		iv.pos = phyxel->pos;
 		vertexList.push_back(iv);
-		iv.pos = impact->phyxel->pos + impact->phyxel->displacement;
+		iv.pos = phyxel->pos + phyxel->totalDisplacement + phyxel->displacement;
 		vertexList.push_back(iv);
 	}
 
@@ -253,7 +214,7 @@ void ImpactList::Draw(){
 		hasBeenSetup = SetupImpacts();
 	}
 
-	if(drawableImpacts.size() == 0)
+	if(drawablePhyxels.size() == 0)
 		return;
 	
 	impactEffect.SetMatrix("View", Helpers::Globals::AppCamera.View());
@@ -267,4 +228,33 @@ void ImpactList::Draw(){
 	Helpers::Globals::Device->IASetVertexBuffers(0, 1, &mVB, &stride, &offset);
 
 	impactEffect.Draw(impactsToDraw);
+}
+
+void ImpactList::AddAffectedPhyxel( ProjectStructs::PHYXEL_NODE * phyxel )
+{
+	if((phyxel->bodyForce != MathHelper::GetZeroVector() || phyxel->force!= MathHelper::GetZeroVector()) && affectedPhyxels.find(phyxel) == affectedPhyxels.end()){
+		if(find(drawablePhyxels.begin(), drawablePhyxels.end(), phyxel) == drawablePhyxels.end()){
+			drawablePhyxels.push_back(phyxel);
+		}
+
+/*
+		for(int i = 0; i<phyxel->parent->surfels.size(); i++){
+			surfelsToPhyxel[phyxel->parent->surfels[i]].push_back(phyxel);
+		}
+
+		phyxelToSurfels[phyxel].insert(phyxelToSurfels[phyxel].end(), phyxel->parent->surfels.begin(), phyxel->parent->surfels.end());
+*/
+		affectedPhyxels[phyxel] = true;
+		for(int i = 0; i<phyxel->parent->surfels.size(); i++){
+	//		if(find(affectedSurfels.begin(), affectedSurfels.end(), phyxel->parent->surfels[i]) == affectedSurfels.end())
+			affectedSurfels[phyxel->parent->surfels[i]] = true;
+		}
+		hasBeenSetup = false;
+	}
+}
+
+void ImpactList::AddAffectedSurfel( SURFEL* surfel )
+{
+	affectedSurfels[surfel] = true;
+	affectedSurfelsVector.clear();
 }

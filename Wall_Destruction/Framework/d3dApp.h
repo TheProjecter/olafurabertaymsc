@@ -17,6 +17,7 @@
 #include "d3dUtil.h"
 #include "GameTimer.h"
 #include <string>
+#include <map>
 
 
 class D3DApp
@@ -71,6 +72,12 @@ protected:
 	D3DXCOLOR mClearColor;
 	int mClientWidth;
 	int mClientHeight;
+
+	static double frameCount;
+	static double totalFramesPerSecond;
+	static double totalMillisecondsPerFrame;
+	static std::map<float, int> D3DApp::modeFPS;
+	static std::map<float, int> D3DApp::modeMPF;
 };
 
 

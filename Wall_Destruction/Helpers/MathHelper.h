@@ -17,12 +17,22 @@ public:
 	static int Sign(float x);
 	
 	static bool D3DXVECTOR3Equals(D3DXVECTOR3 vec, float x, float y, float z);
-	static bool Facing(D3DXVECTOR3 p1, D3DXVECTOR3 p2, D3DXVECTOR3 n2);
+	/*static bool Facing(D3DXVECTOR3 p1, D3DXVECTOR3 p2, D3DXVECTOR3 n2);
 	static bool Facing(D3DXVECTOR3 n1, D3DXVECTOR3 n2);
+	*/
+	static bool Facing(D3DXVECTOR3 v1, D3DXVECTOR3 v2, D3DXVECTOR3 n2);
+	static short HalfSpaceTest(const D3DXVECTOR3& vecTestPoint, const D3DXVECTOR3& vecNormal, const D3DXVECTOR3& vecPointOnPlane);
 	static bool SameDirection(D3DXVECTOR3 n1, D3DXVECTOR3 n2);
 	static float GetAngleBetweenVectors(D3DXVECTOR3 v1, D3DXVECTOR3 v2, bool betweenPiAndMinusPi);
-	static float Get3DAngle(D3DXVECTOR3 v1, D3DXVECTOR3 v2, D3DXVECTOR3 n);
+	static float GetPlaneAngle(D3DXVECTOR3 planeNormal, D3DXVECTOR3 planeCentre, D3DXVECTOR3 referenceVector, D3DXVECTOR3 v);
+
+	static float GetAngleBetweenVectors( D3DXVECTOR3 v1, D3DXVECTOR3 v2, D3DXVECTOR3 planeNormal );
+
 	static float Get3DAngle(ProjectStructs::SURFEL* surfel, D3DXVECTOR3 point, D3DXVECTOR3 zeroAnglePoint);
+	static D3DXVECTOR3 ProjectVectorToPlane(D3DXVECTOR3 planeNormal, D3DXVECTOR3 planeCentre, D3DXVECTOR3 v);
+	//static D3DXVECTOR3 GetYawPitchRoll(D3DXVECTOR3 p1, D3DXVECTOR3 p2);
+	static float Get3DAngleBetween3Points(D3DXVECTOR3 centre, D3DXVECTOR3 p1, D3DXVECTOR3 p2);
+	static void DisplaceSurfel(ProjectStructs::SURFEL* surfel, D3DXVECTOR3 surfacePos);
 	static bool isCounterClockwise(D3DXVECTOR3 p0, D3DXVECTOR3 p1, D3DXVECTOR3 p2);
 	static float GetOverlapPercentage(ProjectStructs::SURFEL* surfel1, ProjectStructs::SURFEL* surfel2);
 	static bool Intersection(ProjectStructs::SURFEL* surfel1, ProjectStructs::SURFEL* surfel2);

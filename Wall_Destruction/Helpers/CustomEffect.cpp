@@ -156,11 +156,16 @@ namespace Helpers{
 	
 	void CustomEffect::CleanUp(){
 
+		if(!effect){
+			return;
+		}
+
 		if(pVertexLayout){
 			for(unsigned int i = 0; i<vertexLayoutSize; i++){
- 				pVertexLayout[i]->Release();
+				if(pVertexLayout[i])
+ 					pVertexLayout[i]->Release();
 			}
-			delete pVertexLayout;
+			delete [] pVertexLayout;
 		}
 
 		std::map<std::string, ID3D10ShaderResourceView*, ProjectStructs::NameComparer>::const_iterator textureItr;

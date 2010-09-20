@@ -15,8 +15,9 @@ namespace PointCloud{
 	const string PointCloudHandler::XML_MESHLESS_WORLDSCALE = "worldscale";
 	const string PointCloudHandler::XML_MESHLESS_WORLDYAWPITCHROLL = "worldyawpitchroll";
 
-	const string PointCloudHandler::XML_MESHLESS_MATERIAL = "material";
+	const string PointCloudHandler::XML_MESHLESS_LIGHTING = "lighting";
 	const string PointCloudHandler::XML_MESHLESS_DENSITY = "density";
+	const string PointCloudHandler::XML_MESHLESS_MASS = "mass";
 	const string PointCloudHandler::XML_MESHLESS_YOUNGS_MODULUS = "youngs_modulus";
 	const string PointCloudHandler::XML_MESHLESS_POISSON_RATIO = "poisson_ratio";
 	const string PointCloudHandler::XML_MESHLESS_DAMPING_CONSTANT_PHI = "damping_constant_phi";
@@ -45,12 +46,12 @@ namespace PointCloud{
 	const string PointCloudHandler::XML_MESHLESS_SURFEL_RADIUS = "radius";
 
 	// surfel
-	const string PointCloudHandler::XML_MESHLESS_SURFEL = "surfel";
-	const string PointCloudHandler::XML_MESHLESS_SURFEL_POSITION = "position";
-	const string PointCloudHandler::XML_MESHLESS_SURFEL_MAJOR_AXIS = "majorAxis";
-	const string PointCloudHandler::XML_MESHLESS_SURFEL_MINOR_AXIS = "minorAxis";
-	const string PointCloudHandler::XML_MESHLESS_SURFEL_NORMAL = "normal";
-	const string PointCloudHandler::XML_MESHLESS_SURFEL_COUNT = "count";
+	const string PointCloudHandler::XML_MESHLESS_SURFACE = "surface";
+	const string PointCloudHandler::XML_MESHLESS_SURFACE_POSITION = "position";
+	const string PointCloudHandler::XML_MESHLESS_SURFACE_SURFEL_MAJOR_AXIS = "majorAxis";
+	const string PointCloudHandler::XML_MESHLESS_SURFACE_SURFEL_MINOR_AXIS = "minorAxis";
+	const string PointCloudHandler::XML_MESHLESS_SURFACE_SURFEL_NORMAL = "normal";
+	const string PointCloudHandler::XML_MESHLESS_SURFACE_SURFEL_COUNT = "count";
 
 
 	ProjectStructs::MESHLESS_OBJECT_STRUCT PointCloudHandler::ProcessPointCloud( std::string file, CSGTree *&volumeTree , Volume *&volume)
@@ -77,21 +78,23 @@ namespace PointCloud{
 		D3DXVECTOR3 yawpitchroll= GetVector3(meshNode->FirstChild(XML_MESHLESS_WORLDYAWPITCHROLL)->ToElement());
 
 		double d;
-		meshNode->FirstChild(XML_MESHLESS_MATERIAL)->ToElement()->Attribute(XML_MESHLESS_MATERIAL_RHO.c_str(), &d);
+		meshNode->FirstChild(XML_MESHLESS_LIGHTING)->ToElement()->Attribute(XML_MESHLESS_MATERIAL_RHO.c_str(), &d);
 		meshlessStruct.materialProperties.rho = (float)d;
-		meshNode->FirstChild(XML_MESHLESS_MATERIAL)->ToElement()->Attribute(XML_MESHLESS_MATERIAL_SIGMA.c_str(), &d);
+		meshNode->FirstChild(XML_MESHLESS_LIGHTING)->ToElement()->Attribute(XML_MESHLESS_MATERIAL_SIGMA.c_str(), &d);
 		meshlessStruct.materialProperties.sigma = (float)d;
-		meshlessStruct.materialProperties.vertexGridSize = -1.0f;
+		meshlessStruct.materialProperties.vertexGridSize= -1.0f;
 
 		if(meshlessStruct.materialProperties.deformable){
 			meshlessStruct.materialProperties.density = (float)atof(meshNode->FirstChild(XML_MESHLESS_DENSITY)->FirstChild()->Value());
+//			meshlessStruct.materialProperties.mass = (float)atof(meshNode->FirstChild(XML_MESHLESS_MASS)->FirstChild()->Value());
 			meshlessStruct.materialProperties.toughness = (float)atof(meshNode->FirstChild(XML_MESHLESS_TOUGHNESS)->FirstChild()->Value());
 			meshlessStruct.materialProperties.youngsModulus = (float)atof(meshNode->FirstChild(XML_MESHLESS_YOUNGS_MODULUS)->FirstChild()->Value());// * pow(10.0f, 5.0f);
 			meshlessStruct.materialProperties.poissonRatio = (float)atof(meshNode->FirstChild(XML_MESHLESS_POISSON_RATIO)->FirstChild()->Value());
 			meshlessStruct.materialProperties.phyxelGridSize= (float)atof(meshNode->FirstChild(XML_MESHLESS_PHYXEL_GRID_SIZE)->FirstChild()->Value());
-			meshlessStruct.materialProperties.vertexGridSize= (float)atof(meshNode->FirstChild(XML_MESHLESS_VERTEX_GRID_SIZE)->FirstChild()->Value());
 			meshlessStruct.materialProperties.minimunSurfelSize = (float)atof(meshNode->FirstChild(XML_MESHLESS_MINIMUM_SURFEL_SIZE)->FirstChild()->Value());
+			meshlessStruct.materialProperties.vertexGridSize= (float)atof(meshNode->FirstChild(XML_MESHLESS_VERTEX_GRID_SIZE)->FirstChild()->Value());
 		}
+		
 
 		meshlessStruct.transform = translation;
 
@@ -111,20 +114,20 @@ namespace PointCloud{
 		std::vector<Volume*> volumes;
 
 		do{
-			surfel = volumeNode->FirstChild(XML_MESHLESS_SURFEL);
+			surfel = volumeNode->FirstChild(XML_MESHLESS_SURFACE);
 			Volume *v = new Volume(meshlessStruct.materialProperties);
 			v->SetWorld(meshlessStruct.world);
 
 			do{
-				D3DXVECTOR3 pos = GetVector3(surfel ->FirstChild(XML_MESHLESS_SURFEL_POSITION)->ToElement());
-				D3DXVECTOR3 majorAxis = GetVector3(surfel ->FirstChild(XML_MESHLESS_SURFEL_MAJOR_AXIS)->ToElement());
-				D3DXVECTOR3 minorAxis = GetVector3(surfel ->FirstChild(XML_MESHLESS_SURFEL_MINOR_AXIS)->ToElement());
-				D3DXVECTOR3 normal = GetVector3(surfel ->FirstChild(XML_MESHLESS_SURFEL_NORMAL)->ToElement());
-				D3DXVECTOR2 count = GetVector2(surfel ->FirstChild(XML_MESHLESS_SURFEL_COUNT)->ToElement());
+				D3DXVECTOR3 pos = GetVector3(surfel ->FirstChild(XML_MESHLESS_SURFACE_POSITION)->ToElement());
+				D3DXVECTOR3 majorAxis = GetVector3(surfel ->FirstChild(XML_MESHLESS_SURFACE_SURFEL_MAJOR_AXIS)->ToElement());
+				D3DXVECTOR3 minorAxis = GetVector3(surfel ->FirstChild(XML_MESHLESS_SURFACE_SURFEL_MINOR_AXIS)->ToElement());
+				D3DXVECTOR3 normal = GetVector3(surfel ->FirstChild(XML_MESHLESS_SURFACE_SURFEL_NORMAL)->ToElement());
+				D3DXVECTOR2 count = GetVector2(surfel ->FirstChild(XML_MESHLESS_SURFACE_SURFEL_COUNT)->ToElement());
 
 				CreateSurface(v, pos, majorAxis, minorAxis, normal, count.x, count.y, meshlessStruct.texture);
 
-				surfel = surfel->NextSibling(XML_MESHLESS_SURFEL);
+				surfel = surfel->NextSibling(XML_MESHLESS_SURFACE);
 			
 			}while(surfel);
 

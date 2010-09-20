@@ -8,6 +8,13 @@
 #include "KeyboardHandler.h"
 #include "PhysicsWrapper.h"
 
+
+double D3DApp::frameCount = 0.0;
+double D3DApp::totalFramesPerSecond = 0.0;
+double D3DApp::totalMillisecondsPerFrame = 0.0;
+std::map<float, int> D3DApp::modeFPS;
+std::map<float, int> D3DApp::modeMPF;
+
 LRESULT CALLBACK
 	MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -51,7 +58,7 @@ D3DApp::D3DApp(HINSTANCE hInstance, std::string name)
 
 	mMainWndCaption = name;
 	md3dDriverType  = D3D10_DRIVER_TYPE_HARDWARE;
-	mClearColor     = D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f);
+	mClearColor     = D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f);
 	mClientWidth    = 1024;
 	mClientHeight   = 800;
 }
@@ -82,6 +89,11 @@ int D3DApp::run()
 	
 	mTimer.reset();
 
+	static float LastUpdate = 0.0f;
+	static float fps = 120.0f;
+	static float timeStep = 1000.0f / fps;
+
+
 	while(msg.message != WM_QUIT)
 	{
 		// If there are Window messages then process them.
@@ -100,12 +112,27 @@ int D3DApp::run()
 			else if(maxSec < mTimer.getDeltaTime())
 				maxSec = mTimer.getDeltaTime();
 
-			if( !mAppPaused )
-				updateScene(mTimer.getDeltaTime());	
+			float gameTime = mTimer.getGameTime() ;
+
+			if( !mAppPaused){
+				//if((gameTime - LastUpdate) * 1000.0f >= timeStep){
+					updateScene(gameTime - LastUpdate);	
+					LastUpdate = mTimer.getGameTime();
+				//}
+			}
 			else
 				Sleep(50);
 
 			drawScene();
+
+
+			
+			// run for 30 seconds 
+// 			if(gameTime >= 30.0f ){
+// 				PostQuitMessage(0);
+// 				CleanApp();
+// 				return 0;
+// 			}
 		}
 	}
 	return (int)msg.wParam;
@@ -183,12 +210,21 @@ void D3DApp::updateScene(float dt)
 	static float t_base = 0.0f;
 
 	frameCnt++;
+	/*D3DApp::totalMillisecondsPerFrame += mTimer.getDeltaTime() * 1000.0f;
+	D3DApp::modeMPF[mTimer.getDeltaTime() * 1000.0f]++;*/
 
 	// Compute averages over one second period.
 	if( (mTimer.getGameTime() - t_base) >= 1.0f )
 	{
+
+		frameCount++;
 		float fps = (float)frameCnt; // fps = frameCnt / 1
+
 		float mspf = 1000.0f / fps;
+
+		D3DApp::totalFramesPerSecond += fps;
+		
+		D3DApp::modeFPS[fps]++;
 
 		std::stringstream outs;   
 		outs.precision(6);
@@ -200,7 +236,7 @@ void D3DApp::updateScene(float dt)
 
 		// Reset for next average.
 		frameCnt = 0;
-		t_base  += 1.0f;
+		t_base  += mTimer.getGameTime() - t_base;
 		minSec = FLT_MAX;
 		maxSec = -FLT_MAX;
 	}
@@ -219,7 +255,6 @@ LRESULT D3DApp::msgProc(UINT msg, WPARAM wParam, LPARAM lParam)
 		PostQuitMessage(0);
 		return 0;
 	}
-
 
 	switch( msg )
 	{
@@ -389,7 +424,7 @@ void D3DApp::initDirect3D()
 	DXGI_SWAP_CHAIN_DESC sd;
 	sd.BufferDesc.Width  = mClientWidth;
 	sd.BufferDesc.Height = mClientHeight;
-	sd.BufferDesc.RefreshRate.Numerator = 60;
+	sd.BufferDesc.RefreshRate.Numerator = 0;
 	sd.BufferDesc.RefreshRate.Denominator = 1;
 	sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;

@@ -36,12 +36,13 @@ namespace PointCloud{
 		static const string XML_MESHLESS_WORLDSCALE;
 		static const string XML_MESHLESS_WORLDYAWPITCHROLL;
 		static const string XML_MESHLESS_DENSITY;
+		static const string XML_MESHLESS_MASS;
 		static const string XML_MESHLESS_YOUNGS_MODULUS;
 		static const string XML_MESHLESS_POISSON_RATIO;
 		static const string XML_MESHLESS_DAMPING_CONSTANT_PHI;
 		static const string XML_MESHLESS_DAMPING_CONSTANT_PSI;
 		static const string XML_MESHLESS_TOUGHNESS;
-		static const string XML_MESHLESS_MATERIAL;
+		static const string XML_MESHLESS_LIGHTING;
 		static const string XML_MESHLESS_PHYXEL_GRID_SIZE;
 		static const string XML_MESHLESS_VERTEX_GRID_SIZE;
 		static const string XML_MESHLESS_MINIMUM_SURFEL_SIZE;
@@ -63,12 +64,12 @@ namespace PointCloud{
 		static const string XML_MESHLESS_MATERIAL_RHO;
 		static const string XML_MESHLESS_SURFEL_RADIUS;
 
-		static const string XML_MESHLESS_SURFEL;
-		static const string XML_MESHLESS_SURFEL_POSITION;
-		static const string XML_MESHLESS_SURFEL_MAJOR_AXIS;
-		static const string XML_MESHLESS_SURFEL_MINOR_AXIS;
-		static const string XML_MESHLESS_SURFEL_NORMAL;
-		static const string XML_MESHLESS_SURFEL_COUNT;
+		static const string XML_MESHLESS_SURFACE;
+		static const string XML_MESHLESS_SURFACE_POSITION;
+		static const string XML_MESHLESS_SURFACE_SURFEL_MAJOR_AXIS;
+		static const string XML_MESHLESS_SURFACE_SURFEL_MINOR_AXIS;
+		static const string XML_MESHLESS_SURFACE_SURFEL_NORMAL;
+		static const string XML_MESHLESS_SURFACE_SURFEL_COUNT;
 
 	};
 }

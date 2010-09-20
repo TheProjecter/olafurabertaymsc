@@ -1,4 +1,5 @@
 #include "MathHelper.h"
+#include "FractureManager.h"
 #include "Globals.h"
 #include <algorithm>
 
@@ -73,20 +74,16 @@ bool MathHelper::SameDirection(D3DXVECTOR3 n1, D3DXVECTOR3 n2){
 	return abs(GetAngleBetweenVectors(n1, n2, true)) <= Helpers::Globals::PI *0.25f;
 }
 
-bool MathHelper::Facing(D3DXVECTOR3 n1, D3DXVECTOR3 n2){
-	return D3DXVec3Dot(&n1, &n2) <= 0.0f;
-}
-
-bool MathHelper::Facing(D3DXVECTOR3 p1, D3DXVECTOR3 p2, D3DXVECTOR3 n2){
+/*bool MathHelper::Facing(D3DXVECTOR3 p1, D3DXVECTOR3 p2, D3DXVECTOR3 n2){
 	return Facing((p1 - p2), n2);
-}
+}*/
 
 bool MathHelper::D3DXVECTOR3Equals(D3DXVECTOR3 vec, float x, float y, float z){
 	return vec.x == x && vec.y == y && vec.z == z;
 }
 
 bool MathHelper::Intersection(ProjectStructs::SURFEL* surfel1, ProjectStructs::SURFEL* surfel2){
-	return Intersection(surfel1, surfel2, 0.1f);
+	return Intersection(surfel1, surfel2, 0.01f);
 }
 
 bool MathHelper::Intersection(ProjectStructs::SURFEL* surfel1, ProjectStructs::SURFEL* surfel2, float percentage){
@@ -187,19 +184,163 @@ float MathHelper::GetAngleBetweenVectors(D3DXVECTOR3 v1, D3DXVECTOR3 v2, bool be
 	return angle;
 }
 
-float MathHelper::Get3DAngle(D3DXVECTOR3 v1, D3DXVECTOR3 v2, D3DXVECTOR3 n){
+D3DXVECTOR3 MathHelper::ProjectVectorToPlane(D3DXVECTOR3 planeNormal, D3DXVECTOR3 planeCentre, D3DXVECTOR3 v){
+	//  create the surfel plane
+	D3DXPLANE surfelPlane;
+	D3DXPlaneFromPointNormal(&surfelPlane, &planeCentre, &planeNormal);
+
+	// end of the ray
+	D3DXVECTOR3 v1 = v;
+	D3DXVECTOR3 vTimesNormal = v;
+	vTimesNormal.x *= planeNormal.x;
+	vTimesNormal.y *= planeNormal.y;
+	vTimesNormal.z *= planeNormal.z;
+
+	if(D3DXVec3Length(&(planeCentre + v + vTimesNormal)) < D3DXVec3Length(&(planeCentre + v))){
+		// make the vector "head" for the plane
+		v1.x *= planeNormal.x;
+		v1.y *= planeNormal.y;
+		v1.z *= planeNormal.z;
+	}	
+	else{
+		// make the vector "head" for the plane
+		v1.x *= -planeNormal.x;
+		v1.y *= -planeNormal.y;
+		v1.z *= -planeNormal.z;
+	}
+
+
+	if((surfelPlane.a * (v.x - v1.x) + surfelPlane.b * (v.y - v1.y) + surfelPlane.c * (v.z - v1.z)) == 0.0f)
+		return v;
+
+	float u = (surfelPlane.a * v.x + surfelPlane.b * v.y + surfelPlane.c * v.z + surfelPlane.d ) /
+		(surfelPlane.a * (v.x - v1.x) + surfelPlane.b * (v.y - v1.y) + surfelPlane.c * (v.z - v1.z));				
+
+	// plane-line intersection point
+	return v + u*(v1 - v);
+}
+
+float MathHelper::GetPlaneAngle(D3DXVECTOR3 planeNormal, D3DXVECTOR3 planeCentre, D3DXVECTOR3 referenceVector, D3DXVECTOR3 v){	
+
+	D3DXVECTOR3 intersectionPoint = ProjectVectorToPlane(planeNormal, planeCentre, v);
+	
+	// move the intersectionpoint and referencepoint to the centre
+	intersectionPoint -= planeCentre;
+	referenceVector -= planeCentre;
+
+	return GetAngleBetweenVectors(intersectionPoint, referenceVector, planeNormal);
+
+}
+
+//Since we have 3 possible outcomes, a short will be used to return either 0, 1 or 2
+//This can be replaced with just a bool, depending on how the special case (point on plane) wants to be handled
+short MathHelper::HalfSpaceTest(const D3DXVECTOR3& vecTestPoint, const D3DXVECTOR3& vecNormal, const D3DXVECTOR3& vecPointOnPlane)
+{
+	//Calculate a vector from the point on the plane to our test point
+	D3DXVECTOR3 vecTemp(vecTestPoint - vecPointOnPlane);
+
+	//Calculate the distance: dot product of the new vector with the plane's normal
+	float fDist(D3DXVec3Dot(&vecTemp, &vecNormal));
+
+	if(fDist > 0.01f)
+	{
+		//Point is in front of the plane
+		return 0;
+	}
+	else if(fDist < -0.01f)
+	{
+		//Point is behind the plane
+		return 1;
+	}
+	//If neither of these were true, then the point is on the plane
+	return 2;
+}
+
+bool MathHelper::Facing(D3DXVECTOR3 v1, D3DXVECTOR3 v2, D3DXVECTOR3 n2){
+	return D3DXVec3LengthSq(&(v2 - v1)) > D3DXVec3LengthSq(&(v2 + n2 - v1));
+}
+
+float MathHelper::GetAngleBetweenVectors( D3DXVECTOR3 v1, D3DXVECTOR3 v2, D3DXVECTOR3 normal ) 
+{
 	D3DXVECTOR3 cross;
 	D3DXVec3Cross(&cross, &v1 , &v2 );
-	
-	float angle = atan2(D3DXVec3Dot(&n, &cross), D3DXVec3Dot(&v2 , &v1)); 
- 	
-// 	if(angle >= Helpers::Globals::TWO_PI)
-// 		angle -= Helpers::Globals::TWO_PI;
-// 	else 
+
+	float angle = atan2(D3DXVec3Dot(&normal, &cross), D3DXVec3Dot(&v1 , &v2)); 
+
 	if(angle < 0.0f)
 		angle += Helpers::Globals::TWO_PI;
+	
 
 	return angle;
+}
+
+float MathHelper::Get3DAngleBetween3Points(D3DXVECTOR3 centre, D3DXVECTOR3 p1, D3DXVECTOR3 p2){
+
+	D3DXVECTOR3 directionBA, directionBC;
+
+	D3DXVec3Normalize(&directionBA, &(p1-centre));
+	D3DXVec3Normalize(&directionBC, &(p2-centre));
+
+	return acos(D3DXVec3Dot(&directionBA, &directionBC));
+	//Direction_BC = Vector3.Normalize(&(p2-centre));
+	//Angle_ABC = acos(vector3.Dot(Direction_BA, Direction_BC)
+
+//	return rotation;
+}
+
+void MathHelper::DisplaceSurfel(ProjectStructs::SURFEL* surfel, D3DXVECTOR3 surfacePos){
+
+
+	std::map<float, ProjectStructs::SURFEL*>::iterator neighborIterator;
+	D3DXVECTOR3 avgNeighbor = zero;
+	float count = 0.0f, multiplier = 1.0f; 
+	D3DXVECTOR3 normalizedNormal = -D3DXVECTOR3(abs(surfel->vertex->normal.x), abs(surfel->vertex->normal.y), abs(surfel->vertex->normal.z));
+	//D3DXVec3Normalize(&normalizedNormal, &surfel->vertex->normal);
+	D3DXVECTOR3 crossVector;
+
+	for(neighborIterator = surfel->neighbors.begin(); neighborIterator != surfel->neighbors.end(); neighborIterator++){
+		D3DXVECTOR3 neighbourPos = surfel->vertex->pos - (neighborIterator->second->vertex->pos);
+		// project P to plane created by surfel pos and surfel normal
+		D3DXVECTOR3 projectedPos = ProjectVectorToPlane(normalizedNormal,  zero , neighbourPos);
+
+		// cross the projected pos by the normal to create a cross vector
+		D3DXVec3Cross(&crossVector, &projectedPos, &normalizedNormal);
+
+		D3DXVECTOR3 displacedNormal;
+		// find the displaced normal by crossing the neighbour position by the crossed vector
+		D3DXVec3Cross(&displacedNormal, &crossVector, &neighbourPos);
+		D3DXVec3Normalize(&displacedNormal, &displacedNormal);
+
+		avgNeighbor += displacedNormal;	
+	}
+
+	//avgNeighbor /= count;
+
+	D3DXVec3Normalize(&avgNeighbor, &avgNeighbor);
+	
+		// create lookat
+		D3DXMATRIX billboardMatrix;
+		D3DXVECTOR3 right, up, look;
+
+//		up = D3DXVECTOR3(0.0f, 1.0f, 0.0f);
+
+		D3DXVec3Normalize(&look, &(-avgNeighbor));
+		D3DXVec3Cross(&right, &D3DXVECTOR3(0.0f, 1.0f, 0.0f), &look);
+		D3DXVec3Normalize(&right, &right);
+		
+ 		D3DXVec3Cross(&up, &look, &right);
+ 		D3DXVec3Normalize(&up, &up);
+
+		billboardMatrix = D3DXMATRIX(
+			right.x, right.y, right.z, 0.0f, 
+			up.x,    up.y,    up.z,    0.0f,
+			look.x,  look.y,  look.z,  0.0f,
+			0.0f,    0.0f,    0.0f,    1.0f);
+
+		D3DXVec3TransformCoord(&surfel->vertex->majorAxis, &surfel->vertex->majorAxis, &billboardMatrix);
+		D3DXVec3TransformCoord(&surfel->vertex->minorAxis, &surfel->vertex->minorAxis, &billboardMatrix);
+		D3DXVec3TransformCoord(&surfel->vertex->normal, &surfel->vertex->normal, &billboardMatrix);
+		//D3DXVec3Normalize(&surfel->vertex->normal, &avgNeighbor);
 }
 
 bool MathHelper::isCounterClockwise(D3DXVECTOR3 p0, D3DXVECTOR3 p1, D3DXVECTOR3 p2)
